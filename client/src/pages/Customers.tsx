@@ -3,73 +3,28 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Plus, Filter } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Customers() {
   const [searchQuery, setSearchQuery] = useState("");
 
-  //todo: remove mock functionality
-  const customers = [
-    {
-      id: "1",
-      name: "Amra Softić",
-      company: "Hotel Bristol",
-      lastContact: "Prije 2 dana",
-      totalPurchases: 45600,
-      status: "vip" as const,
-      favoriteProducts: ["VORAX GT 5kg", "Suma Grill D9"],
-    },
-    {
-      id: "2",
-      name: "Edin Jusić",
-      company: "Bolnica Koševo",
-      lastContact: "Prije 5 dana",
-      totalPurchases: 32800,
-      status: "active" as const,
-      favoriteProducts: ["BACTER WC 5L", "Higi Glass Cleaner"],
-    },
-    {
-      id: "3",
-      name: "Selma Imamović",
-      company: "Restoran Kod Muje",
-      lastContact: "Prije 1 sedmicu",
-      totalPurchases: 18900,
-      status: "active" as const,
-      favoriteProducts: ["Higi Dish Soap", "Domestos gel"],
-    },
-    {
-      id: "4",
-      name: "Nermin Hodžić",
-      company: "Ćevabdžinica Željo",
-      lastContact: "Prije 2 sedmice",
-      totalPurchases: 12400,
-      status: "active" as const,
-      favoriteProducts: ["Suma Grill D9", "CIF Cream"],
-    },
-    {
-      id: "5",
-      name: "Lejla Karić",
-      company: "Škola Štampar Makarije",
-      lastContact: "Prije 3 sedmice",
-      totalPurchases: 8700,
-      status: "inactive" as const,
-      favoriteProducts: ["TASKI Jontec 300"],
-    },
-    {
-      id: "6",
-      name: "Haris Begić",
-      company: "Tržni centar BBI",
-      lastContact: "Juče",
-      totalPurchases: 52300,
-      status: "vip" as const,
-      favoriteProducts: ["VORAX GT 5kg", "BACTER WC 5L", "Higi Glass Cleaner"],
-    },
-  ];
+  const { data: customers = [], isLoading } = useQuery({
+    queryKey: ["/api/customers"],
+  });
 
   const filteredCustomers = customers.filter(
-    (customer) =>
+    (customer: any) =>
       customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       customer.company.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Učitavam...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -102,8 +57,8 @@ export default function Customers() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredCustomers.map((customer) => (
-          <CustomerCard key={customer.id} {...customer} />
+        {filteredCustomers.map((customer: any) => (
+          <CustomerCard key={customer.id} {...customer} id={String(customer.id)} />
         ))}
       </div>
 

@@ -4,28 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Plus } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Products() {
   const [searchQuery, setSearchQuery] = useState("");
-
-  //todo: remove mock functionality
-  const products = [
-    { id: "1", name: "VORAX GT 5kg", category: "Sredstva za čišćenje", price: 89.90, stock: 45, unit: "kom" },
-    { id: "2", name: "BACTER WC 5L", category: "Sredstva za čišćenje", price: 32.50, stock: 28, unit: "kom" },
-    { id: "3", name: "Higi Glass Cleaner 4L", category: "Sredstva za čišćenje", price: 24.90, stock: 52, unit: "kom" },
-    { id: "4", name: "IPC 24V CT15 B35 16L", category: "Oprema", price: 5690.00, stock: 3, unit: "kom" },
-    { id: "5", name: "Suma Grill D9 2L", category: "Sredstva za čišćenje", price: 45.00, stock: 18, unit: "kom" },
-    { id: "6", name: "TASKI Jontec 300 5L", category: "Sredstva za čišćenje", price: 67.50, stock: 31, unit: "kom" },
-    { id: "7", name: "Higi Dish Soap 4L", category: "Sredstva za čišćenje", price: 28.90, stock: 42, unit: "kom" },
-    { id: "8", name: "Air Wick Essential Oils", category: "Osvježivači", price: 7.40, stock: 65, unit: "kom" },
-    { id: "9", name: "Aquarius Dispenser", category: "Dispenseri", price: 125.00, stock: 8, unit: "kom" },
-  ];
-
-  const categories = ["Svi proizvodi", "Sredstva za čišćenje", "Oprema", "Dispenseri", "Osvježivači"];
-
   const [activeCategory, setActiveCategory] = useState("Svi proizvodi");
 
-  const filteredProducts = products.filter((product) => {
+  const { data: products = [], isLoading } = useQuery({
+    queryKey: ["/api/products"],
+  });
+
+  const categories = ["Svi proizvodi", ...Array.from(new Set(products.map((p: any) => p.category)))];
+
+  const filteredProducts = products.filter((product: any) => {
     const matchesSearch =
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.category.toLowerCase().includes(searchQuery.toLowerCase());
@@ -33,6 +24,14 @@ export default function Products() {
       activeCategory === "Svi proizvodi" || product.category === activeCategory;
     return matchesSearch && matchesCategory;
   });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Učitavam...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -69,8 +68,13 @@ export default function Products() {
 
         <TabsContent value={activeCategory} className="mt-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredProducts.map((product) => (
-              <ProductCard key={product.id} {...product} />
+            {filteredProducts.map((product: any) => (
+              <ProductCard 
+                key={product.id} 
+                {...product} 
+                id={String(product.id)}
+                price={parseFloat(product.price)}
+              />
             ))}
           </div>
 

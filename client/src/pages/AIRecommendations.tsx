@@ -2,56 +2,22 @@ import { AIRecommendationCard } from "@/components/AIRecommendationCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles, TrendingUp, Users, Clock } from "lucide-react";
 import { StatsCard } from "@/components/StatsCard";
+import { useQuery } from "@tanstack/react-query";
 
 export default function AIRecommendations() {
-  //todo: remove mock functionality
-  const recommendations = [
-    {
-      id: "1",
-      customerName: "Amra Softić",
-      customerCompany: "Hotel Bristol",
-      suggestedProducts: ["VORAX GT 5kg", "Suma Grill D9"],
-      reasoning: "Klijent redovno naručuje proizvode za čišćenje kuhinje svakih 30 dana. Vrijeme je za ponovno naručivanje.",
-      priority: "high" as const,
-      optimalTime: "10:00 - 12:00",
-    },
-    {
-      id: "2",
-      customerName: "Edin Jusić",
-      customerCompany: "Bolnica Koševo",
-      suggestedProducts: ["BACTER WC 5L", "WC Premium"],
-      reasoning: "Prošlo je 25 dana od zadnje narudžbe toaletnih sredstava. Obično naručuju na 4 sedmice.",
-      priority: "medium" as const,
-      optimalTime: "14:00 - 16:00",
-    },
-    {
-      id: "3",
-      customerName: "Haris Begić",
-      customerCompany: "Tržni centar BBI",
-      suggestedProducts: ["Higi Glass Cleaner 4L", "TASKI Jontec 300 5L"],
-      reasoning: "VIP klijent koji preferira bulk narudžbe. Pokazuje interes za nove proizvode za održavanje.",
-      priority: "high" as const,
-      optimalTime: "09:00 - 11:00",
-    },
-    {
-      id: "4",
-      customerName: "Selma Imamović",
-      customerCompany: "Restoran Kod Muje",
-      suggestedProducts: ["Higi Dish Soap 4L", "Domestos gel"],
-      reasoning: "Redovan klijent sa predvidivim ciklusom naručivanja. Vrijeme za obnovu zaliha.",
-      priority: "medium" as const,
-      optimalTime: "13:00 - 15:00",
-    },
-    {
-      id: "5",
-      customerName: "Lejla Karić",
-      customerCompany: "Škola Štampar Makarije",
-      suggestedProducts: ["TASKI Jontec 300 5L", "Higi Glass Cleaner"],
-      reasoning: "Nije naručivao već 3 sedmice. Možda je vrijeme za reaktivaciju sa specijalnom ponudom.",
-      priority: "low" as const,
-      optimalTime: "11:00 - 13:00",
-    },
-  ];
+  const { data: recommendations = [], isLoading } = useQuery({
+    queryKey: ["/api/recommendations"],
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Generišem AI preporuke...</p>
+      </div>
+    );
+  }
+
+  const highPriorityCount = recommendations.filter((r: any) => r.priority === 'high').length;
 
   return (
     <div className="space-y-6">
@@ -70,7 +36,7 @@ export default function AIRecommendations() {
           title="Preporuke danas"
           value={recommendations.length}
           icon={Sparkles}
-          description={`${recommendations.filter(r => r.priority === 'high').length} visokog prioriteta`}
+          description={`${highPriorityCount} visokog prioriteta`}
         />
         <StatsCard
           title="Očekivana prodaja"
@@ -94,11 +60,28 @@ export default function AIRecommendations() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {recommendations.map((rec) => (
-              <AIRecommendationCard key={rec.id} {...rec} />
-            ))}
-          </div>
+          {recommendations.length > 0 ? (
+            <div className="space-y-4">
+              {recommendations.map((rec: any) => (
+                <AIRecommendationCard 
+                  key={rec.customerId} 
+                  id={String(rec.customerId)}
+                  customerName={rec.customerName}
+                  customerCompany={rec.customerCompany}
+                  suggestedProducts={rec.suggestedProducts}
+                  reasoning={rec.reasoning}
+                  priority={rec.priority}
+                  optimalTime={rec.optimalContactTime}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">
+                Trenutno nema preporuka. AI će generisati preporuke kada kupci budu spremni za ponovno naručivanje.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
