@@ -50,11 +50,14 @@ export const products = pgTable("products", {
 });
 
 export const insertProductSchema = createInsertSchema(products, {
-  name: z.string().min(1),
-  category: z.string().min(1),
-  price: z.string(),
-  stock: z.number().int().min(0).optional(),
-  unit: z.string().optional(),
+  name: z.string().min(1, "Naziv je obavezan"),
+  category: z.string().min(1, "Kategorija je obavezna"),
+  price: z.string().min(1, "Cijena je obavezna").refine(
+    (val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0,
+    "Cijena mora biti pozitivan broj"
+  ),
+  stock: z.number().int().min(0, "Stanje mora biti pozitivno"),
+  unit: z.string().min(1, "Jedinica je obavezna"),
 }).omit({
   id: true,
 });

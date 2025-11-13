@@ -1,10 +1,10 @@
 import { ProductCard } from "@/components/ProductCard";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Plus } from "lucide-react";
+import { Search } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { AddProductDialog } from "@/components/AddProductDialog";
 
 export default function Products() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -40,10 +40,7 @@ export default function Products() {
           <h1 className="text-2xl font-semibold" data-testid="heading-products">Proizvodi</h1>
           <p className="text-muted-foreground">Katalog Greentime proizvoda</p>
         </div>
-        <Button data-testid="button-add-product">
-          <Plus className="h-4 w-4 mr-2" />
-          Novi proizvod
-        </Button>
+        <AddProductDialog />
       </div>
 
       <div className="relative">

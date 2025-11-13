@@ -1,9 +1,10 @@
 import { CustomerCard } from "@/components/CustomerCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Filter } from "lucide-react";
+import { Search, Filter } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { AddCustomerDialog } from "@/components/AddCustomerDialog";
 
 export default function Customers() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -33,10 +34,7 @@ export default function Customers() {
           <h1 className="text-2xl font-semibold" data-testid="heading-customers">Kupci</h1>
           <p className="text-muted-foreground">Upravljajte vašim klijentima</p>
         </div>
-        <Button data-testid="button-add-customer">
-          <Plus className="h-4 w-4 mr-2" />
-          Novi kupac
-        </Button>
+        <AddCustomerDialog />
       </div>
 
       <div className="flex gap-3 flex-wrap">
