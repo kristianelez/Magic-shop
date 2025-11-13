@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertCustomerSchema, insertProductSchema, insertSaleSchema, insertActivitySchema } from "@shared/schema";
+import { generateCustomerRecommendations } from "./ai";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -233,6 +234,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Error creating activity:", error);
       res.status(500).json({ error: "Failed to create activity" });
+    }
+  });
+
+  // AI Recommendations API
+  app.get("/api/recommendations", async (req, res) => {
+    try {
+      const recommendations = await generateCustomerRecommendations();
+      res.json(recommendations);
+    } catch (error) {
+      console.error("Error generating recommendations:", error);
+      res.status(500).json({ error: "Failed to generate recommendations" });
     }
   });
 

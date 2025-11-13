@@ -27,7 +27,11 @@ export const customers = pgTable("customers", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const insertCustomerSchema = createInsertSchema(customers).omit({
+export const insertCustomerSchema = createInsertSchema(customers, {
+  name: z.string().min(1),
+  company: z.string().min(1),
+  status: z.string().optional(),
+}).omit({
   id: true,
   createdAt: true,
 });
@@ -45,7 +49,13 @@ export const products = pgTable("products", {
   description: text("description"),
 });
 
-export const insertProductSchema = createInsertSchema(products).omit({
+export const insertProductSchema = createInsertSchema(products, {
+  name: z.string().min(1),
+  category: z.string().min(1),
+  price: z.string(),
+  stock: z.number().int().min(0).optional(),
+  unit: z.string().optional(),
+}).omit({
   id: true,
 });
 
@@ -62,7 +72,13 @@ export const sales = pgTable("sales", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const insertSaleSchema = createInsertSchema(sales).omit({
+export const insertSaleSchema = createInsertSchema(sales, {
+  customerId: z.number().int(),
+  productId: z.number().int(),
+  quantity: z.number().int().min(1),
+  totalAmount: z.string(),
+  status: z.string().optional(),
+}).omit({
   id: true,
   createdAt: true,
 });
@@ -79,7 +95,10 @@ export const activities = pgTable("activities", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const insertActivitySchema = createInsertSchema(activities).omit({
+export const insertActivitySchema = createInsertSchema(activities, {
+  customerId: z.number().int(),
+  type: z.string().min(1),
+}).omit({
   id: true,
   createdAt: true,
 });
