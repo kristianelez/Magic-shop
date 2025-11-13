@@ -18,7 +18,7 @@ import {
   sales,
   activities,
 } from "@shared/schema";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, sql, inArray } from "drizzle-orm";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -198,7 +198,7 @@ export class DatabaseStorage implements IStorage {
       .map(([id]) => parseInt(id));
 
     const topProducts = topProductIds.length > 0
-      ? await db.select().from(products).where(sql`${products.id} = ANY(${topProductIds})`)
+      ? await db.select().from(products).where(inArray(products.id, topProductIds))
       : [];
 
     return {
