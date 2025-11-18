@@ -5,16 +5,17 @@ import { Search, Filter } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AddCustomerDialog } from "@/components/AddCustomerDialog";
+import type { Customer } from "@shared/schema";
 
 export default function Customers() {
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: customers = [], isLoading } = useQuery({
+  const { data: customers = [], isLoading } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
   });
 
   const filteredCustomers = customers.filter(
-    (customer: any) =>
+    (customer) =>
       customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       customer.company.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -55,8 +56,17 @@ export default function Customers() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredCustomers.map((customer: any) => (
-          <CustomerCard key={customer.id} {...customer} id={String(customer.id)} />
+        {filteredCustomers.map((customer) => (
+          <CustomerCard
+            key={customer.id}
+            id={String(customer.id)}
+            name={customer.name}
+            company={customer.company}
+            email={customer.email}
+            phone={customer.phone}
+            status={customer.status as "active" | "inactive" | "vip"}
+            totalPurchases={0}
+          />
         ))}
       </div>
 

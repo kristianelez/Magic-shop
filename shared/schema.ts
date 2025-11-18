@@ -28,8 +28,10 @@ export const customers = pgTable("customers", {
 });
 
 export const insertCustomerSchema = createInsertSchema(customers, {
-  name: z.string().min(1),
-  company: z.string().min(1),
+  name: z.string().min(1, "Ime je obavezno"),
+  company: z.string().min(1, "Kompanija je obavezna"),
+  email: z.string().email("Nevažeća email adresa").optional().or(z.literal("")),
+  phone: z.string().regex(/^\+?[0-9\s\-()/.]+$/, "Nevažeći broj telefona").optional().or(z.literal("")),
   status: z.string().optional(),
 }).omit({
   id: true,

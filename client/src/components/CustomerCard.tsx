@@ -8,6 +8,8 @@ interface CustomerCardProps {
   id: string;
   name: string;
   company: string;
+  email?: string | null;
+  phone?: string | null;
   lastContact?: string;
   totalPurchases: number;
   status: "active" | "inactive" | "vip";
@@ -18,6 +20,8 @@ export function CustomerCard({
   id,
   name,
   company,
+  email,
+  phone,
   lastContact,
   totalPurchases,
   status,
@@ -30,6 +34,13 @@ export function CustomerCard({
       .join("")
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  const normalizePhoneForTel = (phoneNumber: string) => {
+    // Zadrži početni + ako postoji, ostrani sve osim brojeva
+    const hasPlus = phoneNumber.startsWith('+');
+    const digitsOnly = phoneNumber.replace(/\D/g, '');
+    return hasPlus ? `+${digitsOnly}` : digitsOnly;
   };
 
   const statusColors = {
@@ -84,14 +95,56 @@ export function CustomerCard({
           </div>
         )}
         <div className="flex gap-2 pt-2">
-          <Button size="sm" variant="outline" className="flex-1" data-testid="button-call">
-            <Phone className="h-3 w-3 mr-1" />
-            Pozovi
-          </Button>
-          <Button size="sm" variant="outline" className="flex-1" data-testid="button-email">
-            <Mail className="h-3 w-3 mr-1" />
-            Email
-          </Button>
+          {phone ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1"
+              data-testid="button-call"
+              asChild
+            >
+              <a href={`tel:${normalizePhoneForTel(phone)}`}>
+                <Phone className="h-3 w-3 mr-1" />
+                Pozovi
+              </a>
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1"
+              data-testid="button-call"
+              disabled
+            >
+              <Phone className="h-3 w-3 mr-1" />
+              Pozovi
+            </Button>
+          )}
+          {email ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1"
+              data-testid="button-email"
+              asChild
+            >
+              <a href={`mailto:${email}`}>
+                <Mail className="h-3 w-3 mr-1" />
+                Email
+              </a>
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1"
+              data-testid="button-email"
+              disabled
+            >
+              <Mail className="h-3 w-3 mr-1" />
+              Email
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
