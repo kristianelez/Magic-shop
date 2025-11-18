@@ -212,6 +212,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/sales/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const saleData = insertSaleSchema.partial().parse(req.body);
+      const sale = await storage.updateSale(id, saleData);
+      
+      if (!sale) {
+        return res.status(404).json({ error: "Sale not found" });
+      }
+      
+      res.json(sale);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Error updating sale:", error);
+      res.status(500).json({ error: "Failed to update sale" });
+    }
+  });
+
+  app.delete("/api/sales/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteSale(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ error: "Sale not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting sale:", error);
+      res.status(500).json({ error: "Failed to delete sale" });
+    }
+  });
+
   // Activities API
   app.get("/api/activities", async (req, res) => {
     try {

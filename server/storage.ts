@@ -49,6 +49,8 @@ export interface IStorage {
   getSales(): Promise<Sale[]>;
   getSalesByCustomer(customerId: number): Promise<Sale[]>;
   createSale(sale: InsertSale): Promise<Sale>;
+  updateSale(id: number, sale: Partial<InsertSale>): Promise<Sale | undefined>;
+  deleteSale(id: number): Promise<boolean>;
 
   // Activities
   getActivities(): Promise<Activity[]>;
@@ -146,6 +148,16 @@ export class DatabaseStorage implements IStorage {
   async createSale(sale: InsertSale): Promise<Sale> {
     const result = await db.insert(sales).values(sale).returning();
     return result[0];
+  }
+
+  async updateSale(id: number, sale: Partial<InsertSale>): Promise<Sale | undefined> {
+    const result = await db.update(sales).set(sale).where(eq(sales.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteSale(id: number): Promise<boolean> {
+    const result = await db.delete(sales).where(eq(sales.id, id)).returning();
+    return result.length > 0;
   }
 
   // Activities

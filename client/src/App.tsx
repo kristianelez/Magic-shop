@@ -13,6 +13,7 @@ import Products from "@/pages/Products";
 import AIRecommendations from "@/pages/AIRecommendations";
 import Sales from "@/pages/Sales";
 import CreateOrder from "@/pages/CreateOrder";
+import EditOrder from "@/pages/EditOrder";
 import Orders from "@/pages/Orders";
 import NotFound from "@/pages/not-found";
 
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/recommendations" component={AIRecommendations} />
       <Route path="/sales" component={Sales} />
       <Route path="/create-order" component={CreateOrder} />
+      <Route path="/edit-order/:orderId" component={EditOrder} />
       <Route path="/orders" component={Orders} />
       <Route component={NotFound} />
     </Switch>

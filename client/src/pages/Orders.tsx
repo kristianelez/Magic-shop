@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Calendar, Package, Users } from "lucide-react";
+import { ShoppingCart, Calendar, Package, Users, Pencil } from "lucide-react";
 import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { bs } from "date-fns/locale";
 import type { Sale, Customer, Product } from "@shared/schema";
@@ -33,6 +34,7 @@ interface GroupedOrder {
 }
 
 export default function Orders() {
+  const [, setLocation] = useLocation();
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState<string>(
     `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`
@@ -189,13 +191,22 @@ export default function Orders() {
                           </p>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="flex flex-col items-end gap-2">
                         <p className="text-2xl font-bold text-primary" data-testid={`order-total-${order.id}`}>
                           {order.totalAmount.toFixed(2)} KM
                         </p>
-                        <Badge variant={order.status === "completed" ? "secondary" : "outline"} className="mt-2">
+                        <Badge variant={order.status === "completed" ? "secondary" : "outline"}>
                           {order.status === "completed" ? "Završeno" : "Na čekanju"}
                         </Badge>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setLocation(`/edit-order/${encodeURIComponent(order.id)}`)}
+                          data-testid={`button-edit-order-${order.id}`}
+                        >
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Uredi
+                        </Button>
                       </div>
                     </div>
                   </CardHeader>
