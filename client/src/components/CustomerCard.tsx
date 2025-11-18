@@ -13,6 +13,7 @@ interface CustomerCardProps {
   lastContact?: string;
   totalPurchases: number;
   status: "active" | "inactive" | "vip";
+  customerType?: string | null;
   favoriteProducts?: string[];
 }
 
@@ -25,6 +26,7 @@ export function CustomerCard({
   lastContact,
   totalPurchases,
   status,
+  customerType,
   favoriteProducts = [],
 }: CustomerCardProps) {
   const getInitials = (name: string) => {
@@ -55,6 +57,24 @@ export function CustomerCard({
     vip: "VIP",
   };
 
+  const customerTypeIcons: Record<string, string> = {
+    hotel: "🏨",
+    pekara: "🥖",
+    kafic: "☕",
+    restoran: "🍽️",
+    fabrika: "🏭",
+    ostalo: "📋",
+  };
+
+  const customerTypeLabels: Record<string, string> = {
+    hotel: "Hotel",
+    pekara: "Pekara",
+    kafic: "Kafić",
+    restoran: "Restoran",
+    fabrika: "Fabrika",
+    ostalo: "Ostalo",
+  };
+
   return (
     <Card className="hover-elevate cursor-pointer" data-testid={`card-customer-${id}`}>
       <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-3">
@@ -67,6 +87,11 @@ export function CustomerCard({
           <div>
             <h3 className="font-semibold text-base" data-testid="text-customer-name">{name}</h3>
             <p className="text-sm text-muted-foreground">{company}</p>
+            {customerType && customerType !== "ostalo" && (
+              <p className="text-xs text-muted-foreground mt-1">
+                {customerTypeIcons[customerType]} {customerTypeLabels[customerType]}
+              </p>
+            )}
           </div>
         </div>
         <Badge className={statusColors[status]} variant="outline">

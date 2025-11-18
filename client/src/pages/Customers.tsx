@@ -65,6 +65,7 @@ export default function Customers() {
             email={customer.email}
             phone={customer.phone}
             status={customer.status as "active" | "inactive" | "vip"}
+            customerType={customer.customerType}
             totalPurchases={0}
           />
         ))}

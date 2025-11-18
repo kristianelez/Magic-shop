@@ -10,12 +10,13 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertCustomerSchema } from "@shared/schema";
+import { insertCustomerSchema, customerTypes } from "@shared/schema";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
 const formSchema = insertCustomerSchema.extend({
   status: z.enum(["active", "inactive", "vip"]).default("active"),
+  customerType: z.enum(customerTypes).default("ostalo"),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -32,6 +33,7 @@ export function AddCustomerDialog() {
       email: "",
       phone: "",
       status: "active",
+      customerType: "ostalo",
     },
   });
 
@@ -126,6 +128,32 @@ export function AddCustomerDialog() {
                   <FormControl>
                     <Input placeholder="+387 33 123 456" {...field} data-testid="input-customer-phone" />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="customerType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tip kupca</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger data-testid="select-customer-type">
+                        <SelectValue placeholder="Odaberi tip kupca" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="hotel">🏨 Hotel</SelectItem>
+                      <SelectItem value="pekara">🥖 Pekara</SelectItem>
+                      <SelectItem value="kafic">☕ Kafić</SelectItem>
+                      <SelectItem value="restoran">🍽️ Restoran</SelectItem>
+                      <SelectItem value="fabrika">🏭 Fabrika</SelectItem>
+                      <SelectItem value="ostalo">📋 Ostalo</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
