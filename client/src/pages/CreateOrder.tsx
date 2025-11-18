@@ -5,9 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, ShoppingCart, Users, Package } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Plus, Trash2, ShoppingCart, Users, Package, Check, ChevronsUpDown } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import type { Customer, Product } from "@shared/schema";
 
 interface OrderItem {
@@ -20,6 +23,7 @@ interface OrderItem {
 
 export default function CreateOrder() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
+  const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const { toast } = useToast();
 
@@ -220,19 +224,52 @@ export default function CreateOrder() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="customer">Odaberi kupca *</Label>
-              <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
-                <SelectTrigger id="customer" data-testid="select-customer">
-                  <SelectValue placeholder="Odaberi kupca..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {customers.map((customer) => (
-                    <SelectItem key={customer.id} value={String(customer.id)}>
-                      {customer.name} - {customer.company}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Odaberi ili pretraži kupca *</Label>
+              <Popover open={customerSearchOpen} onOpenChange={setCustomerSearchOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={customerSearchOpen}
+                    className="w-full justify-between"
+                    data-testid="select-customer"
+                  >
+                    {selectedCustomerId
+                      ? customers.find((c) => String(c.id) === selectedCustomerId)?.name + " - " + customers.find((c) => String(c.id) === selectedCustomerId)?.company
+                      : "Odaberi kupca..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0">
+                  <Command>
+                    <CommandInput placeholder="Pretraži kupce..." data-testid="input-search-customer" />
+                    <CommandList>
+                      <CommandEmpty>Nema pronađenih kupaca.</CommandEmpty>
+                      <CommandGroup>
+                        {customers.map((customer) => (
+                          <CommandItem
+                            key={customer.id}
+                            value={`${customer.name} ${customer.company}`}
+                            onSelect={() => {
+                              setSelectedCustomerId(String(customer.id));
+                              setCustomerSearchOpen(false);
+                            }}
+                            data-testid={`customer-option-${customer.id}`}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedCustomerId === String(customer.id) ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {customer.name} - {customer.company}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
           </CardContent>
         </Card>
