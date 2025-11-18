@@ -53,12 +53,14 @@ const menuItems = [
 
 export function AppSidebar() {
   const [location, setLocation] = useLocation();
-  const { setOpen, isMobile } = useSidebar();
+  const { setOpenMobile, isMobile } = useSidebar();
 
   const handleLinkClick = (url: string) => {
     setLocation(url);
     if (isMobile) {
-      setOpen(false);
+      requestAnimationFrame(() => {
+        setOpenMobile(false);
+      });
     }
   };
 
