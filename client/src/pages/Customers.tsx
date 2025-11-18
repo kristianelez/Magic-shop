@@ -59,13 +59,7 @@ export default function Customers() {
         {filteredCustomers.map((customer) => (
           <CustomerCard
             key={customer.id}
-            id={String(customer.id)}
-            name={customer.name}
-            company={customer.company}
-            email={customer.email}
-            phone={customer.phone}
-            status={customer.status as "active" | "inactive" | "vip"}
-            customerType={customer.customerType}
+            customer={customer}
             totalPurchases={0}
           />
         ))}

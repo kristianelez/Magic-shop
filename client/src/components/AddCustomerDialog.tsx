@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
@@ -10,7 +9,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertCustomerSchema, customerTypes } from "@shared/schema";
+import { insertCustomerSchema, customerTypes, type Customer } from "@shared/schema";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
@@ -21,59 +20,86 @@ const formSchema = insertCustomerSchema.extend({
 
 type FormData = z.infer<typeof formSchema>;
 
-export function AddCustomerDialog() {
+interface CustomerDialogProps {
+  customer?: Customer;
+  trigger?: React.ReactNode;
+}
+
+export function AddCustomerDialog({ customer, trigger }: CustomerDialogProps) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
+  const isEditMode = !!customer;
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      company: "",
-      email: "",
-      phone: "",
-      status: "active",
-      customerType: "ostalo",
+      name: customer?.name || "",
+      company: customer?.company || "",
+      email: customer?.email || "",
+      phone: customer?.phone || "",
+      status: (customer?.status as "active" | "inactive" | "vip") || "active",
+      customerType: (customer?.customerType as typeof customerTypes[number]) || "ostalo",
     },
   });
 
-  const createCustomer = useMutation({
+  useEffect(() => {
+    if (customer && open) {
+      form.reset({
+        name: customer.name,
+        company: customer.company,
+        email: customer.email || "",
+        phone: customer.phone || "",
+        status: customer.status as "active" | "inactive" | "vip",
+        customerType: (customer.customerType as typeof customerTypes[number]) || "ostalo",
+      });
+    }
+  }, [customer, open, form]);
+
+  const saveCustomer = useMutation({
     mutationFn: async (data: FormData) => {
-      return await apiRequest("POST", "/api/customers", data);
+      if (isEditMode && customer) {
+        return await apiRequest("PATCH", `/api/customers/${customer.id}`, data);
+      } else {
+        return await apiRequest("POST", "/api/customers", data);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       toast({
-        title: "Uspješno dodato",
-        description: "Novi kupac je dodat u sistem",
+        title: isEditMode ? "Uspješno ažurirano" : "Uspješno dodato",
+        description: isEditMode ? "Kupac je ažuriran" : "Novi kupac je dodat u sistem",
       });
       setOpen(false);
-      form.reset();
+      if (!isEditMode) {
+        form.reset();
+      }
     },
     onError: (error: any) => {
       toast({
         title: "Greška",
-        description: error.message || "Nije moguće dodati kupca",
+        description: error.message || (isEditMode ? "Nije moguće ažurirati kupca" : "Nije moguće dodati kupca"),
         variant: "destructive",
       });
     },
   });
 
   const onSubmit = (data: FormData) => {
-    createCustomer.mutate(data);
+    saveCustomer.mutate(data);
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button data-testid="button-add-customer">
-          <Plus className="h-4 w-4 mr-2" />
-          Novi kupac
-        </Button>
+        {trigger || (
+          <Button data-testid="button-add-customer">
+            <Plus className="h-4 w-4 mr-2" />
+            Novi kupac
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Dodaj novog kupca</DialogTitle>
+          <DialogTitle>{isEditMode ? "Uredi kupca" : "Dodaj novog kupca"}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -146,12 +172,12 @@ export function AddCustomerDialog() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="hotel">🏨 Hotel</SelectItem>
-                      <SelectItem value="pekara">🥖 Pekara</SelectItem>
-                      <SelectItem value="kafic">☕ Kafić</SelectItem>
-                      <SelectItem value="restoran">🍽️ Restoran</SelectItem>
-                      <SelectItem value="fabrika">🏭 Fabrika</SelectItem>
-                      <SelectItem value="ostalo">📋 Ostalo</SelectItem>
+                      <SelectItem value="hotel">Hotel</SelectItem>
+                      <SelectItem value="pekara">Pekara</SelectItem>
+                      <SelectItem value="kafic">Kafić</SelectItem>
+                      <SelectItem value="restoran">Restoran</SelectItem>
+                      <SelectItem value="fabrika">Fabrika</SelectItem>
+                      <SelectItem value="ostalo">Ostalo</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -191,8 +217,11 @@ export function AddCustomerDialog() {
               >
                 Otkaži
               </Button>
-              <Button type="submit" disabled={createCustomer.isPending} data-testid="button-save-customer">
-                {createCustomer.isPending ? "Dodajem..." : "Dodaj kupca"}
+              <Button type="submit" disabled={saveCustomer.isPending} data-testid="button-save-customer">
+                {saveCustomer.isPending 
+                  ? (isEditMode ? "Ažuriram..." : "Dodajem...") 
+                  : (isEditMode ? "Sačuvaj izmjene" : "Dodaj kupca")
+                }
               </Button>
             </div>
           </form>

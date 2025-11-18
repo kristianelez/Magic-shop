@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCustomerSchema, insertProductSchema, insertSaleSchema, insertActivitySchema } from "@shared/schema";
+import { insertCustomerSchema, insertProductSchema, insertSaleSchema, insertActivitySchema, type InsertCustomer } from "@shared/schema";
 import { generateHybridRecommendations } from "./ai";
 import { z } from "zod";
 
@@ -77,12 +77,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/customers/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const customerData = insertCustomerSchema.partial().parse(req.body);
-      const customer = await storage.updateCustomer(id, customerData);
       
-      if (!customer) {
+      const existing = await storage.getCustomer(id);
+      if (!existing) {
         return res.status(404).json({ error: "Customer not found" });
       }
+      
+      const updates = insertCustomerSchema.partial().parse(req.body);
+      
+      const mergedData: any = { ...existing };
+      for (const key in updates) {
+        mergedData[key] = updates[key as keyof typeof updates];
+      }
+      
+      delete mergedData.id;
+      delete mergedData.createdAt;
+      
+      const customer = await storage.updateCustomer(id, mergedData);
       
       res.json(customer);
     } catch (error) {

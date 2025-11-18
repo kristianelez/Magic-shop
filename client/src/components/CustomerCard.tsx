@@ -2,33 +2,24 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Phone, Mail, TrendingUp } from "lucide-react";
+import { Phone, Mail, Pencil } from "lucide-react";
+import { AddCustomerDialog } from "./AddCustomerDialog";
+import type { Customer } from "@shared/schema";
 
 interface CustomerCardProps {
-  id: string;
-  name: string;
-  company: string;
-  email?: string | null;
-  phone?: string | null;
+  customer: Customer;
   lastContact?: string;
   totalPurchases: number;
-  status: "active" | "inactive" | "vip";
-  customerType?: string | null;
   favoriteProducts?: string[];
 }
 
 export function CustomerCard({
-  id,
-  name,
-  company,
-  email,
-  phone,
+  customer,
   lastContact,
   totalPurchases,
-  status,
-  customerType,
   favoriteProducts = [],
 }: CustomerCardProps) {
+  const { id, name, company, email, phone, status, customerType } = customer;
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -57,15 +48,6 @@ export function CustomerCard({
     vip: "VIP",
   };
 
-  const customerTypeIcons: Record<string, string> = {
-    hotel: "🏨",
-    pekara: "🥖",
-    kafic: "☕",
-    restoran: "🍽️",
-    fabrika: "🏭",
-    ostalo: "📋",
-  };
-
   const customerTypeLabels: Record<string, string> = {
     hotel: "Hotel",
     pekara: "Pekara",
@@ -76,7 +58,7 @@ export function CustomerCard({
   };
 
   return (
-    <Card className="hover-elevate cursor-pointer" data-testid={`card-customer-${id}`}>
+    <Card className="hover-elevate" data-testid={`card-customer-${id}`}>
       <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-3">
         <div className="flex items-center gap-3">
           <Avatar>
@@ -89,14 +71,24 @@ export function CustomerCard({
             <p className="text-sm text-muted-foreground">{company}</p>
             {customerType && customerType !== "ostalo" && (
               <p className="text-xs text-muted-foreground mt-1">
-                {customerTypeIcons[customerType]} {customerTypeLabels[customerType]}
+                {customerTypeLabels[customerType]}
               </p>
             )}
           </div>
         </div>
-        <Badge className={statusColors[status]} variant="outline">
-          {statusLabels[status]}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <AddCustomerDialog
+            customer={customer}
+            trigger={
+              <Button size="icon" variant="ghost" data-testid={`button-edit-customer-${id}`}>
+                <Pencil className="h-4 w-4" />
+              </Button>
+            }
+          />
+          <Badge className={statusColors[status as "active" | "inactive" | "vip"]} variant="outline">
+            {statusLabels[status as "active" | "inactive" | "vip"]}
+          </Badge>
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex items-center justify-between text-sm">
