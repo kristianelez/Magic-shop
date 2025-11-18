@@ -1,17 +1,16 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Plus, Trash2, ShoppingCart, Users, Package, Check, ChevronsUpDown } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import type { Customer, Product } from "@shared/schema";
+import type { Customer, Product, Sale } from "@shared/schema";
 
 interface OrderItem {
   productId: number;
@@ -24,6 +23,7 @@ interface OrderItem {
 export default function CreateOrder() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
+  const [productSearchOpen, setProductSearchOpen] = useState<{ [key: number]: boolean }>({});
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const { toast } = useToast();
 
@@ -34,6 +34,33 @@ export default function CreateOrder() {
   const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
   });
+
+  const { data: sales = [], isLoading: salesLoading } = useQuery<Sale[]>({
+    queryKey: ["/api/sales"],
+  });
+
+  // Izračunaj top 10 najprodavanijih proizvoda
+  const topProducts = useMemo(() => {
+    const productSales: { [key: number]: number } = {};
+    
+    sales.forEach((sale) => {
+      if (productSales[sale.productId]) {
+        productSales[sale.productId] += sale.quantity;
+      } else {
+        productSales[sale.productId] = sale.quantity;
+      }
+    });
+
+    const sortedProducts = products
+      .map((product) => ({
+        ...product,
+        totalSold: productSales[product.id] || 0,
+      }))
+      .sort((a, b) => b.totalSold - a.totalSold)
+      .slice(0, 10);
+
+    return sortedProducts;
+  }, [products, sales]);
 
   const createSales = useMutation({
     mutationFn: async (items: OrderItem[]) => {
@@ -68,8 +95,8 @@ export default function CreateOrder() {
   });
 
   const addOrderItem = () => {
-    if (products.length > 0) {
-      const firstProduct = products[0];
+    if (topProducts.length > 0) {
+      const firstProduct = topProducts[0];
       setOrderItems([
         ...orderItems,
         {
@@ -91,7 +118,7 @@ export default function CreateOrder() {
     const newItems = [...orderItems];
     
     if (field === "productId") {
-      const product = products.find((p) => p.id === parseInt(value));
+      const product = topProducts.find((p) => p.id === parseInt(value));
       if (product) {
         newItems[index].productId = product.id;
         newItems[index].productName = product.name;
@@ -301,22 +328,58 @@ export default function CreateOrder() {
                   data-testid={`order-item-${index}`}
                 >
                   <div>
-                    <Label>Proizvod</Label>
-                    <Select
-                      value={String(item.productId)}
-                      onValueChange={(value) => updateOrderItem(index, "productId", value)}
+                    <Label>Proizvod (Top 10 najprodavanijih)</Label>
+                    <Popover 
+                      open={productSearchOpen[index] || false} 
+                      onOpenChange={(open) => setProductSearchOpen({ ...productSearchOpen, [index]: open })}
                     >
-                      <SelectTrigger data-testid={`select-product-${index}`}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {products.map((product) => (
-                          <SelectItem key={product.id} value={String(product.id)}>
-                            {product.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={productSearchOpen[index] || false}
+                          className="w-full justify-between"
+                          data-testid={`select-product-${index}`}
+                        >
+                          {item.productName}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[400px] p-0">
+                        <Command>
+                          <CommandInput placeholder="Pretraži proizvode..." data-testid={`input-search-product-${index}`} />
+                          <CommandList>
+                            <CommandEmpty>Nema pronađenih proizvoda.</CommandEmpty>
+                            <CommandGroup>
+                              {topProducts.map((product) => (
+                                <CommandItem
+                                  key={product.id}
+                                  value={product.name}
+                                  onSelect={() => {
+                                    updateOrderItem(index, "productId", String(product.id));
+                                    setProductSearchOpen({ ...productSearchOpen, [index]: false });
+                                  }}
+                                  data-testid={`product-option-${index}-${product.id}`}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      item.productId === product.id ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  <div className="flex-1">
+                                    <div>{product.name}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                      Prodano: {product.totalSold} | Cijena: {product.price} KM
+                                    </div>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </div>
 
                   <div>
