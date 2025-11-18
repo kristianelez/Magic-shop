@@ -10,6 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 const menuItems = [
@@ -52,6 +53,14 @@ const menuItems = [
 
 export function AppSidebar() {
   const [location] = useLocation();
+  const { setOpen, isMobile } = useSidebar();
+
+  const handleLinkClick = () => {
+    // Zatvori sidebar na mobilnim uređajima nakon klika
+    if (isMobile) {
+      setOpen(false);
+    }
+  };
 
   return (
     <Sidebar>
@@ -78,7 +87,7 @@ export function AppSidebar() {
                     isActive={location === item.url}
                     data-testid={`link-${item.title.toLowerCase()}`}
                   >
-                    <Link href={item.url}>
+                    <Link href={item.url} onClick={handleLinkClick}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </Link>

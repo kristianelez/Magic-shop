@@ -1,57 +1,123 @@
+import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatsCard } from "@/components/StatsCard";
-import { TrendingUp, DollarSign, ShoppingCart, Users } from "lucide-react";
+import { TrendingUp, DollarSign, ShoppingCart, Users, ClipboardList } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { format } from "date-fns";
+import { bs } from "date-fns/locale";
+import type { Sale, Customer, Product } from "@shared/schema";
 
 export default function Sales() {
-  //todo: remove mock functionality
-  const recentSales = [
-    { id: 1, customer: "Hotel Bristol", product: "VORAX GT 5kg x 10", amount: 899, date: "13 Nov 2025", status: "completed" },
-    { id: 2, customer: "Bolnica Koševo", product: "BACTER WC 5L x 15", amount: 487.50, date: "12 Nov 2025", status: "completed" },
-    { id: 3, customer: "Restoran Kod Muje", product: "Higi Dish Soap 4L x 8", amount: 231.20, date: "12 Nov 2025", status: "pending" },
-    { id: 4, customer: "Tržni centar BBI", product: "Higi Glass Cleaner 4L x 20", amount: 498, date: "11 Nov 2025", status: "completed" },
-    { id: 5, customer: "Hotel Bristol", product: "Suma Grill D9 2L x 6", amount: 270, date: "11 Nov 2025", status: "completed" },
-    { id: 6, customer: "Ćevabdžinica Željo", product: "TASKI Jontec 300 5L x 4", amount: 270, date: "10 Nov 2025", status: "completed" },
-  ];
+  const [, setLocation] = useLocation();
 
-  const topProducts = [
-    { name: "VORAX GT 5kg", sold: 45, revenue: 4045.50 },
-    { name: "BACTER WC 5L", sold: 38, revenue: 1235 },
-    { name: "Higi Glass Cleaner 4L", sold: 52, revenue: 1294.80 },
-    { name: "Suma Grill D9 2L", sold: 28, revenue: 1260 },
-  ];
+  const { data: sales = [], isLoading: salesLoading } = useQuery<Sale[]>({
+    queryKey: ["/api/sales"],
+  });
+
+  const { data: customers = [], isLoading: customersLoading } = useQuery<Customer[]>({
+    queryKey: ["/api/customers"],
+  });
+
+  const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
+    queryKey: ["/api/products"],
+  });
+
+  const isLoading = salesLoading || customersLoading || productsLoading;
+
+  // Nedavne prodaje (zadnjih 10)
+  const recentSales = sales.slice(0, 10).map((sale) => {
+    const customer = customers.find((c) => c.id === sale.customerId);
+    const product = products.find((p) => p.id === sale.productId);
+    return {
+      id: sale.id,
+      customer: customer?.name || "N/A",
+      product: `${product?.name || "N/A"} x ${sale.quantity}`,
+      amount: parseFloat(sale.totalAmount),
+      date: format(new Date(sale.createdAt), "dd MMM yyyy", { locale: bs }),
+      status: sale.status,
+    };
+  });
+
+  // Izračunaj statistike
+  const totalSales = sales.reduce((sum, sale) => sum + parseFloat(sale.totalAmount), 0);
+  const totalTransactions = sales.length;
+  const averageValue = totalTransactions > 0 ? totalSales / totalTransactions : 0;
+  
+  // Broj jedinstvenih kupaca
+  const uniqueCustomers = new Set(sales.map((s) => s.customerId)).size;
+
+  // Top proizvodi
+  const productStats: { [key: number]: { name: string; sold: number; revenue: number } } = {};
+  
+  sales.forEach((sale) => {
+    const product = products.find((p) => p.id === sale.productId);
+    if (product) {
+      if (!productStats[product.id]) {
+        productStats[product.id] = {
+          name: product.name,
+          sold: 0,
+          revenue: 0,
+        };
+      }
+      productStats[product.id].sold += sale.quantity;
+      productStats[product.id].revenue += parseFloat(sale.totalAmount);
+    }
+  });
+
+  const topProducts = Object.values(productStats)
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 4);
+
+  const maxSold = Math.max(...topProducts.map((p) => p.sold), 1);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Učitavam podatke...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold" data-testid="heading-sales">Prodaja</h1>
-        <p className="text-muted-foreground">Pregled prodajnih rezultata</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold" data-testid="heading-sales">Prodaja</h1>
+          <p className="text-muted-foreground">Pregled prodajnih rezultata</p>
+        </div>
+        <Button 
+          onClick={() => setLocation("/orders")} 
+          variant="outline"
+          data-testid="button-view-orders"
+        >
+          <ClipboardList className="h-4 w-4 mr-2" />
+          Pregled narudžbi
+        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Ukupna prodaja"
-          value="45,290 KM"
+          value={`${totalSales.toFixed(2)} KM`}
           icon={DollarSign}
-          trend={{ value: 8, isPositive: true }}
         />
         <StatsCard
           title="Broj transakcija"
-          value="187"
+          value={String(totalTransactions)}
           icon={ShoppingCart}
-          trend={{ value: 12, isPositive: true }}
         />
         <StatsCard
           title="Prosječna vrijednost"
-          value="242 KM"
+          value={`${averageValue.toFixed(2)} KM`}
           icon={TrendingUp}
-          trend={{ value: 3, isPositive: false }}
         />
         <StatsCard
           title="Aktivni kupci"
-          value="89"
+          value={String(uniqueCustomers)}
           icon={Users}
-          description="ovaj mjesec"
+          description="ukupno"
         />
       </div>
 
@@ -90,28 +156,34 @@ export default function Sales() {
             <CardTitle>Top proizvodi</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {topProducts.map((product, idx) => (
-                <div key={idx} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-sm">{product.name}</span>
-                    <span className="text-sm font-semibold text-primary">
-                      {product.revenue.toFixed(2)} KM
-                    </span>
+            {topProducts.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                Nema podataka o prodaji proizvoda.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {topProducts.map((product, idx) => (
+                  <div key={idx} className="space-y-2" data-testid={`top-product-${idx}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">{product.name}</span>
+                      <span className="text-sm font-semibold text-primary">
+                        {product.revenue.toFixed(2)} KM
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{product.sold} prodatih jedinica</span>
+                      <span>#{idx + 1}</span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div
+                        className="bg-primary h-2 rounded-full"
+                        style={{ width: `${(product.sold / maxSold) * 100}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{product.sold} prodatih jedinica</span>
-                    <span>#{idx + 1}</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div
-                      className="bg-primary h-2 rounded-full"
-                      style={{ width: `${(product.sold / 52) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

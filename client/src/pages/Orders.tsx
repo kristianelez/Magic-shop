@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Calendar, Package, Users, Pencil } from "lucide-react";
+import { ShoppingCart, Calendar, Package, Users, Pencil, TrendingUp } from "lucide-react";
 import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { bs } from "date-fns/locale";
 import type { Sale, Customer, Product } from "@shared/schema";
@@ -138,6 +138,14 @@ export default function Orders() {
           </h1>
           <p className="text-muted-foreground">Pregled svih narudžbi sa filterima</p>
         </div>
+        <Button 
+          onClick={() => setLocation("/sales")} 
+          variant="outline"
+          data-testid="button-view-sales"
+        >
+          <TrendingUp className="h-4 w-4 mr-2" />
+          Pregled prodaje
+        </Button>
       </div>
 
       <Card>
