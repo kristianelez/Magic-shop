@@ -3,6 +3,8 @@ import { pgTable, text, varchar, serial, integer, decimal, timestamp } from "dri
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export const customerTypes = ["hotel", "pekara", "kafic", "restoran", "fabrika", "ostalo"] as const;
+
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
@@ -23,6 +25,7 @@ export const customers = pgTable("customers", {
   company: text("company").notNull(),
   email: text("email"),
   phone: text("phone"),
+  customerType: text("customer_type").default("ostalo"),
   status: text("status").notNull().default("active"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -32,6 +35,7 @@ export const insertCustomerSchema = createInsertSchema(customers, {
   company: z.string().min(1, "Kompanija je obavezna"),
   email: z.string().email("Nevažeća email adresa").optional().or(z.literal("")),
   phone: z.string().regex(/^\+?[0-9\s\-()/.]+$/, "Nevažeći broj telefona").optional().or(z.literal("")),
+  customerType: z.enum(customerTypes).optional(),
   status: z.string().optional(),
 }).omit({
   id: true,
@@ -49,6 +53,8 @@ export const products = pgTable("products", {
   stock: integer("stock").notNull().default(0),
   unit: text("unit").notNull().default("kom"),
   description: text("description"),
+  vendor: text("vendor"),
+  recommendedFor: text("recommended_for").array(),
 });
 
 export const insertProductSchema = createInsertSchema(products, {
@@ -60,6 +66,8 @@ export const insertProductSchema = createInsertSchema(products, {
   ),
   stock: z.number().int().min(0, "Stanje mora biti pozitivno"),
   unit: z.string().min(1, "Jedinica je obavezna"),
+  vendor: z.string().optional(),
+  recommendedFor: z.array(z.enum(customerTypes)).optional(),
 }).omit({
   id: true,
 });
