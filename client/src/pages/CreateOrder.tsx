@@ -126,13 +126,31 @@ export default function CreateOrder() {
         newItems[index].total = parseFloat(product.price) * newItems[index].quantity;
       }
     } else if (field === "quantity") {
-      const parsedQty = parseInt(value);
-      const qty = isNaN(parsedQty) || parsedQty < 1 ? 1 : parsedQty;
-      newItems[index].quantity = qty;
-      newItems[index].total = parseFloat(newItems[index].price) * qty;
+      // Allow empty string while typing
+      if (value === "" || value === null || value === undefined) {
+        newItems[index].quantity = "" as any;
+        newItems[index].total = 0;
+      } else {
+        const parsedQty = parseInt(value);
+        const qty = isNaN(parsedQty) || parsedQty < 1 ? 1 : parsedQty;
+        newItems[index].quantity = qty;
+        newItems[index].total = parseFloat(newItems[index].price) * qty;
+      }
     }
 
     setOrderItems(newItems);
+  };
+
+  const handleQuantityBlur = (index: number) => {
+    const newItems = [...orderItems];
+    const currentQty = newItems[index].quantity;
+    
+    // If empty or invalid, set to 1
+    if (typeof currentQty === "string" || currentQty === null || currentQty === undefined || currentQty < 1) {
+      newItems[index].quantity = 1;
+      newItems[index].total = parseFloat(newItems[index].price) * 1;
+      setOrderItems(newItems);
+    }
   };
 
   const totalAmount = orderItems.reduce((sum, item) => sum + item.total, 0);
@@ -396,10 +414,12 @@ export default function CreateOrder() {
                   <div>
                     <Label>Količina</Label>
                     <Input
-                      type="number"
-                      min="1"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       value={item.quantity}
                       onChange={(e) => updateOrderItem(index, "quantity", e.target.value)}
+                      onBlur={() => handleQuantityBlur(index)}
                       data-testid={`input-quantity-${index}`}
                     />
                   </div>
