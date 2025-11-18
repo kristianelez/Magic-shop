@@ -118,3 +118,11 @@ export const insertActivitySchema = createInsertSchema(activities, {
 
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
 export type Activity = typeof activities.$inferSelect;
+
+export const aiRecommendationsCache = pgTable("ai_recommendations_cache", {
+  id: serial("id").primaryKey(),
+  recommendations: text("recommendations").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type AIRecommendationsCache = typeof aiRecommendationsCache.$inferSelect;

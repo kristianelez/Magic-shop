@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertCustomerSchema, insertProductSchema, insertSaleSchema, insertActivitySchema } from "@shared/schema";
-import { generateCustomerRecommendations } from "./ai";
+import { generateHybridRecommendations } from "./ai";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -273,10 +273,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI Recommendations API
+  // AI Recommendations API (Hybrid: Local + OpenAI)
   app.get("/api/recommendations", async (req, res) => {
     try {
-      const recommendations = await generateCustomerRecommendations();
+      const recommendations = await generateHybridRecommendations();
       res.json(recommendations);
     } catch (error) {
       console.error("Error generating recommendations:", error);

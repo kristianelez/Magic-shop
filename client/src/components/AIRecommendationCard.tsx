@@ -2,12 +2,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Phone, Clock } from "lucide-react";
+import { Sparkles, Phone, Clock, Mail, ShoppingCart } from "lucide-react";
+import { useLocation } from "wouter";
 
 interface AIRecommendationCardProps {
   id: string;
   customerName: string;
   customerCompany: string;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
   suggestedProducts: string[];
   reasoning: string;
   priority: "high" | "medium" | "low";
@@ -18,11 +21,14 @@ export function AIRecommendationCard({
   id,
   customerName,
   customerCompany,
+  customerEmail,
+  customerPhone,
   suggestedProducts,
   reasoning,
   priority,
   optimalTime,
 }: AIRecommendationCardProps) {
+  const [, setLocation] = useLocation();
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -42,6 +48,16 @@ export function AIRecommendationCard({
     high: "Visoki prioritet",
     medium: "Srednji prioritet",
     low: "Niski prioritet",
+  };
+
+  const normalizePhoneForTel = (phoneNumber: string) => {
+    const hasPlus = phoneNumber.startsWith('+');
+    const digitsOnly = phoneNumber.replace(/\D/g, '');
+    return hasPlus ? `+${digitsOnly}` : digitsOnly;
+  };
+
+  const handleCreateOrder = () => {
+    setLocation(`/create-order?customerId=${id}`);
   };
 
   return (
@@ -86,13 +102,66 @@ export function AIRecommendationCard({
           </div>
         )}
 
-        <div className="flex gap-2 pt-2">
-          <Button size="sm" className="flex-1" data-testid="button-call-now">
-            <Phone className="h-3 w-3 mr-1" />
-            Pozovi sada
-          </Button>
-          <Button size="sm" variant="outline" data-testid="button-schedule">
-            Zakaži
+        <div className="flex gap-2 pt-2 flex-wrap">
+          {customerPhone ? (
+            <Button
+              size="sm"
+              variant="default"
+              className="flex-1"
+              data-testid="button-call-now"
+              asChild
+            >
+              <a href={`tel:${normalizePhoneForTel(customerPhone)}`}>
+                <Phone className="h-3 w-3 mr-1" />
+                Pozovi
+              </a>
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="default"
+              className="flex-1"
+              data-testid="button-call-now"
+              disabled
+            >
+              <Phone className="h-3 w-3 mr-1" />
+              Pozovi
+            </Button>
+          )}
+          {customerEmail ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1"
+              data-testid="button-email"
+              asChild
+            >
+              <a href={`mailto:${customerEmail}`}>
+                <Mail className="h-3 w-3 mr-1" />
+                Email
+              </a>
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1"
+              data-testid="button-email"
+              disabled
+            >
+              <Mail className="h-3 w-3 mr-1" />
+              Email
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1"
+            data-testid="button-create-order"
+            onClick={handleCreateOrder}
+          >
+            <ShoppingCart className="h-3 w-3 mr-1" />
+            Narudžba
           </Button>
         </div>
       </CardContent>

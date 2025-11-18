@@ -4,8 +4,20 @@ import { Sparkles, TrendingUp, Users, Clock } from "lucide-react";
 import { StatsCard } from "@/components/StatsCard";
 import { useQuery } from "@tanstack/react-query";
 
+interface Recommendation {
+  customerId: number;
+  customerName: string;
+  customerCompany: string;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
+  suggestedProducts: string[];
+  reasoning: string;
+  priority: "high" | "medium" | "low";
+  optimalContactTime: string;
+}
+
 export default function AIRecommendations() {
-  const { data: recommendations = [], isLoading } = useQuery({
+  const { data: recommendations = [], isLoading } = useQuery<Recommendation[]>({
     queryKey: ["/api/recommendations"],
   });
 
@@ -68,6 +80,8 @@ export default function AIRecommendations() {
                   id={String(rec.customerId)}
                   customerName={rec.customerName}
                   customerCompany={rec.customerCompany}
+                  customerEmail={rec.customerEmail}
+                  customerPhone={rec.customerPhone}
                   suggestedProducts={rec.suggestedProducts}
                   reasoning={rec.reasoning}
                   priority={rec.priority}

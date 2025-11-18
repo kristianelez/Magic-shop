@@ -72,10 +72,11 @@ Preferred communication style: Simple, everyday language.
 - Connection pooling enabled for scalability
 - Schema defined in `shared/schema.ts` with the following core tables:
   - `users` - User authentication (UUID primary key)
-  - `customers` - Customer information with status tracking (active/inactive/vip)
-  - `products` - Product catalog with pricing, stock, and categorization
+  - `customers` - Customer information with status tracking (active/inactive/vip) and customerType enum (hotel/pekara/kafic/restoran/fabrika)
+  - `products` - Product catalog with pricing, stock, categorization, and recommendedFor array for customer type targeting
   - `sales` - Sales transactions linking customers and products
   - `activities` - Customer interaction tracking
+  - `ai_recommendations_cache` - Caches OpenAI recommendations for 24 hours to minimize API costs
 
 **Schema Validation:**
 - **drizzle-zod** generates Zod schemas from Drizzle table definitions
@@ -87,6 +88,7 @@ Preferred communication style: Simple, everyday language.
 - Populates initial products (cleaning supplies, equipment, air fresheners)
 - Creates sample customers (hotels, hospitals, restaurants)
 - Generates historical sales data for testing
+- **CSV Import** - `server/import-products.ts` imported 160 products from 3,127-line CSV file with customer type targeting
 
 ### Authentication and Authorization
 
@@ -103,10 +105,15 @@ Preferred communication style: Simple, everyday language.
 ### External Dependencies
 
 **AI Integration:**
-- **OpenAI API** (GPT-5 model) for generating customer recommendations
-- Analyzes customer purchase patterns, frequency, and favorite products
-- Generates personalized product suggestions with reasoning and priority levels
-- Recommends optimal contact times based on historical patterns
+- **Hybrid AI System** - Combines local algorithms (90%) with OpenAI API calls (10%) for cost-effective recommendations
+- **OpenAI API** (GPT-5 model) limited to top 5 customers with 24-hour cache to minimize costs
+- **Local AI Engine** (`server/local-ai.ts`) provides instant, free recommendations using:
+  - Seasonal forecasting (summer/winter patterns for different product categories)
+  - Stock depletion prediction based on purchase intervals and average quantity
+  - Customer type-based product filtering (recommendedFor matching)
+  - Purchase pattern analysis (favorite products, categories, frequencies)
+- **Robust Fallback** - System continues serving local recommendations even when OpenAI quota is exceeded
+- **Cache Management** - `ai_recommendations_cache` table stores OpenAI responses with 24h validity and automatic cleanup
 - API key configured via `OPENAI_API_KEY` environment variable
 
 **Database Service:**
