@@ -12,6 +12,7 @@ import Customers from "@/pages/Customers";
 import Products from "@/pages/Products";
 import AIRecommendations from "@/pages/AIRecommendations";
 import Sales from "@/pages/Sales";
+import CreateOrder from "@/pages/CreateOrder";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/products" component={Products} />
       <Route path="/recommendations" component={AIRecommendations} />
       <Route path="/sales" component={Sales} />
+      <Route path="/create-order" component={CreateOrder} />
       <Route component={NotFound} />
     </Switch>
   );

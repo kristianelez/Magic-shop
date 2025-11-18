@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Package, Sparkles, TrendingUp } from "lucide-react";
+import { LayoutDashboard, Users, Package, Sparkles, TrendingUp, ShoppingCart } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
   Sidebar,
@@ -17,6 +17,11 @@ const menuItems = [
     title: "Dashboard",
     url: "/",
     icon: LayoutDashboard,
+  },
+  {
+    title: "Nova narudžba",
+    url: "/create-order",
+    icon: ShoppingCart,
   },
   {
     title: "Kupci",
