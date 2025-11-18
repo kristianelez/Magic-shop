@@ -52,11 +52,11 @@ const menuItems = [
 ];
 
 export function AppSidebar() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { setOpen, isMobile } = useSidebar();
 
-  const handleLinkClick = () => {
-    // Zatvori sidebar na mobilnim uređajima nakon klika
+  const handleLinkClick = (url: string) => {
+    setLocation(url);
     if (isMobile) {
       setOpen(false);
     }
@@ -83,14 +83,12 @@ export function AppSidebar() {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
-                    asChild
                     isActive={location === item.url}
                     data-testid={`link-${item.title.toLowerCase()}`}
+                    onClick={() => handleLinkClick(item.url)}
                   >
-                    <Link href={item.url} onClick={handleLinkClick}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
