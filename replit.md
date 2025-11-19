@@ -96,15 +96,38 @@ Preferred communication style: Simple, everyday language.
 
 ### Authentication and Authorization
 
-**Current Implementation:**
-- User schema exists in database with username/password fields
-- Authentication logic not yet implemented in routes
-- Sessions would use `connect-pg-simple` for PostgreSQL-backed session storage
+**Authentication System:**
+- **Full session-based authentication** implemented with bcrypt password hashing
+- **Session Management** using `express-session` with PostgreSQL-backed storage (`connect-pg-simple`)
+- **Secure session cookies**: httpOnly, sameSite: "lax", 30-day rolling expiration, secure flag in production
+- **Login page** with username/password form at `/login` route
+- **Protected routes**: All API endpoints require authentication via `requireAuth` middleware
+- **Auto-redirect**: Unauthenticated users automatically redirected to login page
 
-**Future Considerations:**
-- Password hashing (likely bcrypt or argon2)
-- Session-based authentication with secure cookies
-- Role-based access control for different user types
+**User Roles:**
+- **admin**: Full access to all data and operations
+- **sales_director**: Can view and manage all sales across all sales managers
+- **sales_manager**: Can only view and manage their own sales (filtered by salesPersonId)
+
+**Role-Based Access Control:**
+- Sales data filtered based on user role:
+  - `sales_manager` sees only sales where `salesPersonId` matches their user ID
+  - `sales_director` and `admin` see all sales from all sales persons
+- Sales creation automatically assigns current user's ID to `salesPersonId` field
+- All other resources (customers, products, activities, recommendations) accessible to all authenticated users
+
+**Default Users (seeded automatically):**
+- **PredragPetrusic** (username: PredragPetrusic, password: pedja2024, role: sales_manager)
+- **DraganElez** (username: DraganElez, password: kacacaka0607, role: sales_director)
+- **Greentimeadmin** (username: Greentimeadmin, password: kikoris12, role: admin)
+
+**Security Features:**
+- Passwords hashed using bcrypt with salt rounds
+- Session secrets stored in `SESSION_SECRET` environment variable
+- requireAuth middleware loads user from database and attaches to req.user
+- Stale sessions (user deleted) automatically destroyed on authentication check
+- Frontend AuthContext manages authentication state with TanStack Query
+- Logout properly clears both server session and client-side cache
 
 ### External Dependencies
 
