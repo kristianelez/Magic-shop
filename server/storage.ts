@@ -48,6 +48,7 @@ export interface IStorage {
   // Sales
   getSales(): Promise<Sale[]>;
   getSalesByCustomer(customerId: number): Promise<Sale[]>;
+  getSalesBySalesPerson(salesPersonId: string): Promise<Sale[]>;
   createSale(sale: InsertSale): Promise<Sale>;
   updateSale(id: number, sale: Partial<InsertSale>): Promise<Sale | undefined>;
   deleteSale(id: number): Promise<boolean>;
@@ -142,6 +143,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(sales)
       .where(eq(sales.customerId, customerId))
+      .orderBy(desc(sales.createdAt));
+  }
+
+  async getSalesBySalesPerson(salesPersonId: string): Promise<Sale[]> {
+    return await db
+      .select()
+      .from(sales)
+      .where(eq(sales.salesPersonId, salesPersonId))
       .orderBy(desc(sales.createdAt));
   }
 

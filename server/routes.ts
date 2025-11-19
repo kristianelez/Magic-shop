@@ -1,11 +1,89 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import bcrypt from "bcryptjs";
 import { storage } from "./storage";
 import { insertCustomerSchema, insertProductSchema, insertSaleSchema, insertActivitySchema, type InsertCustomer } from "@shared/schema";
 import { generateHybridRecommendations } from "./ai";
+import { requireAuth } from "./auth";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Authentication API
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+
+      if (!username || !password) {
+        return res.status(400).json({ message: "Korisničko ime i šifra su obavezni" });
+      }
+
+      const user = await storage.getUserByUsername(username);
+
+      if (!user) {
+        return res.status(401).json({ message: "Neispravno korisničko ime ili šifra" });
+      }
+
+      const isValidPassword = await bcrypt.compare(password, user.password);
+
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Neispravno korisničko ime ili šifra" });
+      }
+
+      req.session.userId = user.id;
+
+      const { password: _, ...userWithoutPassword } = user;
+      res.json({ user: userWithoutPassword });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Greška pri prijavljivanju" });
+    }
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Greška pri odjavljivanju" });
+      }
+      res.json({ message: "Uspješno ste se odjavili" });
+    });
+  });
+
+  app.get("/api/auth/me", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Niste prijavljeni" });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+
+      if (!user) {
+        req.session.destroy(() => {});
+        return res.status(401).json({ message: "Korisnik nije pronađen" });
+      }
+
+      const { password: _, ...userWithoutPassword } = user;
+      res.json({ user: userWithoutPassword });
+    } catch (error) {
+      console.error("Get current user error:", error);
+      res.status(500).json({ message: "Greška pri dohvatanju korisnika" });
+    }
+  });
+
+  // Middleware to attach user to request for protected routes
+  app.use("/api/*", async (req, res, next) => {
+    if (req.path.startsWith("/api/auth/")) {
+      return next();
+    }
+
+    if (req.session.userId) {
+      const user = await storage.getUser(req.session.userId);
+      if (user) {
+        req.user = user;
+      }
+    }
+    next();
+  });
+
   // Customers API
   app.get("/api/customers", async (req, res) => {
     try {
@@ -199,9 +277,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Sales API
-  app.get("/api/sales", async (req, res) => {
+  app.get("/api/sales", requireAuth, async (req, res) => {
     try {
-      const sales = await storage.getSales();
+      let sales;
+
+      if (req.user!.role === "sales_manager") {
+        sales = await storage.getSalesBySalesPerson(req.user!.id);
+      } else {
+        sales = await storage.getSales();
+      }
+
       res.json(sales);
     } catch (error) {
       console.error("Error fetching sales:", error);
@@ -209,10 +294,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/sales", async (req, res) => {
+  app.post("/api/sales", requireAuth, async (req, res) => {
     try {
       const saleData = insertSaleSchema.parse(req.body);
-      const sale = await storage.createSale(saleData);
+      
+      const saleWithSalesPerson = {
+        ...saleData,
+        salesPersonId: req.user!.id,
+      };
+
+      const sale = await storage.createSale(saleWithSalesPerson);
       res.status(201).json(sale);
     } catch (error) {
       if (error instanceof z.ZodError) {
