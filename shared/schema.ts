@@ -5,15 +5,23 @@ import { z } from "zod";
 
 export const customerTypes = ["hotel", "pekara", "kafic", "restoran", "fabrika", "ostalo"] as const;
 
+export const userRoles = ["admin", "sales_director", "sales_manager"] as const;
+
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  fullName: text("full_name").notNull(),
+  role: text("role").notNull().default("sales_manager"),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export const insertUserSchema = createInsertSchema(users, {
+  username: z.string().min(3, "Korisničko ime mora imati najmanje 3 karaktera"),
+  password: z.string().min(6, "Šifra mora imati najmanje 6 karaktera"),
+  fullName: z.string().min(1, "Puno ime je obavezno"),
+  role: z.enum(userRoles),
+}).omit({
+  id: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -79,6 +87,7 @@ export const sales = pgTable("sales", {
   id: serial("id").primaryKey(),
   customerId: integer("customer_id").notNull().references(() => customers.id),
   productId: integer("product_id").notNull().references(() => products.id),
+  salesPersonId: varchar("sales_person_id").references(() => users.id),
   quantity: integer("quantity").notNull(),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
   status: text("status").notNull().default("completed"),
@@ -88,6 +97,7 @@ export const sales = pgTable("sales", {
 export const insertSaleSchema = createInsertSchema(sales, {
   customerId: z.number().int(),
   productId: z.number().int(),
+  salesPersonId: z.string().optional(),
   quantity: z.number().int().min(1),
   totalAmount: z.string(),
   status: z.string().optional(),
