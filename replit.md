@@ -38,9 +38,15 @@ Preferred communication style: Simple, everyday language.
 **Key Pages:**
 - Dashboard - Overview with stats and recent activities
 - Customers - Customer list and management
-- Products - Product catalog with inventory tracking
+- Products - Product catalog with inventory tracking (128 unique products after related products filtering)
 - AI Recommendations - Smart customer outreach suggestions
 - Sales - Sales history and analytics
+- **Create Order** (Nova narudžba) - Order creation with smart product selection:
+  - Displays **Top 10 preporučenih proizvoda** (suggested products based on sales volume)
+  - Enables **search through ALL 128 products** via searchable dropdown
+  - Two-group product selector: "Preporučeni proizvodi (Top 10)" and "Svi proizvodi"
+  - Real-time search filtering across both groups
+  - Automatic price population on product selection
 
 ### Backend Architecture
 

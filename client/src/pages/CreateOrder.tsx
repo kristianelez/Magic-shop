@@ -118,7 +118,8 @@ export default function CreateOrder() {
     const newItems = [...orderItems];
     
     if (field === "productId") {
-      const product = topProducts.find((p) => p.id === parseInt(value));
+      // Search ALL products, not just topProducts
+      const product = products.find((p) => p.id === parseInt(value));
       if (product) {
         newItems[index].productId = product.id;
         newItems[index].productName = product.name;
@@ -346,7 +347,7 @@ export default function CreateOrder() {
                   data-testid={`order-item-${index}`}
                 >
                   <div>
-                    <Label>Proizvod (Top 10 najprodavanijih)</Label>
+                    <Label>Proizvod</Label>
                     <Popover 
                       open={productSearchOpen[index] || false} 
                       onOpenChange={(open) => setProductSearchOpen({ ...productSearchOpen, [index]: open })}
@@ -368,8 +369,40 @@ export default function CreateOrder() {
                           <CommandInput placeholder="Pretraži proizvode..." data-testid={`input-search-product-${index}`} />
                           <CommandList>
                             <CommandEmpty>Nema pronađenih proizvoda.</CommandEmpty>
-                            <CommandGroup>
-                              {topProducts.map((product) => (
+                            
+                            {/* Top 10 Suggested Products */}
+                            {topProducts.length > 0 && (
+                              <CommandGroup heading="Preporučeni proizvodi (Top 10)">
+                                {topProducts.map((product) => (
+                                  <CommandItem
+                                    key={product.id}
+                                    value={product.name}
+                                    onSelect={() => {
+                                      updateOrderItem(index, "productId", String(product.id));
+                                      setProductSearchOpen({ ...productSearchOpen, [index]: false });
+                                    }}
+                                    data-testid={`product-option-${index}-${product.id}`}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        item.productId === product.id ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    <div className="flex-1">
+                                      <div>{product.name}</div>
+                                      <div className="text-xs text-muted-foreground">
+                                        Prodano: {product.totalSold} | Cijena: {product.price} KM
+                                      </div>
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            )}
+                            
+                            {/* All Products */}
+                            <CommandGroup heading="Svi proizvodi">
+                              {products.map((product) => (
                                 <CommandItem
                                   key={product.id}
                                   value={product.name}
@@ -377,7 +410,7 @@ export default function CreateOrder() {
                                     updateOrderItem(index, "productId", String(product.id));
                                     setProductSearchOpen({ ...productSearchOpen, [index]: false });
                                   }}
-                                  data-testid={`product-option-${index}-${product.id}`}
+                                  data-testid={`all-products-option-${index}-${product.id}`}
                                 >
                                   <Check
                                     className={cn(
@@ -388,7 +421,7 @@ export default function CreateOrder() {
                                   <div className="flex-1">
                                     <div>{product.name}</div>
                                     <div className="text-xs text-muted-foreground">
-                                      Prodano: {product.totalSold} | Cijena: {product.price} KM
+                                      {product.category} | Cijena: {product.price} KM
                                     </div>
                                   </div>
                                 </CommandItem>
