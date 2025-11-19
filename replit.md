@@ -85,10 +85,14 @@ Preferred communication style: Simple, everyday language.
 
 **Data Seeding:**
 - Automatic database seeding on first run via `server/seed.ts`
-- Populates initial products (cleaning supplies, equipment, air fresheners)
 - Creates sample customers (hotels, hospitals, restaurants)
 - Generates historical sales data for testing
-- **CSV Import** - `server/import-products.ts` imported 160 products from 3,127-line CSV file with customer type targeting
+- **Product Import from greentime.ba** - `server/import-greentime-products.ts` imports ALL products directly from greentime.ba website:
+  - Uses Cheerio for HTML parsing to extract product data
+  - Imports 274 products across 18 categories with accurate pricing
+  - Top categories: Oprema za čišćenje objekata (32), Profesionalna sredstva za čišćenje (28), Dispenzeri (24)
+  - Automatically assigns customer type recommendations based on category
+  - Replaces all existing products to ensure catalog stays up-to-date with greentime.ba
 
 ### Authentication and Authorization
 
