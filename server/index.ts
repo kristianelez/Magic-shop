@@ -10,6 +10,10 @@ const app = express();
 
 const PgSession = connectPgSimple(session);
 
+if (!process.env.SESSION_SECRET) {
+  throw new Error("SESSION_SECRET environment variable is required for secure session management");
+}
+
 const sessionPool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
@@ -26,7 +30,7 @@ app.use(
       pool: sessionPool,
       createTableIfMissing: true,
     }),
-    secret: process.env.SESSION_SECRET || "greentime-secret-key-change-in-production",
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
