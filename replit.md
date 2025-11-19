@@ -87,10 +87,13 @@ Preferred communication style: Simple, everyday language.
 - Automatic database seeding on first run via `server/seed.ts`
 - Creates sample customers (hotels, hospitals, restaurants)
 - Generates historical sales data for testing
-- **Product Import from greentime.ba** - `server/import-greentime-products.ts` imports ALL products directly from greentime.ba website:
+- **Product Import from greentime.ba** - `server/import-greentime-products.ts` imports products directly from greentime.ba website:
   - Uses Cheerio for HTML parsing to extract product data
-  - Imports 274 products across 18 categories with accurate pricing
-  - Top categories: Oprema za čišćenje objekata (32), Profesionalna sredstva za čišćenje (28), Dispenzeri (24)
+  - Scrapes 18 product categories from greentime.ba
+  - **Smart Related Products Filtering**: Detects and removes products appearing in 10+ categories (related/recommended products that greentime.ba shows on every category page)
+  - Filters out 8 related products (BACTER WC, WC LIMP, TAX FORTE, INOXARP, BRISSOL, CRISSOL, TERGOSAN BACT, AIRON BD) that appear in all 18 categories
+  - Imports 129 unique, category-relevant products with accurate pricing
+  - Top categories: Oprema za čišćenje objekata (24), Profesionalna sredstva za čišćenje (19), Dispenzeri (16)
   - Automatically assigns customer type recommendations based on category
   - Replaces all existing products to ensure catalog stays up-to-date with greentime.ba
 

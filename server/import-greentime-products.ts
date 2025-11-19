@@ -108,23 +108,89 @@ async function importAllProducts() {
   console.log(`  SCRAPING COMPLETE: ${allProducts.length} products collected`);
   console.log("═══════════════════════════════════════════════════════\n");
   
-  // Step 2: Validate scraping results BEFORE touching database
-  const MIN_PRODUCT_COUNT = 200; // Safety threshold
+  // Step 2a: Remove related products (products appearing in too many categories)
+  console.log("Step 2a: Filtering out related products...\n");
   
-  if (allProducts.length < MIN_PRODUCT_COUNT) {
+  // Count how many categories each product appears in
+  const productCategoryCount = new Map<string, Set<string>>();
+  allProducts.forEach(p => {
+    if (!productCategoryCount.has(p.name)) {
+      productCategoryCount.set(p.name, new Set());
+    }
+    productCategoryCount.get(p.name)!.add(p.category);
+  });
+  
+  // Identify related products (appearing in 10+ categories out of 18)
+  const RELATED_PRODUCT_THRESHOLD = 10;
+  const relatedProducts = new Set<string>();
+  
+  productCategoryCount.forEach((categories, productName) => {
+    if (categories.size >= RELATED_PRODUCT_THRESHOLD) {
+      relatedProducts.add(productName);
+    }
+  });
+  
+  console.log(`  Found ${relatedProducts.size} related products appearing in ${RELATED_PRODUCT_THRESHOLD}+ categories:`);
+  relatedProducts.forEach(name => {
+    const categoryCount = productCategoryCount.get(name)!.size;
+    console.log(`    - ${name} (appears in ${categoryCount} categories)`);
+  });
+  
+  // Extract related product keywords (product family identifiers)
+  // These keywords will help us filter ALL variations of related products
+  const relatedKeywords = new Set<string>();
+  relatedProducts.forEach(name => {
+    // Extract distinctive keywords from related product names
+    const keywords = [
+      'BACTER WC',
+      'WC LIMP',
+      'TAX FORTE',
+      'INOXARP',
+      'BRISSOL',
+      'CRISSOL',
+      'TERGOSAN BACT',
+      'AIRON BD'
+    ];
+    
+    keywords.forEach(keyword => {
+      if (name.includes(keyword)) {
+        relatedKeywords.add(keyword);
+      }
+    });
+  });
+  
+  console.log(`\n  Related product keywords: ${Array.from(relatedKeywords).join(', ')}`);
+  
+  // Filter out related products AND their variations (e.g., different sizes)
+  const filteredProducts = allProducts.filter(p => {
+    // Check if product name contains any related keywords
+    const hasRelatedKeyword = Array.from(relatedKeywords).some(keyword => 
+      p.name.includes(keyword)
+    );
+    return !hasRelatedKeyword;
+  });
+  
+  console.log(`\n  Original: ${allProducts.length} products`);
+  console.log(`  Filtered: ${filteredProducts.length} products`);
+  console.log(`  Removed: ${allProducts.length - filteredProducts.length} related product entries\n`);
+  
+  // Step 2b: Validate scraping results BEFORE touching database
+  const MIN_PRODUCT_COUNT = 100; // Safety threshold (reduced after filtering related products)
+  
+  if (filteredProducts.length < MIN_PRODUCT_COUNT) {
     console.error(`\n❌ SAFETY CHECK FAILED!`);
-    console.error(`   Expected at least ${MIN_PRODUCT_COUNT} products, but only got ${allProducts.length}.`);
+    console.error(`   Expected at least ${MIN_PRODUCT_COUNT} products, but only got ${filteredProducts.length}.`);
     console.error(`   This might indicate a scraping error or website changes.`);
     console.error(`   Aborting import to prevent data loss.\n`);
     process.exit(1);
   }
   
-  console.log(`✓ Global safety check passed (${allProducts.length} >= ${MIN_PRODUCT_COUNT} products)\n`);
+  console.log(`✓ Global safety check passed (${filteredProducts.length} >= ${MIN_PRODUCT_COUNT} products)\n`);
   
   // Validate per-category counts
-  console.log("Step 2b: Validating per-category results...\n");
+  console.log("Step 2c: Validating per-category results...\n");
   const categoryCounts = new Map<string, number>();
-  allProducts.forEach(p => {
+  filteredProducts.forEach(p => {
     categoryCounts.set(p.category, (categoryCounts.get(p.category) || 0) + 1);
   });
   
@@ -165,7 +231,7 @@ async function importAllProducts() {
     let insertedCount = 0;
     const errors: string[] = [];
     
-    for (const product of allProducts) {
+    for (const product of filteredProducts) {
       try {
         // Determine recommended customer types based on category
         let recommendedFor: string[] = [];
@@ -193,7 +259,7 @@ async function importAllProducts() {
         insertedCount++;
         
         if (insertedCount % 20 === 0) {
-          console.log(`    ✓ Inserted ${insertedCount}/${allProducts.length} products...`);
+          console.log(`    ✓ Inserted ${insertedCount}/${filteredProducts.length} products...`);
         }
       } catch (error: any) {
         errors.push(`${product.name}: ${error.message}`);
@@ -208,7 +274,7 @@ async function importAllProducts() {
       }
     }
     
-    const skippedCount = allProducts.length - insertedCount;
+    const skippedCount = filteredProducts.length - insertedCount;
     
     console.log("\n═══════════════════════════════════════════════════════");
     console.log("  IMPORT COMPLETE!");
