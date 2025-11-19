@@ -82,7 +82,7 @@ function AppContent() {
                   {user.fullName}
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  ({user.role === "admin" ? "Admin" : user.role === "sales_director" ? "Direktor prodaje" : "Komercijalista"})
+                  ({user.role === "admin" ? "Admin" : user.role === "sales_director" ? "Direktor prodaje" : "Sales manager"})
                 </span>
               </div>
             </div>

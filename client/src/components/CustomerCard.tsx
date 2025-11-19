@@ -19,7 +19,7 @@ export function CustomerCard({
   totalPurchases,
   favoriteProducts = [],
 }: CustomerCardProps) {
-  const { id, name, company, email, phone, status, customerType } = customer;
+  const { id, name, company, email, phone, status, customerType, paymentTerms } = customer;
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -40,12 +40,14 @@ export function CustomerCard({
     active: "bg-primary/10 text-primary border-primary/20",
     inactive: "bg-muted text-muted-foreground",
     vip: "bg-primary text-primary-foreground",
+    potential: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800",
   };
 
   const statusLabels = {
     active: "Aktivan",
     inactive: "Neaktivan",
     vip: "VIP",
+    potential: "Potencijalni",
   };
 
   const customerTypeLabels: Record<string, string> = {
@@ -85,8 +87,8 @@ export function CustomerCard({
               </Button>
             }
           />
-          <Badge className={statusColors[status as "active" | "inactive" | "vip"]} variant="outline">
-            {statusLabels[status as "active" | "inactive" | "vip"]}
+          <Badge className={statusColors[status as "active" | "inactive" | "vip" | "potential"]} variant="outline">
+            {statusLabels[status as "active" | "inactive" | "vip" | "potential"]}
           </Badge>
         </div>
       </CardHeader>
@@ -99,6 +101,12 @@ export function CustomerCard({
           <span className="text-muted-foreground">Ukupna vrijednost:</span>
           <span className="font-semibold text-primary">{totalPurchases.toLocaleString()} KM</span>
         </div>
+        {paymentTerms && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Plaćanje:</span>
+            <span className="font-medium">{paymentTerms}</span>
+          </div>
+        )}
         {favoriteProducts.length > 0 && (
           <div className="pt-2 border-t border-border">
             <p className="text-xs text-muted-foreground mb-2">Najčešći proizvodi:</p>

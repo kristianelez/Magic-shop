@@ -35,6 +35,7 @@ export const customers = pgTable("customers", {
   phone: text("phone"),
   customerType: text("customer_type").default("ostalo"),
   status: text("status").notNull().default("active"),
+  paymentTerms: text("payment_terms"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -45,6 +46,7 @@ export const insertCustomerSchema = createInsertSchema(customers, {
   phone: z.string().regex(/^\+?[0-9\s\-()/.]+$/, "Nevažeći broj telefona").optional().or(z.literal("")),
   customerType: z.enum(customerTypes).optional(),
   status: z.string().optional(),
+  paymentTerms: z.string().optional(),
 }).omit({
   id: true,
   createdAt: true,

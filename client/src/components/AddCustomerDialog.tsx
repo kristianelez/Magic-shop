@@ -14,7 +14,7 @@ import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
 const formSchema = insertCustomerSchema.extend({
-  status: z.enum(["active", "inactive", "vip"]).default("active"),
+  status: z.enum(["active", "inactive", "vip", "potential"]).default("active"),
   customerType: z.enum(customerTypes).default("ostalo"),
 });
 
@@ -37,8 +37,9 @@ export function AddCustomerDialog({ customer, trigger }: CustomerDialogProps) {
       company: customer?.company || "",
       email: customer?.email || "",
       phone: customer?.phone || "",
-      status: (customer?.status as "active" | "inactive" | "vip") || "active",
+      status: (customer?.status as "active" | "inactive" | "vip" | "potential") || "active",
       customerType: (customer?.customerType as typeof customerTypes[number]) || "ostalo",
+      paymentTerms: customer?.paymentTerms || "",
     },
   });
 
@@ -49,8 +50,9 @@ export function AddCustomerDialog({ customer, trigger }: CustomerDialogProps) {
         company: customer.company,
         email: customer.email || "",
         phone: customer.phone || "",
-        status: customer.status as "active" | "inactive" | "vip",
+        status: customer.status as "active" | "inactive" | "vip" | "potential",
         customerType: (customer.customerType as typeof customerTypes[number]) || "ostalo",
+        paymentTerms: customer.paymentTerms || "",
       });
     }
   }, [customer, open, form]);
@@ -201,8 +203,23 @@ export function AddCustomerDialog({ customer, trigger }: CustomerDialogProps) {
                       <SelectItem value="active">Aktivan</SelectItem>
                       <SelectItem value="inactive">Neaktivan</SelectItem>
                       <SelectItem value="vip">VIP</SelectItem>
+                      <SelectItem value="potential">Potencijalni</SelectItem>
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="paymentTerms"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Dogovoreno plaćanje</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Gotovinsko, 30 dana, itd." {...field} data-testid="input-payment-terms" />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
