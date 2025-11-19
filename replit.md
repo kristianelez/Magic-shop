@@ -123,11 +123,17 @@ Preferred communication style: Simple, everyday language.
 
 **Security Features:**
 - Passwords hashed using bcrypt with salt rounds
-- Session secrets stored in `SESSION_SECRET` environment variable
+- Session secrets stored in `SESSION_SECRET` environment variable (REQUIRED - application will fail to start if not set)
 - requireAuth middleware loads user from database and attaches to req.user
 - Stale sessions (user deleted) automatically destroyed on authentication check
 - Frontend AuthContext manages authentication state with TanStack Query
 - Logout properly clears both server session and client-side cache
+- Session cookies configured with httpOnly, sameSite: "lax", and secure flag in production
+
+**Required Environment Variables:**
+- `SESSION_SECRET`: Strong random secret for session management (REQUIRED)
+- `DATABASE_URL`: PostgreSQL connection string (auto-configured in Replit)
+- `OPENAI_API_KEY`: OpenAI API key for AI recommendations (optional - falls back to local AI)
 
 ### External Dependencies
 
