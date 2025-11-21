@@ -29,6 +29,11 @@ Preferred communication style: Simple, everyday language.
 - Typography: Inter font family for general UI, JetBrains Mono for monospace elements
 - Custom color system with CSS variables for light/dark theme support
 - Spacing based on Tailwind's 4-point grid system (multiples of 4px)
+- **Sticky Header**: Fixed header with backdrop blur that remains visible during scrolling
+- **Fully Responsive**: Mobile-first design with breakpoints (sm: 640px, md: 768px, lg: 1024px)
+  - Header adapts: responsive padding, truncated text, icon-only buttons on mobile
+  - Content grids adjust from stacked (mobile) to multi-column (desktop)
+  - Sidebar collapses automatically on mobile devices
 
 **State Management:**
 - **TanStack Query (React Query)** for server state management and data fetching

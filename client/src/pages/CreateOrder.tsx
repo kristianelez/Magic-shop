@@ -343,7 +343,7 @@ export default function CreateOrder() {
               orderItems.map((item, index) => (
                 <div
                   key={index}
-                  className="grid gap-4 md:grid-cols-[2fr_1fr_1fr_1fr_auto] items-end p-4 border rounded-lg"
+                  className="grid gap-4 grid-cols-1 sm:grid-cols-[2fr_1fr] md:grid-cols-[2fr_1fr_1fr_1fr_auto] items-end p-4 border rounded-lg"
                   data-testid={`order-item-${index}`}
                 >
                   <div>

@@ -73,35 +73,50 @@ function AppContent() {
     <SidebarProvider style={style as React.CSSProperties}>
       <div className="flex h-screen w-full">
         <AppSidebar />
-        <div className="flex flex-col flex-1">
-          <header className="flex items-center justify-between p-4 border-b border-border gap-4">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger data-testid="button-sidebar-toggle" />
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-foreground" data-testid="text-username">
+        <div className="flex flex-col flex-1 min-w-0">
+          {/* Fixed Header - ostaje fiksiran na vrhu */}
+          <header className="shrink-0 flex items-center justify-between p-3 md:p-4 border-b border-border gap-2 md:gap-4 bg-background z-50">
+            <div className="flex items-center gap-2 md:gap-4 min-w-0">
+              <SidebarTrigger data-testid="button-sidebar-toggle" className="shrink-0" />
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="font-semibold text-foreground truncate text-sm md:text-base" data-testid="text-username">
                   {user.fullName}
                 </span>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-xs md:text-sm text-muted-foreground hidden sm:inline truncate">
                   ({user.role === "admin" ? "Admin" : user.role === "sales_director" ? "Direktor prodaje" : "Sales manager"})
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 md:gap-2 shrink-0">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => logoutMutation.mutate()}
                 disabled={logoutMutation.isPending}
                 data-testid="button-logout"
+                className="hidden sm:flex"
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 Odjavi se
               </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => logoutMutation.mutate()}
+                disabled={logoutMutation.isPending}
+                data-testid="button-logout-mobile"
+                className="sm:hidden"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
               <ThemeToggle />
             </div>
           </header>
-          <main className="flex-1 overflow-auto p-6">
-            <Router />
+          {/* Scrollable main content - prilagođen za sve uređaje */}
+          <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 md:p-4 lg:p-6">
+            <div className="max-w-[100vw] md:max-w-none">
+              <Router />
+            </div>
           </main>
         </div>
       </div>
