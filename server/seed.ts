@@ -3,6 +3,36 @@ import bcrypt from "bcryptjs";
 import { importGreentimeProducts } from "./import-greentime-products";
 import { importCustomersFromExcel } from "./import-customers";
 
+/**
+ * Quick baseline check - verifies minimum required data exists
+ * Returns immediately (< 1s) without importing
+ */
+export async function quickBaselineCheck(): Promise<{
+  exists: boolean;
+  users: number;
+  products: number;
+  customers: number;
+}> {
+  const MIN_PRODUCT_COUNT = 100;
+  const MIN_CUSTOMER_COUNT = 60;
+  
+  const users = await storage.getUsers();
+  const products = await storage.getProducts();
+  const customers = await storage.getCustomers();
+  
+  const exists = 
+    users.length > 0 && 
+    products.length >= MIN_PRODUCT_COUNT && 
+    customers.length >= MIN_CUSTOMER_COUNT;
+  
+  return {
+    exists,
+    users: users.length,
+    products: products.length,
+    customers: customers.length
+  };
+}
+
 export async function seedDatabase() {
   try {
     // GRANULAR SEEDING: Check each dataset independently and seed only what's missing
