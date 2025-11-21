@@ -95,18 +95,26 @@ Preferred communication style: Simple, everyday language.
 - Type inference ensures consistency between database and application types
 
 **Data Seeding:**
-- Automatic database seeding on first run via `server/seed.ts`
-- Creates sample customers (hotels, hospitals, restaurants)
-- Generates historical sales data for testing
-- **Product Import from greentime.ba** - `server/import-greentime-products.ts` imports products directly from greentime.ba website:
+- **Automatic database seeding on first run** via `server/seed.ts`
+- **Smart Seed System**: Checks if database is empty before seeding
+  - If empty, automatically imports all data:
+    - **3 Users**: PredragPetrusic (sales_manager), DraganElez (sales_director), Greentimeadmin (admin)
+    - **128 Products**: Live import from greentime.ba using `importGreentimeProducts()`
+    - **69 Customers**: Import from Excel using `importCustomersFromExcel()`
+  - If data exists, skips seeding to prevent duplicates
+- **Product Import from greentime.ba** - `server/import-greentime-products.ts`:
   - Uses Cheerio for HTML parsing to extract product data
   - Scrapes 18 product categories from greentime.ba
-  - **Smart Related Products Filtering**: Detects and removes products appearing in 10+ categories (related/recommended products that greentime.ba shows on every category page)
-  - Filters out 8 related products (BACTER WC, WC LIMP, TAX FORTE, INOXARP, BRISSOL, CRISSOL, TERGOSAN BACT, AIRON BD) that appear in all 18 categories
-  - Imports 129 unique, category-relevant products with accurate pricing
-  - Top categories: Oprema za čišćenje objekata (24), Profesionalna sredstva za čišćenje (19), Dispenzeri (16)
+  - **Smart Related Products Filtering**: Detects and removes products appearing in 10+ categories
+  - Filters out 8 related products that appear in all categories
+  - Imports 128 unique, category-relevant products with accurate pricing
   - Automatically assigns customer type recommendations based on category
-  - Replaces all existing products to ensure catalog stays up-to-date with greentime.ba
+- **Customer Import from Excel** - `server/import-customers.ts`:
+  - Imports from `Analiza prodaje Predrag Petrušić_*.xlsx`
+  - Processes "KUPCI" sheet (active customers) and "POTENCIJALNI KUPCI" sheet (potential customers)
+  - Maps customer types and normalizes phone numbers
+  - Total: 69 customers imported
+- **Production Database Setup**: See `PRODUCTION_SETUP.md` for instructions on resetting production database after first publish
 
 ### Authentication and Authorization
 
