@@ -115,6 +115,13 @@ Preferred communication style: Simple, everyday language.
   - Maps customer types and normalizes phone numbers
   - Total: 69 customers imported
 - **Production Database Setup**: See `PRODUCTION_SETUP.md` for instructions on resetting production database after first publish
+- **Transaction-Based Seeding System**: 
+  - All product imports wrapped in database transactions for atomicity
+  - If insert fails mid-way, automatic rollback prevents partial catalog states
+  - Safety checks validate minimum thresholds BEFORE touching database
+  - Foreign key cleanup (sales, activities) happens INSIDE transaction
+  - Seed gate requires minimum 100 products AND 60 customers before marking database as "seeded"
+  - Partial data triggers automatic re-seed on next boot
 
 ### Authentication and Authorization
 
