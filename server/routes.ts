@@ -87,7 +87,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Customers API
   app.get("/api/customers", requireAuth, async (req, res) => {
     try {
+      console.log("[PRODUCTION DEBUG] Fetching customers...");
       const customers = await storage.getCustomers();
+      console.log(`[PRODUCTION DEBUG] Found ${customers.length} customers`);
       
       const customersWithStats = await Promise.all(
         customers.map(async (customer) => {
