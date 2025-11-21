@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { products, sales, activities } from "../shared/schema";
 import * as cheerio from "cheerio";
+import { sql } from "drizzle-orm";
 
 interface GreentimeProduct {
   name: string;
@@ -318,6 +319,16 @@ export async function importGreentimeProducts() {
       }
     }
     
+    // SAFETY CHECK: Validate scraping results before touching database
+    const MIN_PRODUCT_COUNT = 100;
+    if (allProducts.length < MIN_PRODUCT_COUNT) {
+      const errorMsg = `❌ SAFETY CHECK FAILED: Only ${allProducts.length} products scraped (minimum required: ${MIN_PRODUCT_COUNT}). Aborting import to prevent data loss.`;
+      console.error(errorMsg);
+      throw new Error(errorMsg);
+    }
+    
+    console.log(`✓ Scraping successful: ${allProducts.length} products collected`);
+    
     // Step 2: Filter out related products
     const productCategoryCount = new Map<string, Set<string>>();
     allProducts.forEach(p => {
@@ -363,33 +374,104 @@ export async function importGreentimeProducts() {
     });
     const uniqueProducts = Array.from(uniqueProductsMap.values());
     
-    // Step 4: Delete existing products
-    await db.delete(products);
-    
-    // Step 5: Insert products
-    let insertedCount = 0;
-    for (const product of uniqueProducts) {
-      try {
-        const recommendedFor = ['hotel', 'restoran', 'kafic', 'pekara', 'fabrika'];
-        await db.insert(products).values({
-          name: product.name,
-          category: product.category,
-          price: product.price.toFixed(2),
-          stock: 100,
-          unit: 'kom',
-          vendor: product.brand || '',
-          description: product.brand ? `Brend: ${product.brand}` : '',
-          recommendedFor: recommendedFor,
-        });
-        insertedCount++;
-      } catch (error) {
-        console.error(`Failed to insert ${product.name}:`, error);
-      }
+    // SAFETY CHECK: Validate final product count
+    const MIN_UNIQUE_PRODUCT_COUNT = 100;
+    if (uniqueProducts.length < MIN_UNIQUE_PRODUCT_COUNT) {
+      const errorMsg = `❌ SAFETY CHECK FAILED: Only ${uniqueProducts.length} unique products after filtering (minimum required: ${MIN_UNIQUE_PRODUCT_COUNT}). Aborting import to prevent data loss.`;
+      console.error(errorMsg);
+      throw new Error(errorMsg);
     }
     
+    console.log(`✓ Filtering successful: ${uniqueProducts.length} unique products ready for import`);
+    
+    // Step 4 & 5: DELETE + INSERT in a TRANSACTION to ensure atomicity
+    // If insert fails, the delete is automatically rolled back
+    console.log("Starting database transaction...");
+    
+    let insertedCount = 0;
+    const errors: string[] = [];
+    
+    try {
+      await db.transaction(async (tx) => {
+        // Delete related data first (foreign key constraint)
+        console.log("  - Clearing sales referencing products...");
+        await tx.delete(sales);
+        
+        console.log("  - Clearing activities referencing products...");
+        await tx.delete(activities);
+        
+        console.log("  - Clearing existing products...");
+        await tx.delete(products);
+        
+        // Insert new products
+        console.log("  - Inserting new products...");
+        for (const product of uniqueProducts) {
+          try {
+            const recommendedFor = ['hotel', 'restoran', 'kafic', 'pekara', 'fabrika'];
+            await tx.insert(products).values({
+              name: product.name,
+              category: product.category,
+              price: product.price.toFixed(2),
+              stock: 100,
+              unit: 'kom',
+              vendor: product.brand || '',
+              description: product.brand ? `Brend: ${product.brand}` : '',
+              recommendedFor: recommendedFor,
+            });
+            insertedCount++;
+            
+            // Progress logging every 20 products
+            if (insertedCount % 20 === 0) {
+              console.log(`    ✓ Inserted ${insertedCount}/${uniqueProducts.length} products...`);
+            }
+          } catch (error: any) {
+            errors.push(`${product.name}: ${error.message}`);
+            // If we have too many errors, abort the transaction
+            if (errors.length > 10) {
+              throw new Error(`Too many insert errors (${errors.length}). Aborting transaction.`);
+            }
+          }
+        }
+        
+        // CRITICAL: Verify count INSIDE transaction before committing
+        const finalCount = await tx.select({ count: sql<number>`count(*)` }).from(products);
+        const actualCount = Number(finalCount[0]?.count || 0);
+        
+        if (actualCount < MIN_UNIQUE_PRODUCT_COUNT) {
+          throw new Error(`Transaction verification FAILED: Only ${actualCount} products inserted (expected at least ${MIN_UNIQUE_PRODUCT_COUNT}). Rolling back.`);
+        }
+        
+        console.log(`  ✓ Transaction verification passed: ${actualCount} products`);
+      });
+      
+      console.log("✓ Transaction committed successfully");
+      
+    } catch (txError: any) {
+      console.error("❌ Transaction failed and was rolled back:", txError.message);
+      throw new Error(`Product import transaction failed: ${txError.message}`);
+    }
+    
+    // Log results
     console.log(`✓ Successfully imported ${insertedCount} products`);
+    if (errors.length > 0) {
+      console.warn(`⚠ ${errors.length} products had insert errors (but transaction still succeeded)`);
+      errors.slice(0, 3).forEach(err => console.warn(`  - ${err}`));
+    }
+    
+    // FINAL SAFETY CHECK: Verify database has products (outside transaction)
+    const finalCount = await db.select({ count: sql<number>`count(*)` }).from(products);
+    const actualCount = Number(finalCount[0]?.count || 0);
+    
+    if (actualCount < MIN_UNIQUE_PRODUCT_COUNT) {
+      const errorMsg = `❌ POST-TRANSACTION VERIFICATION FAILED: Database has only ${actualCount} products. Expected at least ${MIN_UNIQUE_PRODUCT_COUNT}.`;
+      console.error(errorMsg);
+      throw new Error(errorMsg);
+    }
+    
+    console.log(`✓ Final verification successful: ${actualCount} products in database`);
+    
   } catch (error) {
-    console.error("Error importing Greentime products:", error);
+    console.error("❌ Error importing Greentime products:", error);
     throw error;
   }
 }

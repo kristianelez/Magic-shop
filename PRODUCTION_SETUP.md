@@ -36,11 +36,21 @@ tsx server/import-customers.ts
 
 Seed skripta (`server/seed.ts`) sada automatski:
 
-1. Provjerava da li postoje podaci u bazi
-2. Ako je baza prazna:
+1. **Provjerava da li postoje podaci u bazi** - Provjerava i proizvode i kupce
+2. **Ako je baza prazna**, automatski importuje:
    - Kreira 3 korisnika sa šifrovanim passwordima
-   - Poziva `importGreentimeProducts()` - Importuje 128 proizvoda
+   - Poziva `importGreentimeProducts()` - Importuje 128 proizvoda sa greentime.ba
    - Poziva `importCustomersFromExcel()` - Importuje 69 kupaca iz Excel-a
+
+### Safety Checks (Zaštita od gubitka podataka)
+
+Import sistem ima **trostruku zaštitu** od greške:
+
+1. **Pre-scraping validacija**: Provjerava da je prikupljeno minimum 100 proizvoda sa website-a
+2. **Pre-deletion validacija**: Provjerava brojeve PRIJE nego obriše postojeće proizvode
+3. **Post-import validacija**: Provjerava da baza ima minimum 100 proizvoda nakon importa
+
+**Ako bilo koji korak failuje, import se zaustavlja i baza ostaje netaknuta.**
 
 ## Provjera da li je sve u redu
 
@@ -86,22 +96,49 @@ Provjerite da su svi potrebni environment variables postavljeni u production:
 
 Ako i dalje ne vidite podatke nakon republish-a:
 
-1. Provjeri production database - Ima li tabela? Ima li podataka?
-2. Provjeri logs - Potraži greške tokom seed-a
-3. Provjeri da li seed skripta radi - Trebala bi ispisati:
+1. **Provjeri production database** - Ima li tabela? Ima li podataka?
+2. **Provjeri logs** - Potraži greške tokom seed-a
+3. **Provjeri da li seed skripta radi** - Trebala bi ispisati:
    ```
-   Seeding database with initial data...
-   Created 3 users
+   ═══════════════════════════════════════════════════════
+     DATABASE SEEDING STARTED
+   ═══════════════════════════════════════════════════════
+
+   Creating users...
+   ✓ Created 3 users
+
    Importing Greentime products...
+   Fetching products from greentime.ba...
+   ✓ Scraping successful: XXX products collected
+   ✓ Filtering successful: 128 unique products ready for import
+   Clearing existing products...
+   Inserting products into database...
+   ✓ Successfully imported 128 products
+   ✓ Import verification successful: 128 products in database
    ✓ Greentime products imported successfully
+
    Importing customers from Excel...
+   ✓ Successfully imported 68 customers!
    ✓ Customers imported successfully
-   ✓ Database seeding completed successfully!
-   Summary:
-   - Users: 3
-   - Products: 128
-   - Customers: 69
+
+   ═══════════════════════════════════════════════════════
+     DATABASE SEEDING COMPLETED
+   ═══════════════════════════════════════════════════════
+     ✓ Users: 3
+     ✓ Products: 128
+     ✓ Customers: 68
+   ═══════════════════════════════════════════════════════
    ```
+
+4. **Ako vidite ERROR poruke**:
+   - `❌ SAFETY CHECK FAILED` - Scraping sa greentime.ba nije uspio (network problem ili promjena website-a)
+   - `❌ IMPORT VERIFICATION FAILED` - Database insert nije uspio
+   - `❌ CRITICAL: Failed to import` - Import je failovao, baza ostaje prazna
+
+5. **U slučaju greške**:
+   - Resetuj production bazu (obriši sve tabele)
+   - Republish aplikaciju ponovo
+   - Ako problem ostaje, kontaktiraj podršku
 
 ## Kontakt za podršku
 
