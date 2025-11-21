@@ -91,7 +91,18 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  await seedDatabase();
+  // Try to seed database, but don't block server startup if it fails
+  // This ensures the server starts even if seeding fails (e.g., network issues, scraping problems)
+  try {
+    await seedDatabase();
+  } catch (error) {
+    console.error("\n⚠️  WARNING: Database seeding failed, but server will continue to start");
+    console.error("Error details:", error);
+    console.error("\nYou can manually seed the database later by running:");
+    console.error("  tsx server/import-greentime-products.ts");
+    console.error("  tsx server/import-customers.ts\n");
+  }
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
