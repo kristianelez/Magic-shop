@@ -138,6 +138,7 @@ Preferred communication style: Simple, everyday language.
 - Frontend AuthContext manages authentication state with TanStack Query
 - Logout properly clears both server session and client-side cache
 - Session cookies configured with httpOnly, sameSite: "lax", and secure flag in production
+- **Trust proxy enabled for published deployments**: Express configured with `trust proxy: 1` when `REPLIT_DEPLOYMENT=1` to properly handle secure cookies behind Replit's HTTPS reverse proxy
 
 **Required Environment Variables:**
 - `SESSION_SECRET`: Strong random secret for session management (REQUIRED)

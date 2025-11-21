@@ -8,6 +8,11 @@ import { seedDatabase } from "./seed";
 
 const app = express();
 
+// Trust Replit's reverse proxy for secure cookies in published deployments
+if (process.env.REPLIT_DEPLOYMENT === "1" || process.env.NODE_ENV === "production") {
+  app.set('trust proxy', 1);
+}
+
 const PgSession = connectPgSimple(session);
 
 if (!process.env.SESSION_SECRET) {
