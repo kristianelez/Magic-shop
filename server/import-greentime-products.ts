@@ -296,8 +296,108 @@ async function importAllProducts() {
   process.exit(0);
 }
 
-// Run the import
-importAllProducts().catch((error) => {
-  console.error("\n\n❌ FATAL ERROR:", error);
-  process.exit(1);
-});
+// Export function for use in seed script (without process.exit)
+export async function importGreentimeProducts() {
+  console.log("═══════════════════════════════════════════════════════");
+  console.log("  GREENTIME PRODUCT IMPORT");
+  console.log("═══════════════════════════════════════════════════════\n");
+  
+  try {
+    // Step 1: Fetch products from all categories
+    console.log("Fetching products from greentime.ba...");
+    const allProducts: GreentimeProduct[] = [];
+    
+    for (let i = 0; i < CATEGORIES.length; i++) {
+      const category = CATEGORIES[i];
+      const categoryProducts = await fetchCategoryProducts(category.url, category.name);
+      allProducts.push(...categoryProducts);
+      
+      // Delay to avoid overwhelming the server
+      if (i < CATEGORIES.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+    
+    // Step 2: Filter out related products
+    const productCategoryCount = new Map<string, Set<string>>();
+    allProducts.forEach(p => {
+      if (!productCategoryCount.has(p.name)) {
+        productCategoryCount.set(p.name, new Set());
+      }
+      productCategoryCount.get(p.name)!.add(p.category);
+    });
+    
+    const RELATED_PRODUCT_THRESHOLD = 10;
+    const relatedProducts = new Set<string>();
+    
+    productCategoryCount.forEach((categories, productName) => {
+      if (categories.size >= RELATED_PRODUCT_THRESHOLD) {
+        relatedProducts.add(productName);
+      }
+    });
+    
+    const relatedKeywords = new Set<string>();
+    relatedProducts.forEach(name => {
+      const keywords = [
+        'BACTER WC', 'WC LIMP', 'TAX FORTE', 'INOXARP', 
+        'BRISSOL', 'CRISSOL', 'TERGOSAN BACT', 'AIRON BD'
+      ];
+      keywords.forEach(kw => {
+        if (name.toUpperCase().includes(kw)) {
+          relatedKeywords.add(kw);
+        }
+      });
+    });
+    
+    const filteredProducts = allProducts.filter(p => {
+      const nameUpper = p.name.toUpperCase();
+      return !Array.from(relatedKeywords).some(kw => nameUpper.includes(kw));
+    });
+    
+    // Step 3: Get unique products
+    const uniqueProductsMap = new Map<string, GreentimeProduct>();
+    filteredProducts.forEach(p => {
+      if (!uniqueProductsMap.has(p.name)) {
+        uniqueProductsMap.set(p.name, p);
+      }
+    });
+    const uniqueProducts = Array.from(uniqueProductsMap.values());
+    
+    // Step 4: Delete existing products
+    await db.delete(products);
+    
+    // Step 5: Insert products
+    let insertedCount = 0;
+    for (const product of uniqueProducts) {
+      try {
+        const recommendedFor = ['hotel', 'restoran', 'kafic', 'pekara', 'fabrika'];
+        await db.insert(products).values({
+          name: product.name,
+          category: product.category,
+          price: product.price.toFixed(2),
+          stock: 100,
+          unit: 'kom',
+          vendor: product.brand || '',
+          description: product.brand ? `Brend: ${product.brand}` : '',
+          recommendedFor: recommendedFor,
+        });
+        insertedCount++;
+      } catch (error) {
+        console.error(`Failed to insert ${product.name}:`, error);
+      }
+    }
+    
+    console.log(`✓ Successfully imported ${insertedCount} products`);
+  } catch (error) {
+    console.error("Error importing Greentime products:", error);
+    throw error;
+  }
+}
+
+// Run the import if called directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  importAllProducts().catch((error) => {
+    console.error("\n\n❌ FATAL ERROR:", error);
+    process.exit(1);
+  });
+}
