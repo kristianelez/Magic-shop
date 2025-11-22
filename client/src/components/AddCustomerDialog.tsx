@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +28,7 @@ interface CustomerDialogProps {
 
 export function AddCustomerDialog({ customer, trigger }: CustomerDialogProps) {
   const [open, setOpen] = useState(false);
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const { toast } = useToast();
   const isEditMode = !!customer;
 
@@ -82,6 +84,29 @@ export function AddCustomerDialog({ customer, trigger }: CustomerDialogProps) {
         description: error.message || (isEditMode ? "Nije moguće ažurirati kupca" : "Nije moguće dodati kupca"),
         variant: "destructive",
       });
+    },
+  });
+
+  const deleteCustomer = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest("DELETE", `/api/customers/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      toast({
+        title: "Uspješno obrisano",
+        description: "Kupac je trajno obrisan iz sistema",
+      });
+      setOpen(false);
+      setShowDeleteAlert(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Greška",
+        description: error.message || "Nije moguće obrisati kupca",
+        variant: "destructive",
+      });
+      setShowDeleteAlert(false);
     },
   });
 
@@ -225,25 +250,62 @@ export function AddCustomerDialog({ customer, trigger }: CustomerDialogProps) {
               )}
             />
 
-            <div className="flex justify-end gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setOpen(false)}
-                data-testid="button-cancel-customer"
-              >
-                Otkaži
-              </Button>
-              <Button type="submit" disabled={saveCustomer.isPending} data-testid="button-save-customer">
-                {saveCustomer.isPending 
-                  ? (isEditMode ? "Ažuriram..." : "Dodajem...") 
-                  : (isEditMode ? "Sačuvaj izmjene" : "Dodaj kupca")
-                }
-              </Button>
+            <div className="flex justify-between gap-3">
+              {isEditMode && customer && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => setShowDeleteAlert(true)}
+                  disabled={deleteCustomer.isPending}
+                  data-testid="button-delete-customer"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Obriši
+                </Button>
+              )}
+              <div className="flex gap-3 ml-auto">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                  data-testid="button-cancel-customer"
+                >
+                  Otkaži
+                </Button>
+                <Button type="submit" disabled={saveCustomer.isPending} data-testid="button-save-customer">
+                  {saveCustomer.isPending 
+                    ? (isEditMode ? "Ažuriram..." : "Dodajem...") 
+                    : (isEditMode ? "Sačuvaj izmjene" : "Dodaj kupca")
+                  }
+                </Button>
+              </div>
             </div>
           </form>
         </Form>
       </DialogContent>
+
+      <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Potvrda brisanja</AlertDialogTitle>
+            <AlertDialogDescription>
+              Da li ste sigurni da želite obrisati kupca <strong>{customer?.name}</strong>? 
+              Ova akcija je trajna i ne može se poništiti. Svi podaci vezani za ovog kupca će biti trajno obrisani.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">Otkaži</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => customer && deleteCustomer.mutate(customer.id)}
+              disabled={deleteCustomer.isPending}
+              data-testid="button-confirm-delete"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteCustomer.isPending ? "Brišem..." : "Obriši kupca"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
