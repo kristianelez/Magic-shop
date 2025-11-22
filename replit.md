@@ -44,7 +44,9 @@ Preferred communication style: Simple, everyday language.
 - Dashboard - Overview with stats and recent activities
 - Customers - Customer list and management
   - **Customer Deletion**: Delete button in edit mode with AlertDialog confirmation
+  - **Cascading Delete**: Automatically removes all related activities and sales in a single database transaction
   - Permanent deletion with warning message showing customer name
+  - Atomic operation ensures no orphaned records remain
   - Automatic cache invalidation and UI update after deletion
 - Products - Product catalog with inventory tracking (128 unique products after related products filtering)
 - AI Recommendations - Smart customer outreach suggestions
