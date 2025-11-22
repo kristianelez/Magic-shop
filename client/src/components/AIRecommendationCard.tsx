@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Phone, Clock, Mail, ShoppingCart } from "lucide-react";
 import { useLocation } from "wouter";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface AIRecommendationCardProps {
   id: string;
@@ -29,6 +31,23 @@ export function AIRecommendationCard({
   optimalTime,
 }: AIRecommendationCardProps) {
   const [, setLocation] = useLocation();
+  
+  const recordCallMutation = useMutation({
+    mutationFn: async (customerId: number) => {
+      return await apiRequest("POST", `/api/activities/call/${customerId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+    },
+  });
+
+  const handleCallClick = () => {
+    if (customerPhone) {
+      recordCallMutation.mutate(parseInt(id));
+      window.location.href = `tel:${normalizePhoneForTel(customerPhone)}`;
+    }
+  };
+
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -103,31 +122,17 @@ export function AIRecommendationCard({
         )}
 
         <div className="flex gap-2 pt-2 flex-wrap">
-          {customerPhone ? (
-            <Button
-              size="sm"
-              variant="default"
-              className="flex-1"
-              data-testid="button-call-now"
-              asChild
-            >
-              <a href={`tel:${normalizePhoneForTel(customerPhone)}`}>
-                <Phone className="h-3 w-3 mr-1" />
-                Pozovi
-              </a>
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              variant="default"
-              className="flex-1"
-              data-testid="button-call-now"
-              disabled
-            >
-              <Phone className="h-3 w-3 mr-1" />
-              Pozovi
-            </Button>
-          )}
+          <Button
+            size="sm"
+            variant="default"
+            className="flex-1"
+            data-testid="button-call-now"
+            onClick={handleCallClick}
+            disabled={!customerPhone || recordCallMutation.isPending}
+          >
+            <Phone className="h-3 w-3 mr-1" />
+            Pozovi
+          </Button>
           {customerEmail ? (
             <Button
               size="sm"
