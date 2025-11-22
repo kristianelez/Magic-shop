@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Phone, Mail, Pencil } from "lucide-react";
 import { AddCustomerDialog } from "./AddCustomerDialog";
 import type { Customer } from "@shared/schema";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface CustomerCardProps {
   customer: Customer;
@@ -20,6 +22,23 @@ export function CustomerCard({
   favoriteProducts = [],
 }: CustomerCardProps) {
   const { id, name, company, email, phone, status, customerType, paymentTerms } = customer;
+  
+  const recordCallMutation = useMutation({
+    mutationFn: async (customerId: number) => {
+      return await apiRequest("POST", `/api/activities/call/${customerId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+    },
+  });
+
+  const handleCallClick = () => {
+    if (phone) {
+      recordCallMutation.mutate(id);
+      window.location.href = `tel:${normalizePhoneForTel(phone)}`;
+    }
+  };
+
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -30,7 +49,6 @@ export function CustomerCard({
   };
 
   const normalizePhoneForTel = (phoneNumber: string) => {
-    // Zadrži početni + ako postoji, ostrani sve osim brojeva
     const hasPlus = phoneNumber.startsWith('+');
     const digitsOnly = phoneNumber.replace(/\D/g, '');
     return hasPlus ? `+${digitsOnly}` : digitsOnly;
@@ -120,31 +138,17 @@ export function CustomerCard({
           </div>
         )}
         <div className="flex gap-2 pt-2">
-          {phone ? (
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1"
-              data-testid="button-call"
-              asChild
-            >
-              <a href={`tel:${normalizePhoneForTel(phone)}`}>
-                <Phone className="h-3 w-3 mr-1" />
-                Pozovi
-              </a>
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1"
-              data-testid="button-call"
-              disabled
-            >
-              <Phone className="h-3 w-3 mr-1" />
-              Pozovi
-            </Button>
-          )}
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1"
+            data-testid="button-call"
+            onClick={handleCallClick}
+            disabled={!phone || recordCallMutation.isPending}
+          >
+            <Phone className="h-3 w-3 mr-1" />
+            Pozovi
+          </Button>
           {email ? (
             <Button
               size="sm"
