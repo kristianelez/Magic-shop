@@ -36,15 +36,24 @@ export function AIRecommendationCard({
     mutationFn: async (customerId: number) => {
       return await apiRequest("POST", `/api/activities/call/${customerId}`);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ['/api/customers'] });
     },
   });
 
-  const handleCallClick = () => {
+  const handleCallClick = async () => {
     if (customerPhone) {
-      recordCallMutation.mutate(parseInt(id));
-      window.location.href = `tel:${normalizePhoneForTel(customerPhone)}`;
+      try {
+        await recordCallMutation.mutateAsync(parseInt(id));
+        const telLink = document.createElement('a');
+        telLink.href = `tel:${normalizePhoneForTel(customerPhone)}`;
+        telLink.click();
+      } catch (error) {
+        console.error("Failed to record call:", error);
+        const telLink = document.createElement('a');
+        telLink.href = `tel:${normalizePhoneForTel(customerPhone)}`;
+        telLink.click();
+      }
     }
   };
 

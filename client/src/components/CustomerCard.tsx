@@ -27,15 +27,24 @@ export function CustomerCard({
     mutationFn: async (customerId: number) => {
       return await apiRequest("POST", `/api/activities/call/${customerId}`);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ['/api/customers'] });
     },
   });
 
-  const handleCallClick = () => {
+  const handleCallClick = async () => {
     if (phone) {
-      recordCallMutation.mutate(id);
-      window.location.href = `tel:${normalizePhoneForTel(phone)}`;
+      try {
+        await recordCallMutation.mutateAsync(id);
+        const telLink = document.createElement('a');
+        telLink.href = `tel:${normalizePhoneForTel(phone)}`;
+        telLink.click();
+      } catch (error) {
+        console.error("Failed to record call:", error);
+        const telLink = document.createElement('a');
+        telLink.href = `tel:${normalizePhoneForTel(phone)}`;
+        telLink.click();
+      }
     }
   };
 

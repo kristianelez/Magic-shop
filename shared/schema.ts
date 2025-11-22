@@ -123,9 +123,9 @@ export const activities = pgTable("activities", {
 export const insertActivitySchema = createInsertSchema(activities, {
   customerId: z.number().int(),
   type: z.string().min(1),
+  createdAt: z.date().optional(),
 }).omit({
   id: true,
-  createdAt: true,
 });
 
 export type InsertActivity = z.infer<typeof insertActivitySchema>;

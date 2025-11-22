@@ -56,11 +56,13 @@ export default function Customers() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredCustomers.map((customer) => (
+        {filteredCustomers.map((customer: any) => (
           <CustomerCard
             key={customer.id}
             customer={customer}
-            totalPurchases={0}
+            lastContact={customer.lastContact}
+            totalPurchases={customer.totalPurchases || 0}
+            favoriteProducts={customer.favoriteProducts}
           />
         ))}
       </div>

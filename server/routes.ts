@@ -388,6 +388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customerId,
         type: "call",
         notes: "Poziv komercijaliste",
+        createdAt: new Date(),
       });
 
       res.status(201).json(activity);
