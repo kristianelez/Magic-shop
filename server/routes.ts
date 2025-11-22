@@ -375,6 +375,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/activities/call/:customerId", requireAuth, async (req, res) => {
+    try {
+      const customerId = parseInt(req.params.customerId);
+      
+      const customer = await storage.getCustomer(customerId);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+
+      const activity = await storage.createActivity({
+        customerId,
+        type: "call",
+        notes: "Poziv komercijaliste",
+      });
+
+      res.status(201).json(activity);
+    } catch (error) {
+      console.error("Error recording call activity:", error);
+      res.status(500).json({ error: "Failed to record call" });
+    }
+  });
+
   // AI Recommendations API (Hybrid: Local + OpenAI)
   app.get("/api/recommendations", requireAuth, async (req, res) => {
     try {
