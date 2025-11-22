@@ -4,7 +4,7 @@ import connectPgSimple from "connect-pg-simple";
 import { Pool } from "pg";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { seedDatabase, quickBaselineCheck } from "./seed";
+import { seedDatabase } from "./seed";
 
 const app = express();
 
@@ -90,41 +90,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Track if baseline data is ready for API traffic
-let baselineReady = false;
-let seedingState: 'ready' | 'initializing' | 'failed' = 'initializing';
-
-// Health check endpoint - MUST be before registerRoutes() to avoid catch-all route
-// Always returns 200 OK if server is listening (deployment health checks pass immediately)
-app.get('/health', (_req, res) => {
-  res.status(200).json({ 
-    status: 'ok', 
-    ready: baselineReady,
-    seeding: seedingState,
-    timestamp: new Date().toISOString() 
-  });
-});
-
-// Gate API traffic until baseline data exists
-app.use((req, res, next) => {
-  // Always allow health checks
-  if (req.path === '/health') {
-    return next();
-  }
-  
-  // If baseline ready, allow all traffic
-  if (baselineReady) {
-    return next();
-  }
-  
-  // Block API traffic until seeding completes
-  return res.status(503).json({
-    message: 'Application initializing - please wait',
-    status: 'initializing'
-  });
-});
-
 (async () => {
+  await seedDatabase();
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -153,60 +120,7 @@ app.use((req, res, next) => {
     port,
     host: "0.0.0.0",
     reusePort: true,
-  }, async () => {
+  }, () => {
     log(`serving on port ${port}`);
-    
-    try {
-      // Quick baseline check (< 1s) - verify minimum data exists
-      const baseline = await quickBaselineCheck();
-      
-      if (baseline.exists) {
-        // Baseline exists → API traffic allowed immediately
-        baselineReady = true;
-        seedingState = 'ready';
-        log(`✓ Baseline data verified (users: ${baseline.users}, products: ${baseline.products}, customers: ${baseline.customers})`);
-        log('✓ Application ready');
-        
-        // Optional: run background seed for updates/additions
-        seedDatabase().catch(err => {
-          log('Background seed update failed (non-critical):', err.message);
-        });
-      } else {
-        // Baseline missing → seed in background, block API until ready
-        seedingState = 'initializing';
-        log(`⚠ Baseline data incomplete (users: ${baseline.users}, products: ${baseline.products}, customers: ${baseline.customers})`);
-        log('⏳ Seeding database in background - API traffic blocked until complete...');
-        
-        seedDatabase()
-          .then(async () => {
-            // Re-verify baseline after seeding
-            const postSeed = await quickBaselineCheck();
-            if (postSeed.exists) {
-              baselineReady = true;
-              seedingState = 'ready';
-              log('✓ Database seeded successfully - application ready');
-            } else {
-              seedingState = 'failed';
-              log('❌ Seeding completed but baseline still incomplete - API traffic remains blocked');
-            }
-          })
-          .catch(error => {
-            seedingState = 'failed';
-            console.error("\n❌ CRITICAL: Database seeding failed");
-            console.error("Error details:", error);
-            console.error("\nAPI traffic will remain blocked.");
-            console.error("You can manually seed the database by running:");
-            console.error("  tsx server/import-greentime-products.ts");
-            console.error("  tsx server/import-customers.ts\n");
-          });
-      }
-    } catch (error) {
-      // Database connection error during baseline check
-      seedingState = 'failed';
-      console.error("\n❌ CRITICAL: Failed to check baseline data");
-      console.error("Error details:", error);
-      console.error("\nThis likely indicates a database connection problem.");
-      console.error("API traffic will remain blocked until the issue is resolved.\n");
-    }
   });
 })();

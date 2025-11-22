@@ -96,15 +96,13 @@ export async function importCustomersFromExcel() {
   }
 }
 
-// Run import if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  importCustomersFromExcel()
-    .then(() => {
-      console.log("Import completed successfully!");
-      process.exit(0);
-    })
-    .catch((error) => {
-      console.error("Import failed:", error);
-      process.exit(1);
-    });
-}
+// Run import
+importCustomersFromExcel()
+  .then(() => {
+    console.log("Import completed successfully!");
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error("Import failed:", error);
+    process.exit(1);
+  });
