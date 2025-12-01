@@ -87,25 +87,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Customers API
   app.get("/api/customers", requireAuth, async (req, res) => {
     try {
-      const customers = await storage.getCustomers();
-      
-      const customersWithStats = await Promise.all(
-        customers.map(async (customer) => {
-          const stats = await storage.getCustomerStats(customer.id);
-          const activities = await storage.getActivitiesByCustomer(customer.id);
-          const lastActivity = activities[0];
-          
-          return {
-            ...customer,
-            totalPurchases: stats.totalPurchases,
-            lastContact: lastActivity 
-              ? new Date(lastActivity.createdAt).toLocaleDateString('bs-BA')
-              : undefined,
-            favoriteProducts: stats.favoriteProducts,
-          };
-        })
-      );
-      
+      // Use optimized batch loading instead of N+1 queries
+      const customersWithStats = await storage.getCustomersWithStats();
       res.json(customersWithStats);
     } catch (error) {
       console.error("Error fetching customers:", error);

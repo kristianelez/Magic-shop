@@ -25,6 +25,12 @@ neonConfig.webSocketConstructor = ws;
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const db = drizzle(pool);
 
+export interface CustomerWithStats extends Customer {
+  totalPurchases: number;
+  lastContact?: string;
+  favoriteProducts: string[];
+}
+
 export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
@@ -33,6 +39,7 @@ export interface IStorage {
 
   // Customers
   getCustomers(): Promise<Customer[]>;
+  getCustomersWithStats(): Promise<CustomerWithStats[]>;
   getCustomer(id: number): Promise<Customer | undefined>;
   createCustomer(customer: InsertCustomer): Promise<Customer>;
   updateCustomer(id: number, customer: Partial<InsertCustomer>): Promise<Customer | undefined>;
@@ -86,6 +93,68 @@ export class DatabaseStorage implements IStorage {
   // Customers
   async getCustomers(): Promise<Customer[]> {
     return await db.select().from(customers).orderBy(desc(customers.createdAt));
+  }
+
+  async getCustomersWithStats(): Promise<CustomerWithStats[]> {
+    // Batch load all data in just 3 queries instead of N+1
+    const [allCustomers, allActivities, allSales, allProducts] = await Promise.all([
+      db.select().from(customers).orderBy(desc(customers.createdAt)),
+      db.select().from(activities).orderBy(desc(activities.createdAt)),
+      db.select().from(sales),
+      db.select().from(products),
+    ]);
+
+    // Create lookup maps for O(1) access
+    const productMap = new Map(allProducts.map(p => [p.id, p.name]));
+    
+    // Group activities by customer
+    const activitiesByCustomer = new Map<number, Activity[]>();
+    for (const activity of allActivities) {
+      const existing = activitiesByCustomer.get(activity.customerId) || [];
+      existing.push(activity);
+      activitiesByCustomer.set(activity.customerId, existing);
+    }
+
+    // Group sales by customer and calculate stats
+    const salesByCustomer = new Map<number, { total: number; productCounts: Map<number, number> }>();
+    for (const sale of allSales) {
+      const existing = salesByCustomer.get(sale.customerId) || { total: 0, productCounts: new Map() };
+      existing.total += parseFloat(sale.totalAmount);
+      existing.productCounts.set(sale.productId, (existing.productCounts.get(sale.productId) || 0) + 1);
+      salesByCustomer.set(sale.customerId, existing);
+    }
+
+    // Build result with all stats
+    return allCustomers.map(customer => {
+      const customerActivities = activitiesByCustomer.get(customer.id) || [];
+      const lastActivity = customerActivities[0];
+      
+      const customerSalesData = salesByCustomer.get(customer.id);
+      const totalPurchases = customerSalesData?.total || 0;
+      
+      // Get top 3 favorite products
+      const favoriteProducts: string[] = [];
+      if (customerSalesData) {
+        const topProductIds = Array.from(customerSalesData.productCounts.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 3)
+          .map(([id]) => id);
+        
+        for (const productId of topProductIds) {
+          const productName = productMap.get(productId);
+          if (productName) favoriteProducts.push(productName);
+        }
+      }
+
+      return {
+        ...customer,
+        totalPurchases,
+        lastContact: lastActivity 
+          ? new Date(lastActivity.createdAt).toLocaleDateString('bs-BA')
+          : undefined,
+        favoriteProducts,
+      };
+    });
   }
 
   async getCustomer(id: number): Promise<Customer | undefined> {
