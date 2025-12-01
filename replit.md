@@ -81,6 +81,15 @@ Preferred communication style: Simple, everyday language.
 - Schema-first approach with validation using Zod
 - Migration files stored in `./migrations` directory
 
+**Performance Optimizations:**
+- **Batch Loading for Customers** - `getCustomersWithStats()` method loads all customer data, activities, sales, and products in just 4 parallel queries instead of N+1 queries per customer
+- **Database Indexes** - Added for faster query performance:
+  - `idx_activities_customer_id` - Fast activity lookups by customer
+  - `idx_sales_customer_id` - Fast sales lookups by customer  
+  - `idx_sales_product_id` - Fast product-based queries
+  - `idx_activities_created_at` - Fast ordering by date
+- **In-memory Aggregation** - Customer stats (totalPurchases, favoriteProducts, lastContact) computed using Maps for O(1) lookups
+
 ### Data Storage Solutions
 
 **Database:**
