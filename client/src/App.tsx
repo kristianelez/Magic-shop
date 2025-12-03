@@ -14,6 +14,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { LogOut } from "lucide-react";
 import Dashboard from "@/pages/Dashboard";
 import Customers from "@/pages/Customers";
+import CustomerDetail from "@/pages/CustomerDetail";
 import Products from "@/pages/Products";
 import AIRecommendations from "@/pages/AIRecommendations";
 import Sales from "@/pages/Sales";
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/" component={Dashboard} />
       <Route path="/customers" component={Customers} />
+      <Route path="/customers/:customerId" component={CustomerDetail} />
       <Route path="/products" component={Products} />
       <Route path="/recommendations" component={AIRecommendations} />
       <Route path="/sales" component={Sales} />

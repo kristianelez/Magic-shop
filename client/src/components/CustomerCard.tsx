@@ -2,7 +2,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Phone, Mail, Pencil } from "lucide-react";
+import { Phone, Mail, Pencil, MessageSquare } from "lucide-react";
+import { useLocation } from "wouter";
 import { AddCustomerDialog } from "./AddCustomerDialog";
 import type { Customer } from "@shared/schema";
 import { useMutation } from "@tanstack/react-query";
@@ -22,6 +23,7 @@ export function CustomerCard({
   favoriteProducts = [],
 }: CustomerCardProps) {
   const { id, name, company, email, phone, status, customerType, paymentTerms } = customer;
+  const [, setLocation] = useLocation();
   
   const recordCallMutation = useMutation({
     mutationFn: async (customerId: number) => {
@@ -146,7 +148,7 @@ export function CustomerCard({
             </div>
           </div>
         )}
-        <div className="flex gap-2 pt-2">
+        <div className="flex gap-2 pt-2 flex-col sm:flex-row">
           <Button
             size="sm"
             variant="outline"
@@ -157,6 +159,16 @@ export function CustomerCard({
           >
             <Phone className="h-3 w-3 mr-1" />
             Pozovi
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1"
+            data-testid={`button-view-conversations-${id}`}
+            onClick={() => setLocation(`/customers/${id}`)}
+          >
+            <MessageSquare className="h-3 w-3 mr-1" />
+            Razgovori
           </Button>
           {email ? (
             <Button
