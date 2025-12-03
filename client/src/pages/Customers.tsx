@@ -19,11 +19,11 @@ interface CustomerWithStats extends Customer {
   favoriteProducts: string[];
 }
 
-type SortOption = "lastContact" | "name" | "nameReverse" | "status" | "type";
+type SortOption = "lastContact" | "lastContactNewest" | "name" | "nameReverse" | "status" | "type";
 
 export default function Customers() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<SortOption>("lastContact");
+  const [sortBy, setSortBy] = useState<SortOption>("lastContactNewest");
 
   const { data: customers = [], isLoading } = useQuery<CustomerWithStats[]>({
     queryKey: ["/api/customers"],
@@ -43,6 +43,12 @@ export default function Customers() {
         const dateA = a.lastContact ? new Date(a.lastContact).getTime() : 0;
         const dateB = b.lastContact ? new Date(b.lastContact).getTime() : 0;
         return dateA - dateB; // Oldest first
+      }
+      case "lastContactNewest": {
+        // Sort by lastContact - newest first
+        const dateA = a.lastContact ? new Date(a.lastContact).getTime() : 0;
+        const dateB = b.lastContact ? new Date(b.lastContact).getTime() : 0;
+        return dateB - dateA; // Newest first
       }
       case "name":
         return a.name.localeCompare(b.name, "bs");
@@ -98,6 +104,15 @@ export default function Customers() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={() => setSortBy("lastContactNewest")}
+              data-testid="sort-lastContactNewest"
+              className={sortBy === "lastContactNewest" ? "bg-accent" : ""}
+            >
+              <span className={sortBy === "lastContactNewest" ? "font-semibold" : ""}>
+                Zadnje kontaktirani (najnoviji)
+              </span>
+            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => setSortBy("lastContact")}
               data-testid="sort-lastContact"
