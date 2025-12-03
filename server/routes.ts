@@ -108,10 +108,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stats = await storage.getCustomerStats(id);
       const activities = await storage.getActivitiesByCustomer(id);
       const sales = await storage.getSalesByCustomer(id);
+      const lastContact = activities.length > 0 
+        ? new Date(activities[0].createdAt).toLocaleDateString('bs-BA')
+        : undefined;
       
       res.json({
         ...customer,
-        stats,
+        totalPurchases: stats.totalPurchases,
+        lastContact,
+        favoriteProducts: stats.favoriteProducts,
         activities,
         sales,
       });
