@@ -1,16 +1,31 @@
 import { CustomerCard } from "@/components/CustomerCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AddCustomerDialog } from "@/components/AddCustomerDialog";
 import type { Customer } from "@shared/schema";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+interface CustomerWithStats extends Customer {
+  totalPurchases: number;
+  lastContact?: string;
+  favoriteProducts: string[];
+}
+
+type SortOption = "lastContact" | "name" | "nameReverse" | "status" | "type";
 
 export default function Customers() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("lastContact");
 
-  const { data: customers = [], isLoading } = useQuery<Customer[]>({
+  const { data: customers = [], isLoading } = useQuery<CustomerWithStats[]>({
     queryKey: ["/api/customers"],
   });
 
@@ -19,6 +34,31 @@ export default function Customers() {
       customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       customer.company.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Sort customers based on selected option
+  const sortedCustomers = [...filteredCustomers].sort((a, b) => {
+    switch (sortBy) {
+      case "lastContact": {
+        // Sort by lastContact - oldest first
+        const dateA = a.lastContact ? new Date(a.lastContact).getTime() : 0;
+        const dateB = b.lastContact ? new Date(b.lastContact).getTime() : 0;
+        return dateA - dateB; // Oldest first
+      }
+      case "name":
+        return a.name.localeCompare(b.name, "bs");
+      case "nameReverse":
+        return b.name.localeCompare(a.name, "bs");
+      case "status": {
+        const statusOrder = { vip: 0, active: 1, potential: 2, inactive: 3 };
+        return (statusOrder[a.status as keyof typeof statusOrder] || 99) -
+               (statusOrder[b.status as keyof typeof statusOrder] || 99);
+      }
+      case "type":
+        return (a.customerType || "").localeCompare(b.customerType || "", "bs");
+      default:
+        return 0;
+    }
+  });
 
   if (isLoading) {
     return (
@@ -49,14 +89,66 @@ export default function Customers() {
             data-testid="input-search-customers"
           />
         </div>
-        <Button variant="outline" data-testid="button-filter">
-          <Filter className="h-4 w-4 mr-2" />
-          Filteri
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" data-testid="button-filter">
+              <Filter className="h-4 w-4 mr-2" />
+              Sortiraj
+              <ChevronDown className="h-4 w-4 ml-2" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={() => setSortBy("lastContact")}
+              data-testid="sort-lastContact"
+              className={sortBy === "lastContact" ? "bg-accent" : ""}
+            >
+              <span className={sortBy === "lastContact" ? "font-semibold" : ""}>
+                Zadnje kontaktirani (od najstarijih)
+              </span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => setSortBy("name")}
+              data-testid="sort-name"
+              className={sortBy === "name" ? "bg-accent" : ""}
+            >
+              <span className={sortBy === "name" ? "font-semibold" : ""}>
+                Abecedno (A-Ž)
+              </span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => setSortBy("nameReverse")}
+              data-testid="sort-nameReverse"
+              className={sortBy === "nameReverse" ? "bg-accent" : ""}
+            >
+              <span className={sortBy === "nameReverse" ? "font-semibold" : ""}>
+                Abecedno (Ž-A)
+              </span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => setSortBy("status")}
+              data-testid="sort-status"
+              className={sortBy === "status" ? "bg-accent" : ""}
+            >
+              <span className={sortBy === "status" ? "font-semibold" : ""}>
+                Po statusu
+              </span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => setSortBy("type")}
+              data-testid="sort-type"
+              className={sortBy === "type" ? "bg-accent" : ""}
+            >
+              <span className={sortBy === "type" ? "font-semibold" : ""}>
+                Po tipu
+              </span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredCustomers.map((customer: any) => (
+        {sortedCustomers.map((customer: any) => (
           <CustomerCard
             key={customer.id}
             customer={customer}
@@ -67,7 +159,7 @@ export default function Customers() {
         ))}
       </div>
 
-      {filteredCustomers.length === 0 && (
+      {sortedCustomers.length === 0 && (
         <div className="text-center py-12">
           <p className="text-muted-foreground">Nema kupaca koji odgovaraju pretrazi</p>
         </div>
