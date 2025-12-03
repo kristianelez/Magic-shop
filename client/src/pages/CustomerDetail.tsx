@@ -25,6 +25,8 @@ export default function CustomerDetail() {
   const { toast } = useToast();
   const [newActivityNotes, setNewActivityNotes] = useState("");
   const [showAddActivity, setShowAddActivity] = useState(false);
+  const [editingActivityId, setEditingActivityId] = useState<number | null>(null);
+  const [editingActivityNotes, setEditingActivityNotes] = useState("");
 
   const { data: customer } = useQuery<CustomerWithStats>({
     queryKey: ["/api/customers", customerId],
@@ -50,7 +52,6 @@ export default function CustomerDetail() {
         customerId: parseInt(customerId!),
         type: "note",
         notes: notes,
-        createdAt: new Date(),
       });
     },
     onSuccess: () => {
@@ -66,6 +67,30 @@ export default function CustomerDetail() {
       toast({
         title: "Greška",
         description: "Nije moguće dodati belesku",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const editActivityMutation = useMutation({
+    mutationFn: async ({ id, notes }: { id: number; notes: string }) => {
+      return await apiRequest("PATCH", `/api/activities/${id}`, {
+        notes: notes,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Uspješno",
+        description: "Beleška je ažurirana",
+      });
+      setEditingActivityId(null);
+      setEditingActivityNotes("");
+      queryClient.invalidateQueries({ queryKey: ["/api/activities"] });
+    },
+    onError: () => {
+      toast({
+        title: "Greška",
+        description: "Nije moguće ažurirati belesku",
         variant: "destructive",
       });
     },
@@ -227,27 +252,76 @@ export default function CustomerDetail() {
                     className="p-3 rounded-md border border-border hover-elevate"
                     data-testid={`activity-item-${activity.id}`}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-start gap-3 flex-1">
-                        <ActivityIcon className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="text-xs">
-                              {activityTypeLabels[activity.type] || activity.type}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {format(new Date(activity.createdAt), "d. MMMM yyyy 'u' HH:mm", { locale: bs })}
-                            </span>
-                          </div>
-                          {activity.notes && (
-                            <p className="text-sm text-foreground mt-2">{activity.notes}</p>
-                          )}
-                          {activity.outcome && (
-                            <p className="text-xs text-muted-foreground mt-1">Ishod: {activity.outcome}</p>
-                          )}
+                    {editingActivityId === activity.id ? (
+                      <div className="space-y-2">
+                        <Textarea
+                          value={editingActivityNotes}
+                          onChange={(e) => setEditingActivityNotes(e.target.value)}
+                          className="resize-none"
+                          data-testid={`textarea-edit-activity-${activity.id}`}
+                        />
+                        <div className="flex gap-2 justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingActivityId(null)}
+                            data-testid="button-cancel-edit"
+                          >
+                            Otkaži
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              editingActivityNotes.trim() &&
+                              editActivityMutation.mutate({ id: activity.id, notes: editingActivityNotes })
+                            }
+                            disabled={!editingActivityNotes.trim() || editActivityMutation.isPending}
+                            data-testid={`button-save-edit-${activity.id}`}
+                          >
+                            {editActivityMutation.isPending ? "Ažuriram..." : "Ažuriraj"}
+                          </Button>
                         </div>
                       </div>
-                    </div>
+                    ) : (
+                      <>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start gap-3 flex-1">
+                            <ActivityIcon className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Badge variant="secondary" className="text-xs">
+                                  {activityTypeLabels[activity.type] || activity.type}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  {format(new Date(activity.createdAt), "d. MMMM yyyy 'u' HH:mm", { locale: bs })}
+                                </span>
+                              </div>
+                              {activity.notes && (
+                                <p className="text-sm text-foreground mt-2">{activity.notes}</p>
+                              )}
+                              {activity.outcome && (
+                                <p className="text-xs text-muted-foreground mt-1">Ishod: {activity.outcome}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {activity.type === "note" && (
+                          <div className="flex justify-end pt-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingActivityId(activity.id);
+                                setEditingActivityNotes(activity.notes || "");
+                              }}
+                              data-testid={`button-edit-activity-${activity.id}`}
+                            >
+                              Uredi
+                            </Button>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                 );
               })}

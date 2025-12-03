@@ -363,6 +363,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/activities/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const activityData = insertActivitySchema.partial().parse(req.body);
+      const activity = await storage.updateActivity(id, activityData);
+      
+      if (!activity) {
+        return res.status(404).json({ error: "Activity not found" });
+      }
+      
+      res.json(activity);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Error updating activity:", error);
+      res.status(500).json({ error: "Failed to update activity" });
+    }
+  });
+
   app.post("/api/activities/call/:customerId", requireAuth, async (req, res) => {
     try {
       const customerId = parseInt(req.params.customerId);
@@ -376,7 +396,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customerId,
         type: "call",
         notes: "Poziv komercijaliste",
-        createdAt: new Date(),
       });
 
       res.status(201).json(activity);

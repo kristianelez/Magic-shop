@@ -64,6 +64,7 @@ export interface IStorage {
   getActivities(): Promise<Activity[]>;
   getActivitiesByCustomer(customerId: number): Promise<Activity[]>;
   createActivity(activity: InsertActivity): Promise<Activity>;
+  updateActivity(id: number, activity: Partial<InsertActivity>): Promise<Activity | undefined>;
 
   // Analytics
   getCustomerStats(customerId: number): Promise<{
@@ -263,6 +264,11 @@ export class DatabaseStorage implements IStorage {
 
   async createActivity(activity: InsertActivity): Promise<Activity> {
     const result = await db.insert(activities).values(activity).returning();
+    return result[0];
+  }
+
+  async updateActivity(id: number, activity: Partial<InsertActivity>): Promise<Activity | undefined> {
+    const result = await db.update(activities).set(activity).where(eq(activities.id, id)).returning();
     return result[0];
   }
 
