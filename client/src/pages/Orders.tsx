@@ -1,15 +1,18 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Calendar, Package, Users, Pencil, TrendingUp } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { ShoppingCart, Calendar, Package, Users, Pencil, TrendingUp, Trash2 } from "lucide-react";
 import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { bs } from "date-fns/locale";
 import type { Sale, Customer, Product } from "@shared/schema";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface SaleWithDetails extends Sale {
   customer?: Customer;
@@ -35,11 +38,14 @@ interface GroupedOrder {
 
 export default function Orders() {
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState<string>(
     `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`
   );
   const [selectedYear, setSelectedYear] = useState<string>(String(currentDate.getFullYear()));
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+  const [selectedOrderForDelete, setSelectedOrderForDelete] = useState<{ id: string; items: GroupedOrder["items"] } | null>(null);
 
   const { data: sales = [], isLoading: salesLoading } = useQuery<Sale[]>({
     queryKey: ["/api/sales"],
@@ -54,6 +60,30 @@ export default function Orders() {
   });
 
   const isLoading = salesLoading || customersLoading || productsLoading;
+
+  const deleteOrderMutation = useMutation({
+    mutationFn: async (saleIds: number[]) => {
+      for (const saleId of saleIds) {
+        await apiRequest("DELETE", `/api/sales/${saleId}`);
+      }
+    },
+    onSuccess: () => {
+      toast({
+        title: "Uspješno",
+        description: "Narudžba je obrisana",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
+      setShowDeleteAlert(false);
+      setSelectedOrderForDelete(null);
+    },
+    onError: () => {
+      toast({
+        title: "Greška",
+        description: "Nije moguće obrisati narudžbu",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Grupa narudžbe po kupcu i datumu (isti kupac + isti datum = jedna narudžba)
   const groupedOrders: GroupedOrder[] = sales.reduce((acc: GroupedOrder[], sale) => {
@@ -206,15 +236,34 @@ export default function Orders() {
                         <Badge variant={order.status === "completed" ? "secondary" : "outline"}>
                           {order.status === "completed" ? "Završeno" : "Na čekanju"}
                         </Badge>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setLocation(`/edit-order/${encodeURIComponent(order.id)}`)}
-                          data-testid={`button-edit-order-${order.id}`}
-                        >
-                          <Pencil className="h-4 w-4 mr-2" />
-                          Uredi
-                        </Button>
+                        <div className="flex flex-col gap-2 w-full">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setLocation(`/edit-order/${encodeURIComponent(order.id)}`)}
+                            data-testid={`button-edit-order-${order.id}`}
+                            className="w-full"
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Uredi
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => {
+                              setSelectedOrderForDelete({
+                                id: order.id,
+                                items: order.items,
+                              });
+                              setShowDeleteAlert(true);
+                            }}
+                            data-testid={`button-delete-order-${order.id}`}
+                            className="w-full"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Izbrisi narudzbu
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </CardHeader>
@@ -275,6 +324,51 @@ export default function Orders() {
           </CardContent>
         </Card>
       )}
+
+      <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Obriši narudzbu</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sigurno želite obrisati ovu narudžbu? Ova radnja se ne može poništiti.
+              {selectedOrderForDelete && selectedOrderForDelete.items.length > 0 && (
+                <div className="mt-3 space-y-1">
+                  <p className="font-medium text-foreground">Stavke u narudžbi:</p>
+                  <ul className="text-xs text-foreground space-y-1">
+                    {selectedOrderForDelete.items.map((item, idx) => (
+                      <li key={idx}>• {item.productName} x {item.quantity}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-2 justify-end pt-4">
+            <AlertDialogCancel>Otkaži</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (selectedOrderForDelete) {
+                  const saleIds = sales
+                    .filter(sale => {
+                      const saleDate = new Date(sale.createdAt);
+                      const orderDate = groupedOrders.find(o => o.id === selectedOrderForDelete.id)?.orderDate;
+                      return orderDate && 
+                        sale.customerId === groupedOrders.find(o => o.id === selectedOrderForDelete.id)?.customerId &&
+                        format(saleDate, 'yyyy-MM-dd-HH:mm') === format(orderDate, 'yyyy-MM-dd-HH:mm');
+                    })
+                    .map(s => s.id);
+                  deleteOrderMutation.mutate(saleIds);
+                }
+              }}
+              disabled={deleteOrderMutation.isPending}
+              data-testid="button-confirm-delete-order"
+            >
+              {deleteOrderMutation.isPending ? "Brišem..." : "Obriši"}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
