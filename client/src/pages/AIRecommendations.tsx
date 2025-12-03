@@ -19,15 +19,8 @@ interface Recommendation {
 export default function AIRecommendations() {
   const { data: recommendations = [], isLoading } = useQuery<Recommendation[]>({
     queryKey: ["/api/recommendations"],
+    staleTime: 5 * 60 * 1000, // Cache for 5 min
   });
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Generišem AI preporuke...</p>
-      </div>
-    );
-  }
 
   const highPriorityCount = recommendations.filter((r: any) => r.priority === 'high').length;
 
@@ -68,7 +61,7 @@ export default function AIRecommendations() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Prioritetna lista
+            Prioritetna lista {isLoading && <span className="text-xs font-normal text-muted-foreground">(učitavanje...)</span>}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -92,7 +85,9 @@ export default function AIRecommendations() {
           ) : (
             <div className="text-center py-8">
               <p className="text-muted-foreground">
-                Trenutno nema preporuka. AI će generisati preporuke kada kupci budu spremni za ponovno naručivanje.
+                {isLoading 
+                  ? "Generišem AI preporuke (može potrajati do 30 sekundi)..." 
+                  : "Trenutno nema preporuka. AI će generisati preporuke kada kupci budu spremni za ponovno naručivanje."}
               </p>
             </div>
           )}

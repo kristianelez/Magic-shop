@@ -46,6 +46,7 @@ export default function Dashboard() {
   const { data: aiRecommendations = [], isLoading: recommendationsLoading } = useQuery<AIRecommendation[]>({
     queryKey: ["/api/recommendations"],
     queryFn: getQueryFn({ on401: "throw" }),
+    staleTime: 5 * 60 * 1000, // Cache for 5 min
   });
 
   const { data: products = [] } = useQuery<any[]>({
@@ -53,7 +54,8 @@ export default function Dashboard() {
     queryFn: getQueryFn({ on401: "throw" }),
   });
 
-  const isLoading = customersLoading || salesLoading || activitiesLoading || recommendationsLoading;
+  // Load main data first, recommendations separately
+  const isLoading = customersLoading || salesLoading || activitiesLoading;
 
   // Calculate current month's sales
   const now = new Date();
@@ -142,6 +144,7 @@ export default function Dashboard() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
+            {/* Main content loads first */}
             <div>
               <h2 className="text-lg font-semibold mb-4">AI Preporuke</h2>
               <div className="space-y-4">

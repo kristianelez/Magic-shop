@@ -1,4 +1,5 @@
 import { Switch, Route, useLocation } from "wouter";
+import { Suspense, lazy } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -16,13 +17,21 @@ import Dashboard from "@/pages/Dashboard";
 import Customers from "@/pages/Customers";
 import CustomerDetail from "@/pages/CustomerDetail";
 import Products from "@/pages/Products";
-import AIRecommendations from "@/pages/AIRecommendations";
 import Sales from "@/pages/Sales";
 import CreateOrder from "@/pages/CreateOrder";
 import EditOrder from "@/pages/EditOrder";
 import Orders from "@/pages/Orders";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/not-found";
+
+// Lazy load slow pages for faster initial load
+const AIRecommendations = lazy(() => import("@/pages/AIRecommendations"));
+
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center h-64">
+    <p className="text-muted-foreground">Učitavanje...</p>
+  </div>
+);
 
 function Router() {
   return (
@@ -32,7 +41,13 @@ function Router() {
       <Route path="/customers" component={Customers} />
       <Route path="/customers/:customerId" component={CustomerDetail} />
       <Route path="/products" component={Products} />
-      <Route path="/recommendations" component={AIRecommendations} />
+      <Route path="/recommendations">
+        {() => (
+          <Suspense fallback={<LoadingFallback />}>
+            <AIRecommendations />
+          </Suspense>
+        )}
+      </Route>
       <Route path="/sales" component={Sales} />
       <Route path="/create-order" component={CreateOrder} />
       <Route path="/edit-order/:orderId" component={EditOrder} />
