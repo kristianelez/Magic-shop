@@ -21,6 +21,7 @@ import Sales from "@/pages/Sales";
 import CreateOrder from "@/pages/CreateOrder";
 import EditOrder from "@/pages/EditOrder";
 import Orders from "@/pages/Orders";
+import Offers from "@/pages/Offers";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/not-found";
 
@@ -49,6 +50,7 @@ function Router() {
         )}
       </Route>
       <Route path="/sales" component={Sales} />
+      <Route path="/offers" component={Offers} />
       <Route path="/create-order" component={CreateOrder} />
       <Route path="/edit-order/:orderId" component={EditOrder} />
       <Route path="/orders" component={Orders} />

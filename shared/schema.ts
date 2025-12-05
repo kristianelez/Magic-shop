@@ -138,3 +138,48 @@ export const aiRecommendationsCache = pgTable("ai_recommendations_cache", {
 });
 
 export type AIRecommendationsCache = typeof aiRecommendationsCache.$inferSelect;
+
+export const offers = pgTable("offers", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id").notNull().references(() => customers.id),
+  salesPersonId: varchar("sales_person_id").references(() => users.id),
+  status: text("status").notNull().default("draft"),
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull().default("0"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const offerItems = pgTable("offer_items", {
+  id: serial("id").primaryKey(),
+  offerId: integer("offer_id").notNull().references(() => offers.id),
+  productId: integer("product_id").notNull().references(() => products.id),
+  quantity: integer("quantity").notNull(),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  category: text("category").notNull(),
+});
+
+export const insertOfferSchema = createInsertSchema(offers, {
+  customerId: z.number().int(),
+  salesPersonId: z.string().optional(),
+  status: z.string().optional(),
+  totalAmount: z.string().optional(),
+}).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertOfferItemSchema = createInsertSchema(offerItems, {
+  offerId: z.number().int(),
+  productId: z.number().int(),
+  quantity: z.number().int().min(1),
+  price: z.string(),
+  category: z.string(),
+}).omit({
+  id: true,
+});
+
+export type InsertOffer = z.infer<typeof insertOfferSchema>;
+export type Offer = typeof offers.$inferSelect;
+export type InsertOfferItem = z.infer<typeof insertOfferItemSchema>;
+export type OfferItem = typeof offerItems.$inferSelect;

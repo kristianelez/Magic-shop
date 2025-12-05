@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Package, Sparkles, TrendingUp, ShoppingCart, ClipboardList } from "lucide-react";
+import { LayoutDashboard, Users, Package, Sparkles, TrendingUp, ShoppingCart, ClipboardList, FileText } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
   Sidebar,
@@ -48,6 +48,11 @@ const menuItems = [
     title: "Prodaja",
     url: "/sales",
     icon: TrendingUp,
+  },
+  {
+    title: "Ponude",
+    url: "/offers",
+    icon: FileText,
   },
 ];
 

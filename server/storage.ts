@@ -12,11 +12,17 @@ import {
   type InsertSale,
   type Activity,
   type InsertActivity,
+  type Offer,
+  type InsertOffer,
+  type OfferItem,
+  type InsertOfferItem,
   users,
   customers,
   products,
   sales,
   activities,
+  offers,
+  offerItems,
 } from "@shared/schema";
 import { eq, desc, and, sql, inArray } from "drizzle-orm";
 
@@ -65,6 +71,13 @@ export interface IStorage {
   getActivitiesByCustomer(customerId: number): Promise<Activity[]>;
   createActivity(activity: InsertActivity): Promise<Activity>;
   updateActivity(id: number, activity: Partial<InsertActivity>): Promise<Activity | undefined>;
+
+  // Offers
+  getOffers(): Promise<any[]>;
+  getOffer(id: number): Promise<any>;
+  createOffer(offer: any): Promise<any>;
+  addOfferItem(item: any): Promise<any>;
+  deleteOffer(id: number): Promise<boolean>;
 
   // Analytics
   getCustomerStats(customerId: number): Promise<{
@@ -270,6 +283,39 @@ export class DatabaseStorage implements IStorage {
   async updateActivity(id: number, activity: Partial<InsertActivity>): Promise<Activity | undefined> {
     const result = await db.update(activities).set(activity).where(eq(activities.id, id)).returning();
     return result[0];
+  }
+
+  // Offers
+  async getOffers(): Promise<any[]> {
+    const allOffers = await db.select().from(offers).orderBy(desc(offers.createdAt));
+    const items = await db.select().from(offerItems);
+    return allOffers.map(offer => ({
+      ...offer,
+      items: items.filter(item => item.offerId === offer.id),
+    }));
+  }
+
+  async getOffer(id: number): Promise<any> {
+    const offer = await db.select().from(offers).where(eq(offers.id, id)).limit(1);
+    if (!offer[0]) return undefined;
+    const items = await db.select().from(offerItems).where(eq(offerItems.offerId, id));
+    return { ...offer[0], items };
+  }
+
+  async createOffer(offer: InsertOffer): Promise<Offer> {
+    const result = await db.insert(offers).values(offer).returning();
+    return result[0];
+  }
+
+  async addOfferItem(item: InsertOfferItem): Promise<OfferItem> {
+    const result = await db.insert(offerItems).values(item).returning();
+    return result[0];
+  }
+
+  async deleteOffer(id: number): Promise<boolean> {
+    await db.delete(offerItems).where(eq(offerItems.offerId, id));
+    const result = await db.delete(offers).where(eq(offers.id, id)).returning();
+    return result.length > 0;
   }
 
   // Analytics

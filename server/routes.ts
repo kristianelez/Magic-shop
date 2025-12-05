@@ -405,6 +405,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Offers API
+  app.get("/api/offers", requireAuth, async (req, res) => {
+    try {
+      const offers = await storage.getOffers();
+      res.json(offers);
+    } catch (error) {
+      console.error("Error fetching offers:", error);
+      res.status(500).json({ error: "Failed to fetch offers" });
+    }
+  });
+
+  app.post("/api/offers", requireAuth, async (req, res) => {
+    try {
+      const { customerId, totalAmount, status } = req.body;
+      const offer = await storage.createOffer({
+        customerId,
+        totalAmount,
+        status: status || "draft",
+        salesPersonId: req.user?.id,
+      });
+      res.status(201).json(offer);
+    } catch (error) {
+      console.error("Error creating offer:", error);
+      res.status(500).json({ error: "Failed to create offer" });
+    }
+  });
+
+  app.post("/api/offers/items", requireAuth, async (req, res) => {
+    try {
+      const { offerId, productId, quantity, price, category } = req.body;
+      const item = await storage.addOfferItem({
+        offerId,
+        productId,
+        quantity,
+        price,
+        category,
+      });
+      res.status(201).json(item);
+    } catch (error) {
+      console.error("Error adding offer item:", error);
+      res.status(500).json({ error: "Failed to add offer item" });
+    }
+  });
+
+  app.delete("/api/offers/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteOffer(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Offer not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting offer:", error);
+      res.status(500).json({ error: "Failed to delete offer" });
+    }
+  });
+
   // AI Recommendations API (Hybrid: Local + OpenAI)
   app.get("/api/recommendations", requireAuth, async (req, res) => {
     try {
