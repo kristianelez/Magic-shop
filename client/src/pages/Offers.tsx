@@ -323,11 +323,11 @@ export default function Offers() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <Card>
+          <Card className="overflow-hidden">
             <CardHeader>
               <CardTitle>Kreiraj novu ponudu</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 overflow-x-hidden px-2 sm:px-6">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Odaberi kupca</label>
                 <Popover open={customerSearchOpen} onOpenChange={setCustomerSearchOpen}>
