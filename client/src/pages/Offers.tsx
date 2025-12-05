@@ -70,20 +70,23 @@ export default function Offers() {
       .sort((a, b) => b.totalSold - a.totalSold);
   }, [products, sales]);
 
-  const calculateItemTotal = (item: OfferItem) => {
-    const basePrice = parseFloat(item.price) * item.quantity;
-    const discountAmount = basePrice * (parseFloat(item.discount || "0") / 100);
-    return basePrice - discountAmount;
-  };
-
+  // VAŽNO: Cijene u bazi već UKLJUČUJU 17% PDV
+  // Cijena sa PDV-om = item.price (originalna cijena iz baze)
+  // Cijena bez PDV-a = item.price / 1.17
   const calculateItemWithPDV = (item: OfferItem) => {
-    const totalBezPDV = calculateItemTotal(item);
-    return totalBezPDV * (1 + PDV_RATE);
+    const priceSaPDV = parseFloat(item.price) * item.quantity;
+    const discountAmount = priceSaPDV * (parseFloat(item.discount || "0") / 100);
+    return priceSaPDV - discountAmount;
   };
 
-  const totalBezPDV = items.reduce((sum, item) => sum + calculateItemTotal(item), 0);
-  const pdvIznos = totalBezPDV * PDV_RATE;
-  const totalSaPDV = totalBezPDV + pdvIznos;
+  const calculateItemBezPDV = (item: OfferItem) => {
+    const totalSaPDV = calculateItemWithPDV(item);
+    return totalSaPDV / (1 + PDV_RATE);
+  };
+
+  const totalSaPDV = items.reduce((sum, item) => sum + calculateItemWithPDV(item), 0);
+  const totalBezPDV = totalSaPDV / (1 + PDV_RATE);
+  const pdvIznos = totalSaPDV - totalBezPDV;
 
   const createOfferMutation = useMutation({
     mutationFn: async () => {
@@ -205,18 +208,19 @@ export default function Offers() {
     doc.setFont("helvetica", "normal");
     yPos += 8;
     
-    let ukupnoBezPDV = 0;
+    let ukupnoSaPDV = 0;
     
+    // VAŽNO: Cijene u bazi već UKLJUČUJU 17% PDV
     (offer.items || []).forEach((item: any) => {
-      const price = parseFloat(item.price);
+      const price = parseFloat(item.price); // Cijena SA PDV-om
       const qty = item.quantity;
       const discount = parseFloat(item.discount || "0");
-      const baseTotal = price * qty;
+      const baseTotal = price * qty; // Ukupno SA PDV-om
       const discountAmount = baseTotal * (discount / 100);
-      const bezPDV = baseTotal - discountAmount;
-      const saPDV = bezPDV * (1 + PDV_RATE);
+      const saPDV = baseTotal - discountAmount; // Finalna cijena SA PDV-om (nakon popusta)
+      const bezPDV = saPDV / (1 + PDV_RATE); // Izvlačimo cijenu bez PDV-a
       
-      ukupnoBezPDV += bezPDV;
+      ukupnoSaPDV += saPDV;
       
       const productName = item.productName || products.find((p) => p.id === item.productId)?.name || "N/A";
       const shortName = productName.length > 30 ? productName.substring(0, 27) + "..." : productName;
@@ -236,8 +240,8 @@ export default function Offers() {
       }
     });
     
-    const pdvIznos = ukupnoBezPDV * PDV_RATE;
-    const ukupnoSaPDV = ukupnoBezPDV + pdvIznos;
+    const ukupnoBezPDV = ukupnoSaPDV / (1 + PDV_RATE);
+    const pdvIznos = ukupnoSaPDV - ukupnoBezPDV;
     
     yPos += 10;
     doc.line(20, yPos, 190, yPos);
@@ -429,7 +433,7 @@ export default function Offers() {
                               />
                             </td>
                             <td className="text-right p-2 font-medium">
-                              {calculateItemTotal(item).toFixed(2)}
+                              {calculateItemBezPDV(item).toFixed(2)}
                             </td>
                             <td className="text-right p-2 font-medium">
                               {calculateItemWithPDV(item).toFixed(2)}
