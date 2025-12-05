@@ -316,40 +316,42 @@ export default function Offers() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-hidden">
       <div>
         <h1 className="text-2xl font-semibold" data-testid="heading-offers">Ponude</h1>
         <p className="text-muted-foreground">Kreiraj i upravljaj ponudama</p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3 overflow-x-hidden">
         <div className="lg:col-span-2">
           <Card className="overflow-hidden">
             <CardHeader>
               <CardTitle>Kreiraj novu ponudu</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 overflow-x-hidden px-2 sm:px-6">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Odaberi kupca</label>
+              <div className="space-y-2 w-full min-w-0">
+                <Label className="text-xs sm:text-sm block truncate">Odaberi kupca</Label>
                 <Popover open={customerSearchOpen} onOpenChange={setCustomerSearchOpen}>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       role="combobox"
                       aria-expanded={customerSearchOpen}
-                      className="w-full justify-between"
+                      className="w-full justify-between truncate"
                       data-testid="select-customer"
                     >
-                      {selectedCustomer
-                        ? customers.find((c) => String(c.id) === selectedCustomer)?.name
-                        : "Odaberi kupca..."}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      <span className="truncate">
+                        {selectedCustomer
+                          ? customers.find((c) => String(c.id) === selectedCustomer)?.name
+                          : "Odaberi kupca..."}
+                      </span>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 flex-shrink-0" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[400px] p-0">
+                  <PopoverContent side="bottom" align="start" className="w-[90vw] sm:w-[400px] max-w-full p-0">
                     <Command>
                       <CommandInput placeholder="Pretrazi kupce..." data-testid="input-search-customer" />
-                      <CommandList>
+                      <CommandList className="max-h-40 overflow-y-auto">
                         <CommandEmpty>Nema pronadenih kupaca.</CommandEmpty>
                         <CommandGroup heading="Kupci">
                           {customers.map((customer: any) => (
@@ -373,28 +375,29 @@ export default function Offers() {
                 </Popover>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Dodaj artikle</label>
-                <div className="flex gap-2">
-                  <Popover open={productSearchOpen} onOpenChange={setProductSearchOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={productSearchOpen}
-                        className="flex-1 justify-between"
-                        data-testid="select-product"
-                      >
+              <div className="space-y-2 w-full min-w-0">
+                <Label className="text-xs sm:text-sm block truncate">Odaberi proizvod</Label>
+                <Popover open={productSearchOpen} onOpenChange={setProductSearchOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={productSearchOpen}
+                      className="w-full justify-between truncate"
+                      data-testid="select-product"
+                    >
+                      <span className="truncate">
                         {selectedProduct
                           ? products.find((p) => String(p.id) === selectedProduct)?.name
                           : "Odaberi proizvod..."}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[400px] p-0">
+                      </span>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 flex-shrink-0" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent side="bottom" align="start" className="w-[90vw] sm:w-[400px] max-w-full p-0">
                       <Command>
                         <CommandInput placeholder="Pretrazi proizvode..." data-testid="input-search-products" />
-                        <CommandList>
+                        <CommandList className="max-h-40 overflow-y-auto">
                           <CommandEmpty>Nema pronadenih proizvoda.</CommandEmpty>
                           <CommandGroup heading="Najprodavljiviji proizvodi">
                             {sortedProducts.slice(0, 10).map((product: any) => (
@@ -434,20 +437,29 @@ export default function Offers() {
                       </Command>
                     </PopoverContent>
                   </Popover>
-                  <Input
-                    type="number"
-                    placeholder="Kol."
-                    value={quantity}
-                    onChange={(e) => setQuantity(e.target.value)}
-                    className="w-20"
-                    min="1"
-                    data-testid="input-quantity"
-                  />
-                  <Button onClick={handleAddItem} data-testid="button-add-item">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
               </div>
+
+              <div className="space-y-2 w-full min-w-0">
+                <Label className="text-xs sm:text-sm block truncate">Količina</Label>
+                <Input
+                  type="number"
+                  placeholder="Unesite količinu"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  className="w-full text-xs sm:text-sm"
+                  min="1"
+                  data-testid="input-quantity"
+                />
+              </div>
+
+              <Button 
+                onClick={handleAddItem} 
+                className="w-full"
+                data-testid="button-add-item"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Dodaj artikal
+              </Button>
 
               {items.length > 0 && (
                 <div className="space-y-2">
