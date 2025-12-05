@@ -333,7 +333,7 @@ export default function CreateOrder() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle>Proizvodi</CardTitle>
             <Button
@@ -347,7 +347,7 @@ export default function CreateOrder() {
               Dodaj proizvod
             </Button>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 overflow-x-hidden px-2 sm:px-6">
             {orderItems.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">
                 Nema dodanih proizvoda. Kliknite "Dodaj proizvod" da započnete.
