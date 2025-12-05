@@ -299,10 +299,10 @@ export default function CreateOrder() {
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[90vw] sm:w-[400px] max-w-full p-0">
+                <PopoverContent side="bottom" align="start" className="w-[90vw] sm:w-[400px] max-w-full p-0">
                   <Command>
                     <CommandInput placeholder="Pretraži kupce..." data-testid="input-search-customer" />
-                    <CommandList className="max-h-48 overflow-y-auto">
+                    <CommandList className="max-h-40 overflow-y-auto">
                       <CommandEmpty>Nema pronađenih kupaca.</CommandEmpty>
                       <CommandGroup>
                         {customers.map((customer) => (
@@ -381,10 +381,10 @@ export default function CreateOrder() {
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-[90vw] sm:w-[400px] max-w-full p-0">
+                        <PopoverContent side="bottom" align="start" className="w-[90vw] sm:w-[400px] max-w-full p-0">
                           <Command>
                             <CommandInput placeholder="Pretraži proizvode..." data-testid={`input-search-product-${index}`} />
-                            <CommandList className="max-h-48 overflow-y-auto">
+                            <CommandList className="max-h-40 overflow-y-auto">
                               <CommandEmpty>Nema pronađenih proizvoda.</CommandEmpty>
                               
                               {topProducts.length > 0 && (
