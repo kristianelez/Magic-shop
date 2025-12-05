@@ -17,8 +17,11 @@ interface OrderItem {
   productName: string;
   quantity: number;
   price: string;
+  discount: string;
   total: number;
 }
+
+const PDV_RATE = 0.17;
 
 export default function CreateOrder() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
@@ -104,6 +107,7 @@ export default function CreateOrder() {
           productName: firstProduct.name,
           quantity: 1,
           price: firstProduct.price,
+          discount: "0",
           total: parseFloat(firstProduct.price),
         },
       ]);
@@ -112,6 +116,12 @@ export default function CreateOrder() {
 
   const removeOrderItem = (index: number) => {
     setOrderItems(orderItems.filter((_, i) => i !== index));
+  };
+
+  const calculateItemTotal = (item: OrderItem) => {
+    const baseTotal = parseFloat(item.price) * item.quantity;
+    const discountAmount = baseTotal * (parseFloat(item.discount || "0") / 100);
+    return baseTotal - discountAmount;
   };
 
   const updateOrderItem = (index: number, field: keyof OrderItem, value: any) => {
@@ -124,7 +134,7 @@ export default function CreateOrder() {
         newItems[index].productId = product.id;
         newItems[index].productName = product.name;
         newItems[index].price = product.price;
-        newItems[index].total = parseFloat(product.price) * newItems[index].quantity;
+        newItems[index].total = calculateItemTotal({ ...newItems[index], price: product.price });
       }
     } else if (field === "quantity") {
       // Allow empty string while typing
@@ -135,8 +145,11 @@ export default function CreateOrder() {
         const parsedQty = parseInt(value);
         const qty = isNaN(parsedQty) || parsedQty < 1 ? 1 : parsedQty;
         newItems[index].quantity = qty;
-        newItems[index].total = parseFloat(newItems[index].price) * qty;
+        newItems[index].total = calculateItemTotal({ ...newItems[index], quantity: qty });
       }
+    } else if (field === "discount") {
+      newItems[index].discount = value || "0";
+      newItems[index].total = calculateItemTotal(newItems[index]);
     }
 
     setOrderItems(newItems);
@@ -149,7 +162,7 @@ export default function CreateOrder() {
     // If empty or invalid, set to 1
     if (typeof currentQty === "string" || currentQty === null || currentQty === undefined || currentQty < 1) {
       newItems[index].quantity = 1;
-      newItems[index].total = parseFloat(newItems[index].price) * 1;
+      newItems[index].total = calculateItemTotal(newItems[index]);
       setOrderItems(newItems);
     }
   };
@@ -340,40 +353,71 @@ export default function CreateOrder() {
                 Nema dodanih proizvoda. Kliknite "Dodaj proizvod" da započnete.
               </p>
             ) : (
-              orderItems.map((item, index) => (
+              orderItems.map((item, index) => {
+                const itemTotal = calculateItemTotal(item);
+                const itemWithoutVAT = itemTotal / (1 + PDV_RATE);
+                return (
                 <div
                   key={index}
-                  className="grid gap-4 grid-cols-1 sm:grid-cols-[2fr_1fr] md:grid-cols-[2fr_1fr_1fr_1fr_auto] items-end p-4 border rounded-lg"
+                  className="space-y-3 p-4 border rounded-lg"
                   data-testid={`order-item-${index}`}
                 >
-                  <div>
-                    <Label>Proizvod</Label>
-                    <Popover 
-                      open={productSearchOpen[index] || false} 
-                      onOpenChange={(open) => setProductSearchOpen({ ...productSearchOpen, [index]: open })}
-                    >
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          aria-expanded={productSearchOpen[index] || false}
-                          className="w-full justify-between"
-                          data-testid={`select-product-${index}`}
-                        >
-                          {item.productName}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[400px] p-0">
-                        <Command>
-                          <CommandInput placeholder="Pretraži proizvode..." data-testid={`input-search-product-${index}`} />
-                          <CommandList>
-                            <CommandEmpty>Nema pronađenih proizvoda.</CommandEmpty>
-                            
-                            {/* Top 10 Suggested Products */}
-                            {topProducts.length > 0 && (
-                              <CommandGroup heading="Preporučeni proizvodi (Top 10)">
-                                {topProducts.map((product) => (
+                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-[2fr_1fr_1fr_1fr_auto] items-end">
+                    <div>
+                      <Label>Proizvod</Label>
+                      <Popover 
+                        open={productSearchOpen[index] || false} 
+                        onOpenChange={(open) => setProductSearchOpen({ ...productSearchOpen, [index]: open })}
+                      >
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={productSearchOpen[index] || false}
+                            className="w-full justify-between"
+                            data-testid={`select-product-${index}`}
+                          >
+                            {item.productName}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[400px] p-0">
+                          <Command>
+                            <CommandInput placeholder="Pretraži proizvode..." data-testid={`input-search-product-${index}`} />
+                            <CommandList>
+                              <CommandEmpty>Nema pronađenih proizvoda.</CommandEmpty>
+                              
+                              {topProducts.length > 0 && (
+                                <CommandGroup heading="Preporučeni proizvodi (Top 10)">
+                                  {topProducts.map((product) => (
+                                    <CommandItem
+                                      key={product.id}
+                                      value={product.name}
+                                      onSelect={() => {
+                                        updateOrderItem(index, "productId", String(product.id));
+                                        setProductSearchOpen({ ...productSearchOpen, [index]: false });
+                                      }}
+                                      data-testid={`product-option-${index}-${product.id}`}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          item.productId === product.id ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      <div className="flex-1">
+                                        <div>{product.name}</div>
+                                        <div className="text-xs text-muted-foreground">
+                                          Prodano: {product.totalSold} | Cijena: {product.price} KM
+                                        </div>
+                                      </div>
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              )}
+                              
+                              <CommandGroup heading="Svi proizvodi">
+                                {products.map((product) => (
                                   <CommandItem
                                     key={product.id}
                                     value={product.name}
@@ -381,7 +425,7 @@ export default function CreateOrder() {
                                       updateOrderItem(index, "productId", String(product.id));
                                       setProductSearchOpen({ ...productSearchOpen, [index]: false });
                                     }}
-                                    data-testid={`product-option-${index}-${product.id}`}
+                                    data-testid={`all-products-option-${index}-${product.id}`}
                                   >
                                     <Check
                                       className={cn(
@@ -392,93 +436,83 @@ export default function CreateOrder() {
                                     <div className="flex-1">
                                       <div>{product.name}</div>
                                       <div className="text-xs text-muted-foreground">
-                                        Prodano: {product.totalSold} | Cijena: {product.price} KM
+                                        {product.category} | Cijena: {product.price} KM
                                       </div>
                                     </div>
                                   </CommandItem>
                                 ))}
                               </CommandGroup>
-                            )}
-                            
-                            {/* All Products */}
-                            <CommandGroup heading="Svi proizvodi">
-                              {products.map((product) => (
-                                <CommandItem
-                                  key={product.id}
-                                  value={product.name}
-                                  onSelect={() => {
-                                    updateOrderItem(index, "productId", String(product.id));
-                                    setProductSearchOpen({ ...productSearchOpen, [index]: false });
-                                  }}
-                                  data-testid={`all-products-option-${index}-${product.id}`}
-                                >
-                                  <Check
-                                    className={cn(
-                                      "mr-2 h-4 w-4",
-                                      item.productId === product.id ? "opacity-100" : "opacity-0"
-                                    )}
-                                  />
-                                  <div className="flex-1">
-                                    <div>{product.name}</div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {product.category} | Cijena: {product.price} KM
-                                    </div>
-                                  </div>
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    <div>
+                      <Label>Cijena (KM)</Label>
+                      <Input
+                        type="text"
+                        value={item.price}
+                        readOnly
+                        className="bg-muted"
+                        data-testid={`input-price-${index}`}
+                      />
+                    </div>
+
+                    <div>
+                      <Label>Količina</Label>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={item.quantity}
+                        onChange={(e) => updateOrderItem(index, "quantity", e.target.value)}
+                        onBlur={() => handleQuantityBlur(index)}
+                        data-testid={`input-quantity-${index}`}
+                      />
+                    </div>
+
+                    <div>
+                      <Label>Rabat %</Label>
+                      <Input
+                        type="number"
+                        value={item.discount}
+                        onChange={(e) => updateOrderItem(index, "discount", e.target.value)}
+                        className="w-full"
+                        min="0"
+                        max="100"
+                        data-testid={`input-discount-${index}`}
+                      />
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeOrderItem(index)}
+                      data-testid={`button-remove-item-${index}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
                   </div>
 
-                  <div>
-                    <Label>Cijena (KM)</Label>
-                    <Input
-                      type="text"
-                      value={item.price}
-                      readOnly
-                      className="bg-muted"
-                      data-testid={`input-price-${index}`}
-                    />
+                  <div className="grid gap-2 grid-cols-3 text-sm pt-2 border-t">
+                    <div>
+                      <span className="text-muted-foreground">Bez PDV:</span>
+                      <p className="font-semibold">{itemWithoutVAT.toFixed(2)} KM</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">PDV (17%):</span>
+                      <p className="font-semibold">{(itemTotal - itemWithoutVAT).toFixed(2)} KM</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Sa PDV:</span>
+                      <p className="font-semibold text-lg">{itemTotal.toFixed(2)} KM</p>
+                    </div>
                   </div>
-
-                  <div>
-                    <Label>Količina</Label>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={item.quantity}
-                      onChange={(e) => updateOrderItem(index, "quantity", e.target.value)}
-                      onBlur={() => handleQuantityBlur(index)}
-                      data-testid={`input-quantity-${index}`}
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Ukupno (KM)</Label>
-                    <Input
-                      type="text"
-                      value={item.total.toFixed(2)}
-                      readOnly
-                      className="bg-muted font-semibold"
-                      data-testid={`input-total-${index}`}
-                    />
-                  </div>
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeOrderItem(index)}
-                    data-testid={`button-remove-item-${index}`}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
                 </div>
-              ))
+              );
+              })
             )}
           </CardContent>
         </Card>
