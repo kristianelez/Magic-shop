@@ -28,34 +28,36 @@ interface AIRecommendation {
 }
 
 export default function Dashboard() {
+  // Critical path - load these first
   const { data: customers = [], isLoading: customersLoading } = useQuery<CustomerWithStats[]>({
     queryKey: ["/api/customers"],
-    queryFn: getQueryFn({ on401: "throw" }),
-  });
-
-  const { data: sales = [], isLoading: salesLoading } = useQuery<Sale[]>({
-    queryKey: ["/api/sales"],
-    queryFn: getQueryFn({ on401: "throw" }),
+    staleTime: 30 * 60 * 1000,
   });
 
   const { data: activities = [], isLoading: activitiesLoading } = useQuery<Activity[]>({
     queryKey: ["/api/activities"],
-    queryFn: getQueryFn({ on401: "throw" }),
+    staleTime: 30 * 60 * 1000,
   });
 
-  const { data: aiRecommendations = [], isLoading: recommendationsLoading } = useQuery<AIRecommendation[]>({
-    queryKey: ["/api/recommendations"],
-    queryFn: getQueryFn({ on401: "throw" }),
-    staleTime: 5 * 60 * 1000, // Cache for 5 min
+  // Secondary - load in background without blocking
+  const { data: sales = [] } = useQuery<Sale[]>({
+    queryKey: ["/api/sales"],
+    staleTime: 30 * 60 * 1000,
   });
 
   const { data: products = [] } = useQuery<any[]>({
     queryKey: ["/api/products"],
-    queryFn: getQueryFn({ on401: "throw" }),
+    staleTime: 30 * 60 * 1000,
   });
 
-  // Load main data first, recommendations separately
-  const isLoading = customersLoading || salesLoading || activitiesLoading;
+  // Lazy load recommendations - don't block render
+  const { data: aiRecommendations = [] } = useQuery<AIRecommendation[]>({
+    queryKey: ["/api/recommendations"],
+    staleTime: 30 * 60 * 1000,
+  });
+
+  // Only wait for critical data
+  const isLoading = customersLoading || activitiesLoading;
 
   // Calculate current month's sales
   const now = new Date();

@@ -22,8 +22,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const { data, isLoading } = useQuery<{ user: User }>({
     queryKey: ["/api/auth/me"],
-    retry: false,
+    retry: 0,
     refetchOnWindowFocus: false,
+    staleTime: 30 * 60 * 1000, // Cache 30 min
   });
 
   const user = data?.user || null;
