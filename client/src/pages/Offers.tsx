@@ -213,19 +213,19 @@ export default function Offers() {
     // Tabela - zaglavlje
     let yPos = 100;
     doc.setFillColor(240, 240, 240);
-    doc.rect(20, yPos - 5, 170, 8, "F");
+    doc.rect(15, yPos - 5, 180, 8, "F");
     
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.text("Artikal", 22, yPos);
-    doc.text("Kol.", 90, yPos, { align: "center" });
-    doc.text("Cijena", 110, yPos, { align: "center" });
-    doc.text("Rabat", 130, yPos, { align: "center" });
-    doc.text("Bez PDV", 155, yPos, { align: "center" });
-    doc.text("Sa PDV", 180, yPos, { align: "center" });
+    doc.setFontSize(9);
+    doc.text("Artikal", 17, yPos);
+    doc.text("Kol.", 72, yPos);
+    doc.text("Cijena", 88, yPos);
+    doc.text("Rabat", 112, yPos);
+    doc.text("Bez PDV", 138, yPos);
+    doc.text("Sa PDV", 170, yPos);
     
     doc.setFont("helvetica", "normal");
-    yPos += 10;
+    yPos += 8;
     
     let ukupnoSaPDV = 0;
     
@@ -242,19 +242,44 @@ export default function Offers() {
       ukupnoSaPDV += saPDV;
       
       const productName = item.productName || products.find((p) => p.id === item.productId)?.name || "N/A";
-      const shortName = productName.length > 35 ? productName.substring(0, 32) + "..." : productName;
       
-      // Svi podaci u istom fontu
+      // Razbij dugacak naziv u vise redova (max 28 karaktera po redu)
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.text(shortName, 22, yPos);
-      doc.text(String(qty), 90, yPos, { align: "center" });
-      doc.text(`${price.toFixed(2)}`, 110, yPos, { align: "center" });
-      doc.text(`${discount.toFixed(0)}%`, 130, yPos, { align: "center" });
-      doc.text(`${bezPDV.toFixed(2)}`, 155, yPos, { align: "center" });
-      doc.text(`${saPDV.toFixed(2)}`, 180, yPos, { align: "center" });
+      doc.setFontSize(9);
       
-      yPos += 7;
+      const maxChars = 28;
+      let nameLines: string[] = [];
+      if (productName.length > maxChars) {
+        let remaining = productName;
+        while (remaining.length > 0) {
+          if (remaining.length <= maxChars) {
+            nameLines.push(remaining);
+            break;
+          }
+          let breakPoint = remaining.lastIndexOf(" ", maxChars);
+          if (breakPoint === -1) breakPoint = maxChars;
+          nameLines.push(remaining.substring(0, breakPoint));
+          remaining = remaining.substring(breakPoint).trim();
+        }
+      } else {
+        nameLines = [productName];
+      }
+      
+      // Prvi red sa svim podacima
+      doc.text(nameLines[0], 17, yPos);
+      doc.text(String(qty), 72, yPos);
+      doc.text(`${price.toFixed(2)}`, 88, yPos);
+      doc.text(`${discount.toFixed(0)}%`, 112, yPos);
+      doc.text(`${bezPDV.toFixed(2)}`, 138, yPos);
+      doc.text(`${saPDV.toFixed(2)}`, 170, yPos);
+      
+      // Dodatni redovi za dugacak naziv
+      for (let i = 1; i < nameLines.length; i++) {
+        yPos += 5;
+        doc.text(nameLines[i], 17, yPos);
+      }
+      
+      yPos += 6;
       
       if (yPos > 270) {
         doc.addPage();
@@ -267,24 +292,24 @@ export default function Offers() {
     
     // Linija iznad totala
     yPos += 5;
-    doc.line(20, yPos, 190, yPos);
-    yPos += 10;
+    doc.line(15, yPos, 195, yPos);
+    yPos += 8;
     
-    // Totali - ujednačeno formatirani
+    // Totali - poravnati sa kolonama
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(11);
-    doc.text("Ukupno bez PDV:", 120, yPos);
-    doc.text(`${ukupnoBezPDV.toFixed(2)} KM`, 180, yPos, { align: "center" });
+    doc.setFontSize(10);
+    doc.text("Ukupno bez PDV:", 100, yPos);
+    doc.text(`${ukupnoBezPDV.toFixed(2)} KM`, 170, yPos);
     
-    yPos += 7;
-    doc.text("PDV (17%):", 120, yPos);
-    doc.text(`${pdvIznos.toFixed(2)} KM`, 180, yPos, { align: "center" });
+    yPos += 6;
+    doc.text("PDV (17%):", 100, yPos);
+    doc.text(`${pdvIznos.toFixed(2)} KM`, 170, yPos);
     
-    yPos += 10;
+    yPos += 8;
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.text("UKUPNO SA PDV:", 120, yPos);
-    doc.text(`${ukupnoSaPDV.toFixed(2)} KM`, 180, yPos, { align: "center" });
+    doc.setFontSize(11);
+    doc.text("UKUPNO SA PDV:", 100, yPos);
+    doc.text(`${ukupnoSaPDV.toFixed(2)} KM`, 170, yPos);
     
     doc.save(`Ponuda_${offer.id}_${customer?.name || "kupac"}.pdf`);
   };
