@@ -215,13 +215,13 @@ export default function Orders() {
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Users className="h-4 w-4 text-muted-foreground" />
-                          <h3 className="font-semibold" data-testid={`customer-name-${order.id}`}>
+                        <div className="flex items-center gap-2 mb-1 min-w-0">
+                          <Users className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <h3 className="font-semibold truncate" data-testid={`customer-name-${order.id}`}>
                             {order.customerName}
                           </h3>
                         </div>
-                        <p className="text-sm text-muted-foreground">{order.customerCompany}</p>
+                        <p className="text-sm text-muted-foreground truncate">{order.customerCompany}</p>
                         <div className="flex items-center gap-2 mt-2">
                           <Calendar className="h-3 w-3 text-muted-foreground" />
                           <p className="text-xs text-muted-foreground" data-testid={`order-date-${order.id}`}>
@@ -280,7 +280,7 @@ export default function Orders() {
                       <TableBody>
                         {order.items.map((item, idx) => (
                           <TableRow key={idx} data-testid={`order-item-${order.id}-${idx}`}>
-                            <TableCell className="font-medium">{item.productName}</TableCell>
+                            <TableCell className="font-medium truncate max-w-[200px]">{item.productName}</TableCell>
                             <TableCell className="text-right">{item.quantity}</TableCell>
                             <TableCell className="text-right">{item.price} KM</TableCell>
                             <TableCell className="text-right font-semibold">{item.total} KM</TableCell>
@@ -334,9 +334,9 @@ export default function Orders() {
               {selectedOrderForDelete && selectedOrderForDelete.items.length > 0 && (
                 <div className="mt-3 space-y-1">
                   <p className="font-medium text-foreground">Stavke u narudžbi:</p>
-                  <ul className="text-xs text-foreground space-y-1">
+                  <ul className="text-xs text-foreground space-y-1 break-words">
                     {selectedOrderForDelete.items.map((item, idx) => (
-                      <li key={idx}>• {item.productName} x {item.quantity}</li>
+                      <li key={idx} className="truncate">• {item.productName} x {item.quantity}</li>
                     ))}
                   </ul>
                 </div>

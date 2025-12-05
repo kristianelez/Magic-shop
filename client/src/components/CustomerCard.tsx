@@ -91,15 +91,15 @@ export function CustomerCard({
   return (
     <Card className="hover-elevate" data-testid={`card-customer-${id}`}>
       <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-3">
-        <div className="flex items-center gap-3">
-          <Avatar>
+        <div className="flex items-center gap-3 min-w-0">
+          <Avatar className="flex-shrink-0">
             <AvatarFallback className="bg-primary text-primary-foreground">
               {getInitials(name)}
             </AvatarFallback>
           </Avatar>
-          <div>
-            <h3 className="font-semibold text-base" data-testid="text-customer-name">{name}</h3>
-            <p className="text-sm text-muted-foreground">{company}</p>
+          <div className="min-w-0">
+            <h3 className="font-semibold text-base truncate" data-testid="text-customer-name">{name}</h3>
+            <p className="text-sm text-muted-foreground truncate">{company}</p>
             {customerType && customerType !== "ostalo" && (
               <p className="text-xs text-muted-foreground mt-1">
                 {customerTypeLabels[customerType]}

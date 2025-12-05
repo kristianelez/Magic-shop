@@ -134,9 +134,9 @@ export default function Sales() {
                   className="flex items-center justify-between p-3 rounded-md border border-border hover-elevate"
                   data-testid={`sale-${sale.id}`}
                 >
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{sale.customer}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{sale.product}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{sale.customer}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate">{sale.product}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">{sale.date}</p>
                   </div>
                   <div className="text-right flex flex-col items-end gap-1">
@@ -163,9 +163,9 @@ export default function Sales() {
             ) : (
               <div className="space-y-4">
                 {topProducts.map((product, idx) => (
-                  <div key={idx} className="space-y-2" data-testid={`top-product-${idx}`}>
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm">{product.name}</span>
+                  <div key={idx} className="space-y-2 min-w-0" data-testid={`top-product-${idx}`}>
+                    <div className="flex items-center justify-between min-w-0 gap-2">
+                      <span className="font-medium text-sm truncate">{product.name}</span>
                       <span className="text-sm font-semibold text-primary">
                         {product.revenue.toFixed(2)} KM
                       </span>

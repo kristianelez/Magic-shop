@@ -17,12 +17,12 @@ export function ProductCard({ id, name, category, price, stock, unit }: ProductC
 
   return (
     <Card className="hover-elevate" data-testid={`card-product-${id}`}>
-      <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-3">
-        <div className="flex-1">
-          <CardTitle className="text-base font-semibold line-clamp-2" data-testid="text-product-name">
+      <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-3 min-w-0">
+        <div className="flex-1 min-w-0">
+          <CardTitle className="text-base font-semibold line-clamp-2 truncate" data-testid="text-product-name">
             {name}
           </CardTitle>
-          <p className="text-xs text-muted-foreground mt-1">{category}</p>
+          <p className="text-xs text-muted-foreground mt-1 truncate">{category}</p>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
