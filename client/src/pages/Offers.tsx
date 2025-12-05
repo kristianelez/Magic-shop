@@ -1,18 +1,14 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Plus, Trash2, Search } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Plus, Trash2, ChevronsUpDown } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import type { Customer, Product, Sale } from "@shared/schema";
 
 interface OfferItem {
@@ -39,7 +35,7 @@ export default function Offers() {
   const [items, setItems] = useState<OfferItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [quantity, setQuantity] = useState("1");
-  const [productSearch, setProductSearch] = useState<string>("");
+  const [productSearchOpen, setProductSearchOpen] = useState(false);
 
   const { data: customers = [] } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
@@ -58,18 +54,16 @@ export default function Offers() {
   });
 
   // Sortiraj proizvode po broju prodaja (najprodavljiviji prvi)
-  const sortedProducts = [...products]
-    .sort((a: any, b: any) => {
-      const aSales = sales.filter((s: any) => s.productId === a.id).length;
-      const bSales = sales.filter((s: any) => s.productId === b.id).length;
-      return bSales - aSales;
-    })
-    .filter((p: any) =>
-      productSearch === ""
-        ? true
-        : p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-          p.category.toLowerCase().includes(productSearch.toLowerCase())
-    );
+  const sortedProducts = useMemo(() => {
+    const productSales: { [key: number]: number } = {};
+    sales.forEach((sale) => {
+      productSales[sale.productId] = (productSales[sale.productId] || 0) + sale.quantity;
+    });
+    
+    return [...products]
+      .map((p) => ({ ...p, totalSold: productSales[p.id] || 0 }))
+      .sort((a, b) => b.totalSold - a.totalSold);
+  }, [products, sales]);
 
   const createOfferMutation = useMutation({
     mutationFn: async () => {
@@ -125,7 +119,7 @@ export default function Offers() {
   const handleAddItem = () => {
     if (!selectedProduct || !quantity) return;
 
-    const product = sortedProducts.find((p: any) => p.id === parseInt(selectedProduct));
+    const product = products.find((p: any) => p.id === parseInt(selectedProduct));
     if (!product) return;
 
     const newItem: OfferItem = {
@@ -139,6 +133,7 @@ export default function Offers() {
     setItems([...items, newItem]);
     setSelectedProduct("");
     setQuantity("1");
+    setProductSearchOpen(false);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -166,48 +161,107 @@ export default function Offers() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Odaberi kupca</label>
-                <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
-                  <SelectTrigger data-testid="select-customer">
-                    <SelectValue placeholder="Odaberi kupca..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers.map((c: any) => (
-                      <SelectItem key={c.id} value={c.id.toString()}>
-                        {c.name} - {c.company}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between"
+                      data-testid="select-customer"
+                    >
+                      {selectedCustomer
+                        ? customers.find((c) => String(c.id) === selectedCustomer)?.name
+                        : "Odaberi kupca..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[400px] p-0">
+                    <Command>
+                      <CommandInput placeholder="Pretraži kupce..." data-testid="input-search-customer" />
+                      <CommandList>
+                        <CommandEmpty>Nema pronađenih kupaca.</CommandEmpty>
+                        <CommandGroup heading="Kupci">
+                          {customers.map((customer: any) => (
+                            <CommandItem
+                              key={customer.id}
+                              value={`${customer.name} ${customer.company}`}
+                              onSelect={() => {
+                                setSelectedCustomer(String(customer.id));
+                              }}
+                              data-testid={`customer-item-${customer.id}`}
+                            >
+                              <span>{customer.name}</span>
+                              <span className="text-xs text-muted-foreground ml-2">({customer.company})</span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Dodaj artikle</label>
-                <div className="relative mb-2">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Pretraži proizvode..."
-                    className="pl-9"
-                    value={productSearch}
-                    onChange={(e) => setProductSearch(e.target.value)}
-                    data-testid="input-search-products"
-                  />
-                </div>
                 <div className="flex gap-2">
-                  <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                    <SelectTrigger className="flex-1" data-testid="select-product">
-                      <SelectValue placeholder="Odaberi proizvod..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sortedProducts.map((p: any) => {
-                        const pSales = sales.filter((s: any) => s.productId === p.id).length;
-                        return (
-                          <SelectItem key={p.id} value={p.id.toString()}>
-                            {p.name} ({p.category}) {pSales > 0 && `- ${pSales} prodaja`}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={productSearchOpen} onOpenChange={setProductSearchOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={productSearchOpen}
+                        className="flex-1 justify-between"
+                        data-testid="select-product"
+                      >
+                        {selectedProduct
+                          ? products.find((p) => String(p.id) === selectedProduct)?.name
+                          : "Odaberi proizvod..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[400px] p-0">
+                      <Command>
+                        <CommandInput placeholder="Pretraži proizvode..." data-testid="input-search-products" />
+                        <CommandList>
+                          <CommandEmpty>Nema pronađenih proizvoda.</CommandEmpty>
+                          <CommandGroup heading="Najprodavljiviji proizvodi">
+                            {sortedProducts.slice(0, 10).map((product: any) => (
+                              <CommandItem
+                                key={product.id}
+                                value={`${product.name} ${product.category}`}
+                                onSelect={() => {
+                                  setSelectedProduct(String(product.id));
+                                  setProductSearchOpen(false);
+                                }}
+                                data-testid={`product-item-${product.id}`}
+                              >
+                                <span>{product.name}</span>
+                                <span className="text-xs text-muted-foreground ml-2">
+                                  ({product.category}) {product.totalSold > 0 && `${product.totalSold} kom`}
+                                </span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                          <CommandGroup heading="Svi proizvodi">
+                            {sortedProducts.slice(10).map((product: any) => (
+                              <CommandItem
+                                key={product.id}
+                                value={`${product.name} ${product.category}`}
+                                onSelect={() => {
+                                  setSelectedProduct(String(product.id));
+                                  setProductSearchOpen(false);
+                                }}
+                                data-testid={`product-item-${product.id}`}
+                              >
+                                <span>{product.name}</span>
+                                <span className="text-xs text-muted-foreground ml-2">({product.category})</span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   <Input
                     type="number"
                     placeholder="Kol."
