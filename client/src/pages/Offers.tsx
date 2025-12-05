@@ -42,6 +42,7 @@ export default function Offers() {
   const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [quantity, setQuantity] = useState("1");
   const [productSearchOpen, setProductSearchOpen] = useState(false);
+  const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
 
   const { data: customers = [] } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
@@ -175,62 +176,83 @@ export default function Offers() {
     const customer = customers.find((c) => c.id === offer.customerId);
     const doc = new jsPDF();
     
-    doc.setFontSize(20);
+    // Naslov
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
     doc.text("PONUDA", 105, 20, { align: "center" });
     
-    doc.setFontSize(12);
+    // Broj ponude i datum
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
     doc.text(`Broj ponude: ${offer.id}`, 20, 35);
     doc.text(`Datum: ${format(new Date(offer.createdAt), "dd.MM.yyyy")}`, 20, 42);
     
-    doc.setFontSize(14);
+    // Podaci o kupcu - naslov
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
     doc.text("Podaci o kupcu:", 20, 55);
+    
+    // Podaci o kupcu - sadrzaj
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(11);
     doc.text(`Naziv: ${customer?.name || "N/A"}`, 20, 63);
     doc.text(`Kompanija: ${customer?.company || "N/A"}`, 20, 70);
     if (customer?.phone) doc.text(`Telefon: ${customer.phone}`, 20, 77);
     if (customer?.email) doc.text(`Email: ${customer.email}`, 20, 84);
     
-    doc.setFontSize(14);
+    // Komercijalista - naslov
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
     doc.text("Komercijalista:", 120, 55);
+    
+    // Komercijalista - ime (isti font kao ostali podaci)
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(11);
     doc.text(`${user?.fullName || "N/A"}`, 120, 63);
     
+    // Tabela - zaglavlje
     let yPos = 100;
-    doc.setFontSize(10);
+    doc.setFillColor(240, 240, 240);
+    doc.rect(20, yPos - 5, 170, 8, "F");
+    
     doc.setFont("helvetica", "bold");
-    doc.text("Artikal", 20, yPos);
-    doc.text("Kol.", 85, yPos);
-    doc.text("Cijena", 100, yPos);
-    doc.text("Rabat %", 125, yPos);
-    doc.text("Bez PDV", 150, yPos);
-    doc.text("Sa PDV", 175, yPos);
+    doc.setFontSize(10);
+    doc.text("Artikal", 22, yPos);
+    doc.text("Kol.", 90, yPos, { align: "center" });
+    doc.text("Cijena", 110, yPos, { align: "center" });
+    doc.text("Rabat", 130, yPos, { align: "center" });
+    doc.text("Bez PDV", 155, yPos, { align: "center" });
+    doc.text("Sa PDV", 180, yPos, { align: "center" });
     
     doc.setFont("helvetica", "normal");
-    yPos += 8;
+    yPos += 10;
     
     let ukupnoSaPDV = 0;
     
     // VAŽNO: Cijene u bazi već UKLJUČUJU 17% PDV
     (offer.items || []).forEach((item: any) => {
-      const price = parseFloat(item.price); // Cijena SA PDV-om
+      const price = parseFloat(item.price);
       const qty = item.quantity;
       const discount = parseFloat(item.discount || "0");
-      const baseTotal = price * qty; // Ukupno SA PDV-om
+      const baseTotal = price * qty;
       const discountAmount = baseTotal * (discount / 100);
-      const saPDV = baseTotal - discountAmount; // Finalna cijena SA PDV-om (nakon popusta)
-      const bezPDV = saPDV / (1 + PDV_RATE); // Izvlačimo cijenu bez PDV-a
+      const saPDV = baseTotal - discountAmount;
+      const bezPDV = saPDV / (1 + PDV_RATE);
       
       ukupnoSaPDV += saPDV;
       
       const productName = item.productName || products.find((p) => p.id === item.productId)?.name || "N/A";
-      const shortName = productName.length > 30 ? productName.substring(0, 27) + "..." : productName;
+      const shortName = productName.length > 35 ? productName.substring(0, 32) + "..." : productName;
       
-      doc.text(shortName, 20, yPos);
-      doc.text(String(qty), 85, yPos);
-      doc.text(`${price.toFixed(2)}`, 100, yPos);
-      doc.text(`${discount.toFixed(0)}%`, 125, yPos);
-      doc.text(`${bezPDV.toFixed(2)}`, 150, yPos);
-      doc.text(`${saPDV.toFixed(2)}`, 175, yPos);
+      // Svi podaci u istom fontu
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text(shortName, 22, yPos);
+      doc.text(String(qty), 90, yPos, { align: "center" });
+      doc.text(`${price.toFixed(2)}`, 110, yPos, { align: "center" });
+      doc.text(`${discount.toFixed(0)}%`, 130, yPos, { align: "center" });
+      doc.text(`${bezPDV.toFixed(2)}`, 155, yPos, { align: "center" });
+      doc.text(`${saPDV.toFixed(2)}`, 180, yPos, { align: "center" });
       
       yPos += 7;
       
@@ -243,22 +265,26 @@ export default function Offers() {
     const ukupnoBezPDV = ukupnoSaPDV / (1 + PDV_RATE);
     const pdvIznos = ukupnoSaPDV - ukupnoBezPDV;
     
-    yPos += 10;
+    // Linija iznad totala
+    yPos += 5;
     doc.line(20, yPos, 190, yPos);
-    yPos += 8;
+    yPos += 10;
     
-    doc.setFont("helvetica", "bold");
+    // Totali - ujednačeno formatirani
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
     doc.text("Ukupno bez PDV:", 120, yPos);
-    doc.text(`${ukupnoBezPDV.toFixed(2)} KM`, 175, yPos);
+    doc.text(`${ukupnoBezPDV.toFixed(2)} KM`, 180, yPos, { align: "center" });
     
     yPos += 7;
-    doc.text(`PDV (17%):`, 120, yPos);
-    doc.text(`${pdvIznos.toFixed(2)} KM`, 175, yPos);
+    doc.text("PDV (17%):", 120, yPos);
+    doc.text(`${pdvIznos.toFixed(2)} KM`, 180, yPos, { align: "center" });
     
-    yPos += 7;
+    yPos += 10;
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.text("UKUPNO SA PDV:", 120, yPos);
-    doc.text(`${ukupnoSaPDV.toFixed(2)} KM`, 175, yPos);
+    doc.text(`${ukupnoSaPDV.toFixed(2)} KM`, 180, yPos, { align: "center" });
     
     doc.save(`Ponuda_${offer.id}_${customer?.name || "kupac"}.pdf`);
   };
@@ -279,11 +305,12 @@ export default function Offers() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Odaberi kupca</label>
-                <Popover>
+                <Popover open={customerSearchOpen} onOpenChange={setCustomerSearchOpen}>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       role="combobox"
+                      aria-expanded={customerSearchOpen}
                       className="w-full justify-between"
                       data-testid="select-customer"
                     >
@@ -305,6 +332,7 @@ export default function Offers() {
                               value={`${customer.name} ${customer.company}`}
                               onSelect={() => {
                                 setSelectedCustomer(String(customer.id));
+                                setCustomerSearchOpen(false);
                               }}
                               data-testid={`customer-item-${customer.id}`}
                             >
