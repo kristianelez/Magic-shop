@@ -362,9 +362,9 @@ export default function CreateOrder() {
                   className="space-y-3 p-4 border rounded-lg"
                   data-testid={`order-item-${index}`}
                 >
-                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-[2fr_1fr_1fr_1fr_auto] items-end">
+                  <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-[2fr_1fr_1fr_1fr_auto] items-end">
                     <div>
-                      <Label>Proizvod</Label>
+                      <Label className="text-xs sm:text-sm">Proizvod</Label>
                       <Popover 
                         open={productSearchOpen[index] || false} 
                         onOpenChange={(open) => setProductSearchOpen({ ...productSearchOpen, [index]: open })}
@@ -381,7 +381,7 @@ export default function CreateOrder() {
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-[400px] p-0">
+                        <PopoverContent className="w-full sm:w-[400px] p-0">
                           <Command>
                             <CommandInput placeholder="Pretraži proizvode..." data-testid={`input-search-product-${index}`} />
                             <CommandList>
@@ -448,19 +448,19 @@ export default function CreateOrder() {
                       </Popover>
                     </div>
 
-                    <div>
-                      <Label>Cijena (KM)</Label>
+                    <div className="hidden sm:block">
+                      <Label className="text-xs sm:text-sm">Cijena (KM)</Label>
                       <Input
                         type="text"
                         value={item.price}
                         readOnly
-                        className="bg-muted"
+                        className="bg-muted text-xs h-8"
                         data-testid={`input-price-${index}`}
                       />
                     </div>
 
                     <div>
-                      <Label>Količina</Label>
+                      <Label className="text-xs sm:text-sm">Količina</Label>
                       <Input
                         type="text"
                         inputMode="numeric"
@@ -468,17 +468,18 @@ export default function CreateOrder() {
                         value={item.quantity}
                         onChange={(e) => updateOrderItem(index, "quantity", e.target.value)}
                         onBlur={() => handleQuantityBlur(index)}
+                        className="text-xs h-8"
                         data-testid={`input-quantity-${index}`}
                       />
                     </div>
 
-                    <div>
-                      <Label>Rabat %</Label>
+                    <div className="hidden sm:block">
+                      <Label className="text-xs sm:text-sm">Rabat %</Label>
                       <Input
                         type="number"
                         value={item.discount}
                         onChange={(e) => updateOrderItem(index, "discount", e.target.value)}
-                        className="w-full"
+                        className="w-full text-xs h-8"
                         min="0"
                         max="100"
                         data-testid={`input-discount-${index}`}
@@ -489,6 +490,7 @@ export default function CreateOrder() {
                       type="button"
                       variant="ghost"
                       size="icon"
+                      className="h-8 w-8 sm:h-9 sm:w-9"
                       onClick={() => removeOrderItem(index)}
                       data-testid={`button-remove-item-${index}`}
                     >
@@ -496,18 +498,18 @@ export default function CreateOrder() {
                     </Button>
                   </div>
 
-                  <div className="grid gap-2 grid-cols-3 text-xs pt-1 border-t">
+                  <div className="grid gap-2 grid-cols-3 text-[10px] sm:text-xs pt-1 border-t">
                     <div>
-                      <span className="text-muted-foreground">Bez PDV:</span>
-                      <p className="font-semibold">{itemWithoutVAT.toFixed(2)} KM</p>
+                      <span className="text-muted-foreground text-[9px] sm:text-xs">Bez PDV:</span>
+                      <p className="font-semibold text-[10px] sm:text-xs">{itemWithoutVAT.toFixed(2)} KM</p>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">PDV (17%):</span>
-                      <p className="font-semibold">{(itemTotal - itemWithoutVAT).toFixed(2)} KM</p>
+                      <span className="text-muted-foreground text-[9px] sm:text-xs">PDV (17%):</span>
+                      <p className="font-semibold text-[10px] sm:text-xs">{(itemTotal - itemWithoutVAT).toFixed(2)} KM</p>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">Sa PDV:</span>
-                      <p className="font-semibold">{itemTotal.toFixed(2)} KM</p>
+                      <span className="text-muted-foreground text-[9px] sm:text-xs">Sa PDV:</span>
+                      <p className="font-semibold text-[10px] sm:text-xs">{itemTotal.toFixed(2)} KM</p>
                     </div>
                   </div>
                 </div>
