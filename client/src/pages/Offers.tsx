@@ -5,18 +5,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Plus, Trash2, ChevronsUpDown } from "lucide-react";
+import { Plus, Trash2, ChevronsUpDown, Download, FileText } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { format } from "date-fns";
+import jsPDF from "jspdf";
 import type { Customer, Product, Sale } from "@shared/schema";
+
+const PDV_RATE = 0.17;
 
 interface OfferItem {
   productId: number;
   quantity: number;
   price: string;
+  discount: string;
   category: string;
-  productName?: string;
+  productName: string;
 }
 
 interface Offer {
@@ -31,6 +36,7 @@ interface Offer {
 
 export default function Offers() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [selectedCustomer, setSelectedCustomer] = useState<string>("");
   const [items, setItems] = useState<OfferItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
@@ -53,7 +59,6 @@ export default function Offers() {
     queryKey: ["/api/offers"],
   });
 
-  // Sortiraj proizvode po broju prodaja (najprodavljiviji prvi)
   const sortedProducts = useMemo(() => {
     const productSales: { [key: number]: number } = {};
     sales.forEach((sale) => {
@@ -65,27 +70,43 @@ export default function Offers() {
       .sort((a, b) => b.totalSold - a.totalSold);
   }, [products, sales]);
 
+  const calculateItemTotal = (item: OfferItem) => {
+    const basePrice = parseFloat(item.price) * item.quantity;
+    const discountAmount = basePrice * (parseFloat(item.discount || "0") / 100);
+    return basePrice - discountAmount;
+  };
+
+  const calculateItemWithPDV = (item: OfferItem) => {
+    const totalBezPDV = calculateItemTotal(item);
+    return totalBezPDV * (1 + PDV_RATE);
+  };
+
+  const totalBezPDV = items.reduce((sum, item) => sum + calculateItemTotal(item), 0);
+  const pdvIznos = totalBezPDV * PDV_RATE;
+  const totalSaPDV = totalBezPDV + pdvIznos;
+
   const createOfferMutation = useMutation({
     mutationFn: async () => {
       if (!selectedCustomer || items.length === 0) {
         throw new Error("Odaberi kupca i dodaj artikle");
       }
 
-      const totalAmount = items.reduce(
-        (sum, item) => sum + parseFloat(item.price) * item.quantity,
-        0
-      );
-
-      const offer = await apiRequest("POST", "/api/offers", {
+      const offerRes = await apiRequest("POST", "/api/offers", {
         customerId: parseInt(selectedCustomer),
-        totalAmount: totalAmount.toString(),
+        totalAmount: totalSaPDV.toFixed(2),
         status: "draft",
       });
+      const offer = await offerRes.json();
 
       for (const item of items) {
         await apiRequest("POST", "/api/offers/items", {
           offerId: offer.id,
-          ...item,
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.price,
+          discount: item.discount || "0",
+          category: item.category,
+          productName: item.productName,
         });
       }
 
@@ -126,6 +147,7 @@ export default function Offers() {
       productId: parseInt(selectedProduct),
       quantity: parseInt(quantity),
       price: product.price,
+      discount: "0",
       category: product.category,
       productName: product.name,
     };
@@ -140,10 +162,102 @@ export default function Offers() {
     setItems(items.filter((_, i) => i !== index));
   };
 
-  const totalAmount = items.reduce(
-    (sum, item) => sum + parseFloat(item.price) * item.quantity,
-    0
-  );
+  const handleDiscountChange = (index: number, discountValue: string) => {
+    const newItems = [...items];
+    newItems[index].discount = discountValue;
+    setItems(newItems);
+  };
+
+  const generatePDF = (offer: Offer) => {
+    const customer = customers.find((c) => c.id === offer.customerId);
+    const doc = new jsPDF();
+    
+    doc.setFontSize(20);
+    doc.text("PONUDA", 105, 20, { align: "center" });
+    
+    doc.setFontSize(12);
+    doc.text(`Broj ponude: ${offer.id}`, 20, 35);
+    doc.text(`Datum: ${format(new Date(offer.createdAt), "dd.MM.yyyy")}`, 20, 42);
+    
+    doc.setFontSize(14);
+    doc.text("Podaci o kupcu:", 20, 55);
+    doc.setFontSize(11);
+    doc.text(`Naziv: ${customer?.name || "N/A"}`, 20, 63);
+    doc.text(`Kompanija: ${customer?.company || "N/A"}`, 20, 70);
+    if (customer?.phone) doc.text(`Telefon: ${customer.phone}`, 20, 77);
+    if (customer?.email) doc.text(`Email: ${customer.email}`, 20, 84);
+    
+    doc.setFontSize(14);
+    doc.text("Komercijalista:", 120, 55);
+    doc.setFontSize(11);
+    doc.text(`${user?.fullName || "N/A"}`, 120, 63);
+    
+    let yPos = 100;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("Artikal", 20, yPos);
+    doc.text("Kol.", 85, yPos);
+    doc.text("Cijena", 100, yPos);
+    doc.text("Rabat %", 125, yPos);
+    doc.text("Bez PDV", 150, yPos);
+    doc.text("Sa PDV", 175, yPos);
+    
+    doc.setFont("helvetica", "normal");
+    yPos += 8;
+    
+    let ukupnoBezPDV = 0;
+    
+    (offer.items || []).forEach((item: any) => {
+      const price = parseFloat(item.price);
+      const qty = item.quantity;
+      const discount = parseFloat(item.discount || "0");
+      const baseTotal = price * qty;
+      const discountAmount = baseTotal * (discount / 100);
+      const bezPDV = baseTotal - discountAmount;
+      const saPDV = bezPDV * (1 + PDV_RATE);
+      
+      ukupnoBezPDV += bezPDV;
+      
+      const productName = item.productName || products.find((p) => p.id === item.productId)?.name || "N/A";
+      const shortName = productName.length > 30 ? productName.substring(0, 27) + "..." : productName;
+      
+      doc.text(shortName, 20, yPos);
+      doc.text(String(qty), 85, yPos);
+      doc.text(`${price.toFixed(2)}`, 100, yPos);
+      doc.text(`${discount.toFixed(0)}%`, 125, yPos);
+      doc.text(`${bezPDV.toFixed(2)}`, 150, yPos);
+      doc.text(`${saPDV.toFixed(2)}`, 175, yPos);
+      
+      yPos += 7;
+      
+      if (yPos > 270) {
+        doc.addPage();
+        yPos = 20;
+      }
+    });
+    
+    const pdvIznos = ukupnoBezPDV * PDV_RATE;
+    const ukupnoSaPDV = ukupnoBezPDV + pdvIznos;
+    
+    yPos += 10;
+    doc.line(20, yPos, 190, yPos);
+    yPos += 8;
+    
+    doc.setFont("helvetica", "bold");
+    doc.text("Ukupno bez PDV:", 120, yPos);
+    doc.text(`${ukupnoBezPDV.toFixed(2)} KM`, 175, yPos);
+    
+    yPos += 7;
+    doc.text(`PDV (17%):`, 120, yPos);
+    doc.text(`${pdvIznos.toFixed(2)} KM`, 175, yPos);
+    
+    yPos += 7;
+    doc.setFontSize(12);
+    doc.text("UKUPNO SA PDV:", 120, yPos);
+    doc.text(`${ukupnoSaPDV.toFixed(2)} KM`, 175, yPos);
+    
+    doc.save(`Ponuda_${offer.id}_${customer?.name || "kupac"}.pdf`);
+  };
 
   return (
     <div className="space-y-6">
@@ -177,9 +291,9 @@ export default function Offers() {
                   </PopoverTrigger>
                   <PopoverContent className="w-[400px] p-0">
                     <Command>
-                      <CommandInput placeholder="Pretraži kupce..." data-testid="input-search-customer" />
+                      <CommandInput placeholder="Pretrazi kupce..." data-testid="input-search-customer" />
                       <CommandList>
-                        <CommandEmpty>Nema pronađenih kupaca.</CommandEmpty>
+                        <CommandEmpty>Nema pronadenih kupaca.</CommandEmpty>
                         <CommandGroup heading="Kupci">
                           {customers.map((customer: any) => (
                             <CommandItem
@@ -221,9 +335,9 @@ export default function Offers() {
                     </PopoverTrigger>
                     <PopoverContent className="w-[400px] p-0">
                       <Command>
-                        <CommandInput placeholder="Pretraži proizvode..." data-testid="input-search-products" />
+                        <CommandInput placeholder="Pretrazi proizvode..." data-testid="input-search-products" />
                         <CommandList>
-                          <CommandEmpty>Nema pronađenih proizvoda.</CommandEmpty>
+                          <CommandEmpty>Nema pronadenih proizvoda.</CommandEmpty>
                           <CommandGroup heading="Najprodavljiviji proizvodi">
                             {sortedProducts.slice(0, 10).map((product: any) => (
                               <CommandItem
@@ -268,6 +382,7 @@ export default function Offers() {
                     value={quantity}
                     onChange={(e) => setQuantity(e.target.value)}
                     className="w-20"
+                    min="1"
                     data-testid="input-quantity"
                   />
                   <Button onClick={handleAddItem} data-testid="button-add-item">
@@ -279,35 +394,75 @@ export default function Offers() {
               {items.length > 0 && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Artikli u ponudi</label>
-                  <div className="border rounded-md divide-y">
-                    {items.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between p-2 text-sm"
-                        data-testid={`offer-item-${idx}`}
-                      >
-                        <div className="flex-1">
-                          <p className="font-medium">
-                            {products.find((p: any) => p.id === item.productId)?.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {item.quantity} x {item.price} KM = {(parseFloat(item.price) * item.quantity).toFixed(2)} KM
-                          </p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveItem(idx)}
-                          data-testid={`button-remove-item-${idx}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
+                  <div className="border rounded-md overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50">
+                        <tr>
+                          <th className="text-left p-2">Artikal</th>
+                          <th className="text-center p-2 w-16">Kol.</th>
+                          <th className="text-right p-2 w-20">Cijena</th>
+                          <th className="text-center p-2 w-20">Rabat %</th>
+                          <th className="text-right p-2 w-24">Bez PDV</th>
+                          <th className="text-right p-2 w-24">Sa PDV</th>
+                          <th className="w-10"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {items.map((item, idx) => (
+                          <tr key={idx} data-testid={`offer-item-${idx}`}>
+                            <td className="p-2">
+                              <p className="font-medium truncate max-w-[150px]">
+                                {item.productName}
+                              </p>
+                            </td>
+                            <td className="text-center p-2">{item.quantity}</td>
+                            <td className="text-right p-2">{parseFloat(item.price).toFixed(2)}</td>
+                            <td className="p-2">
+                              <Input
+                                type="number"
+                                value={item.discount}
+                                onChange={(e) => handleDiscountChange(idx, e.target.value)}
+                                className="w-16 h-8 text-center"
+                                min="0"
+                                max="100"
+                                data-testid={`input-discount-${idx}`}
+                              />
+                            </td>
+                            <td className="text-right p-2 font-medium">
+                              {calculateItemTotal(item).toFixed(2)}
+                            </td>
+                            <td className="text-right p-2 font-medium">
+                              {calculateItemWithPDV(item).toFixed(2)}
+                            </td>
+                            <td className="p-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleRemoveItem(idx)}
+                                data-testid={`button-remove-item-${idx}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                  <div className="flex justify-between items-center pt-2 border-t">
-                    <span className="font-semibold">Ukupno:</span>
-                    <span className="text-lg font-bold">{totalAmount.toFixed(2)} KM</span>
+                  
+                  <div className="bg-muted/30 rounded-md p-3 space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span>Ukupno bez PDV:</span>
+                      <span className="font-medium">{totalBezPDV.toFixed(2)} KM</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>PDV (17%):</span>
+                      <span className="font-medium">{pdvIznos.toFixed(2)} KM</span>
+                    </div>
+                    <div className="flex justify-between text-base font-bold border-t pt-2">
+                      <span>UKUPNO SA PDV:</span>
+                      <span>{totalSaPDV.toFixed(2)} KM</span>
+                    </div>
                   </div>
                 </div>
               )}
@@ -318,6 +473,7 @@ export default function Offers() {
                 disabled={!selectedCustomer || items.length === 0 || createOfferMutation.isPending}
                 data-testid="button-create-offer"
               >
+                <FileText className="h-4 w-4 mr-2" />
                 {createOfferMutation.isPending ? "Kreiram..." : "Kreiraj ponudu"}
               </Button>
             </CardContent>
@@ -331,33 +487,65 @@ export default function Offers() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2 max-h-96 overflow-y-auto">
-                {offers.map((offer: any) => (
-                  <div
-                    key={offer.id}
-                    className="border rounded-md p-2 text-sm"
-                    data-testid={`offer-card-${offer.id}`}
-                  >
-                    <div className="flex justify-between items-start gap-2">
-                      <div className="flex-1">
-                        <p className="font-medium">
-                          {customers.find((c: any) => c.id === offer.customerId)?.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {offer.items?.length || 0} artikala
-                        </p>
-                        <p className="font-semibold mt-1">{offer.totalAmount} KM</p>
+                {offers.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Nema kreiranih ponuda
+                  </p>
+                )}
+                {offers.map((offer: any) => {
+                  const customer = customers.find((c: any) => c.id === offer.customerId);
+                  let offerTotalBezPDV = 0;
+                  (offer.items || []).forEach((item: any) => {
+                    const price = parseFloat(item.price);
+                    const qty = item.quantity;
+                    const discount = parseFloat(item.discount || "0");
+                    const baseTotal = price * qty;
+                    const discountAmount = baseTotal * (discount / 100);
+                    offerTotalBezPDV += baseTotal - discountAmount;
+                  });
+                  const offerPDV = offerTotalBezPDV * PDV_RATE;
+                  const offerTotalSaPDV = offerTotalBezPDV + offerPDV;
+                  
+                  return (
+                    <div
+                      key={offer.id}
+                      className="border rounded-md p-3 text-sm"
+                      data-testid={`offer-card-${offer.id}`}
+                    >
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="flex-1">
+                          <p className="font-medium">{customer?.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {offer.items?.length || 0} artikala | {format(new Date(offer.createdAt), "dd.MM.yyyy")}
+                          </p>
+                          <div className="mt-2 text-xs space-y-0.5">
+                            <p>Bez PDV: <span className="font-medium">{offerTotalBezPDV.toFixed(2)} KM</span></p>
+                            <p className="font-bold">Sa PDV: {offerTotalSaPDV.toFixed(2)} KM</p>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => generatePDF(offer)}
+                            data-testid={`button-download-pdf-${offer.id}`}
+                            title="Preuzmi PDF"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteOfferMutation.mutate(offer.id)}
+                            data-testid={`button-delete-offer-${offer.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteOfferMutation.mutate(offer.id)}
-                        data-testid={`button-delete-offer-${offer.id}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
