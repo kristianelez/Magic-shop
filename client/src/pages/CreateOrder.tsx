@@ -267,7 +267,7 @@ export default function CreateOrder() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-hidden">
       <div>
         <h1 className="text-2xl font-semibold flex items-center gap-2" data-testid="heading-create-order">
           <ShoppingCart className="h-6 w-6" />
@@ -276,7 +276,7 @@ export default function CreateOrder() {
         <p className="text-muted-foreground">Kreirajte novu narudžbu za kupca</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6 overflow-x-hidden">
         <Card>
           <CardHeader>
             <CardTitle>Informacije o kupcu</CardTitle>
@@ -299,10 +299,10 @@ export default function CreateOrder() {
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[400px] p-0">
+                <PopoverContent className="w-[90vw] sm:w-[400px] max-w-full p-0">
                   <Command>
                     <CommandInput placeholder="Pretraži kupce..." data-testid="input-search-customer" />
-                    <CommandList>
+                    <CommandList className="max-h-48 overflow-y-auto">
                       <CommandEmpty>Nema pronađenih kupaca.</CommandEmpty>
                       <CommandGroup>
                         {customers.map((customer) => (
@@ -381,10 +381,10 @@ export default function CreateOrder() {
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-[90vw] sm:w-[400px] p-0">
+                        <PopoverContent className="w-[90vw] sm:w-[400px] max-w-full p-0">
                           <Command>
                             <CommandInput placeholder="Pretraži proizvode..." data-testid={`input-search-product-${index}`} />
-                            <CommandList>
+                            <CommandList className="max-h-48 overflow-y-auto">
                               <CommandEmpty>Nema pronađenih proizvoda.</CommandEmpty>
                               
                               {topProducts.length > 0 && (
