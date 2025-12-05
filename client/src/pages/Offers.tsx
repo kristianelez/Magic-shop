@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Plus, Trash2, ChevronsUpDown, Download, FileText } from "lucide-react";
@@ -451,60 +452,83 @@ export default function Offers() {
               {items.length > 0 && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Artikli u ponudi</label>
-                  <div className="border rounded-md overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead className="bg-muted/50">
-                        <tr>
-                          <th className="text-left p-2">Artikal</th>
-                          <th className="text-center p-2 w-16">Kol.</th>
-                          <th className="text-right p-2 w-20">Cijena</th>
-                          <th className="text-center p-2 w-20">Rabat %</th>
-                          <th className="text-right p-2 w-24">Bez PDV</th>
-                          <th className="text-right p-2 w-24">Sa PDV</th>
-                          <th className="w-10"></th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y">
-                        {items.map((item, idx) => (
-                          <tr key={idx} data-testid={`offer-item-${idx}`}>
-                            <td className="p-2">
-                              <p className="font-medium truncate max-w-[150px]">
-                                {item.productName}
-                              </p>
-                            </td>
-                            <td className="text-center p-2">{item.quantity}</td>
-                            <td className="text-right p-2">{parseFloat(item.price).toFixed(2)}</td>
-                            <td className="p-2">
-                              <Input
-                                type="number"
-                                value={item.discount}
-                                onChange={(e) => handleDiscountChange(idx, e.target.value)}
-                                className="w-16 h-8 text-center"
-                                min="0"
-                                max="100"
-                                data-testid={`input-discount-${idx}`}
-                              />
-                            </td>
-                            <td className="text-right p-2 font-medium">
-                              {calculateItemBezPDV(item).toFixed(2)}
-                            </td>
-                            <td className="text-right p-2 font-medium">
-                              {calculateItemWithPDV(item).toFixed(2)}
-                            </td>
-                            <td className="p-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleRemoveItem(idx)}
-                                data-testid={`button-remove-item-${idx}`}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="space-y-3">
+                    {items.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="space-y-2 p-2 sm:p-4 border rounded-lg w-full min-w-0 overflow-hidden"
+                        data-testid={`offer-item-${idx}`}
+                      >
+                        <div className="w-full min-w-0">
+                          <Label className="text-xs sm:text-sm block truncate">Proizvod</Label>
+                          <p className="font-medium text-xs sm:text-sm truncate bg-muted p-2 rounded">
+                            {item.productName}
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div className="w-full min-w-0">
+                            <Label className="text-xs sm:text-sm block truncate">Cijena (KM)</Label>
+                            <Input
+                              type="text"
+                              value={parseFloat(item.price).toFixed(2)}
+                              readOnly
+                              className="bg-muted w-full text-xs sm:text-sm"
+                            />
+                          </div>
+
+                          <div className="w-full min-w-0">
+                            <Label className="text-xs sm:text-sm block truncate">Količina</Label>
+                            <Input
+                              type="text"
+                              value={item.quantity}
+                              readOnly
+                              className="bg-muted w-full text-xs sm:text-sm"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="w-full min-w-0">
+                          <Label className="text-xs sm:text-sm block truncate">Rabat %</Label>
+                          <Input
+                            type="number"
+                            value={item.discount}
+                            onChange={(e) => handleDiscountChange(idx, e.target.value)}
+                            className="w-full text-xs sm:text-sm"
+                            min="0"
+                            max="100"
+                            data-testid={`input-discount-${idx}`}
+                          />
+                        </div>
+
+                        <div className="grid gap-2 grid-cols-3 text-[10px] sm:text-xs pt-2 border-t">
+                          <div>
+                            <span className="text-muted-foreground text-[9px] sm:text-xs">Bez PDV:</span>
+                            <p className="font-semibold text-[10px] sm:text-xs">{calculateItemBezPDV(item).toFixed(2)} KM</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground text-[9px] sm:text-xs">PDV (17%):</span>
+                            <p className="font-semibold text-[10px] sm:text-xs">{(calculateItemWithPDV(item) - calculateItemBezPDV(item)).toFixed(2)} KM</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground text-[9px] sm:text-xs">Sa PDV:</span>
+                            <p className="font-semibold text-[10px] sm:text-xs">{calculateItemWithPDV(item).toFixed(2)} KM</p>
+                          </div>
+                        </div>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="w-full mt-2"
+                          onClick={() => handleRemoveItem(idx)}
+                          data-testid={`button-remove-item-${idx}`}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Ukloni
+                        </Button>
+                      </div>
+                    ))}
                   </div>
                   
                   <div className="bg-muted/30 rounded-md p-3 space-y-1">
