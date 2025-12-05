@@ -177,23 +177,23 @@ export default function Offers() {
     const doc = new jsPDF();
     
     // Naslov
-    doc.setFont("helvetica", "bold");
+    doc.setFont("times", "bold");
     doc.setFontSize(22);
     doc.text("PONUDA", 105, 20, { align: "center" });
     
     // Broj ponude i datum
-    doc.setFont("helvetica", "normal");
+    doc.setFont("times", "normal");
     doc.setFontSize(11);
     doc.text(`Broj ponude: ${offer.id}`, 20, 35);
     doc.text(`Datum: ${format(new Date(offer.createdAt), "dd.MM.yyyy")}`, 20, 42);
     
     // Podaci o kupcu - naslov
-    doc.setFont("helvetica", "bold");
+    doc.setFont("times", "bold");
     doc.setFontSize(12);
     doc.text("Podaci o kupcu:", 20, 55);
     
     // Podaci o kupcu - sadrzaj
-    doc.setFont("helvetica", "normal");
+    doc.setFont("times", "normal");
     doc.setFontSize(11);
     doc.text(`Naziv: ${customer?.name || "N/A"}`, 20, 63);
     doc.text(`Kompanija: ${customer?.company || "N/A"}`, 20, 70);
@@ -201,12 +201,12 @@ export default function Offers() {
     if (customer?.email) doc.text(`Email: ${customer.email}`, 20, 84);
     
     // Komercijalista - naslov
-    doc.setFont("helvetica", "bold");
+    doc.setFont("times", "bold");
     doc.setFontSize(12);
     doc.text("Komercijalista:", 120, 55);
     
     // Komercijalista - ime (isti font kao ostali podaci)
-    doc.setFont("helvetica", "normal");
+    doc.setFont("times", "normal");
     doc.setFontSize(11);
     doc.text(`${user?.fullName || "N/A"}`, 120, 63);
     
@@ -215,7 +215,7 @@ export default function Offers() {
     doc.setFillColor(240, 240, 240);
     doc.rect(15, yPos - 5, 180, 8, "F");
     
-    doc.setFont("helvetica", "bold");
+    doc.setFont("times", "bold");
     doc.setFontSize(9);
     doc.text("Artikal", 17, yPos);
     doc.text("Kol.", 72, yPos);
@@ -224,7 +224,7 @@ export default function Offers() {
     doc.text("Bez PDV", 138, yPos);
     doc.text("Sa PDV", 170, yPos);
     
-    doc.setFont("helvetica", "normal");
+    doc.setFont("times", "normal");
     yPos += 8;
     
     let ukupnoSaPDV = 0;
@@ -244,7 +244,7 @@ export default function Offers() {
       const productName = item.productName || products.find((p) => p.id === item.productId)?.name || "N/A";
       
       // Razbij dugacak naziv u vise redova (max 28 karaktera po redu)
-      doc.setFont("helvetica", "normal");
+      doc.setFont("times", "normal");
       doc.setFontSize(9);
       
       const maxChars = 28;
@@ -296,7 +296,7 @@ export default function Offers() {
     yPos += 8;
     
     // Totali - poravnati sa kolonama
-    doc.setFont("helvetica", "normal");
+    doc.setFont("times", "normal");
     doc.setFontSize(10);
     doc.text("Ukupno bez PDV:", 100, yPos);
     doc.text(`${ukupnoBezPDV.toFixed(2)} KM`, 170, yPos);
@@ -306,7 +306,7 @@ export default function Offers() {
     doc.text(`${pdvIznos.toFixed(2)} KM`, 170, yPos);
     
     yPos += 8;
-    doc.setFont("helvetica", "bold");
+    doc.setFont("times", "bold");
     doc.setFontSize(11);
     doc.text("UKUPNO SA PDV:", 100, yPos);
     doc.text(`${ukupnoSaPDV.toFixed(2)} KM`, 170, yPos);
