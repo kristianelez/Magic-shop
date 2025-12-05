@@ -42,7 +42,7 @@ export default function Offers() {
   const [items, setItems] = useState<OfferItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [quantity, setQuantity] = useState("1");
-  const [productSearchOpen, setProductSearchOpen] = useState(false);
+  const [productSearchOpen, setProductSearchOpen] = useState<{ [key: number]: boolean }>({});
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
 
   const { data: customers = [] } = useQuery<Customer[]>({
@@ -143,24 +143,19 @@ export default function Offers() {
   });
 
   const handleAddItem = () => {
-    if (!selectedProduct || !quantity) return;
-
-    const product = products.find((p: any) => p.id === parseInt(selectedProduct));
-    if (!product) return;
-
-    const newItem: OfferItem = {
-      productId: parseInt(selectedProduct),
-      quantity: parseInt(quantity),
-      price: product.price,
-      discount: "0",
-      category: product.category,
-      productName: product.name,
-    };
-
-    setItems([...items, newItem]);
-    setSelectedProduct("");
-    setQuantity("1");
-    setProductSearchOpen(false);
+    if (sortedProducts.length > 0) {
+      const firstProduct = sortedProducts[0];
+      const newItem: OfferItem = {
+        productId: firstProduct.id,
+        quantity: 1,
+        price: firstProduct.price,
+        discount: "0",
+        category: firstProduct.category,
+        productName: firstProduct.name,
+      };
+      setItems([...items, newItem]);
+      setProductSearchOpen({});
+    }
   };
 
   const handleRemoveItem = (index: number) => {
@@ -324,112 +319,46 @@ export default function Offers() {
 
       <div className="grid gap-6 lg:grid-cols-3 overflow-x-hidden">
         <div className="lg:col-span-2">
-          <Card className="overflow-hidden">
-            <CardHeader>
-              <CardTitle>Kreiraj novu ponudu</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 overflow-x-hidden px-2 sm:px-6">
-              <div className="space-y-2 w-full min-w-0">
-                <Label className="text-xs sm:text-sm block truncate">Odaberi kupca</Label>
-                <Popover open={customerSearchOpen} onOpenChange={setCustomerSearchOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={customerSearchOpen}
-                      className="w-full justify-between truncate"
-                      data-testid="select-customer"
-                    >
-                      <span className="truncate">
+          <div className="space-y-6 overflow-x-hidden">
+            <Card>
+              <CardHeader>
+                <CardTitle>Informacije o kupcu</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Odaberi ili pretraži kupca *</Label>
+                  <Popover open={customerSearchOpen} onOpenChange={setCustomerSearchOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={customerSearchOpen}
+                        className="w-full justify-between"
+                        data-testid="select-customer"
+                      >
                         {selectedCustomer
-                          ? customers.find((c) => String(c.id) === selectedCustomer)?.name
+                          ? customers.find((c) => String(c.id) === selectedCustomer)?.name + " - " + customers.find((c) => String(c.id) === selectedCustomer)?.company
                           : "Odaberi kupca..."}
-                      </span>
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 flex-shrink-0" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent side="bottom" align="start" className="w-[90vw] sm:w-[400px] max-w-full p-0">
-                    <Command>
-                      <CommandInput placeholder="Pretrazi kupce..." data-testid="input-search-customer" />
-                      <CommandList className="max-h-40 overflow-y-auto">
-                        <CommandEmpty>Nema pronadenih kupaca.</CommandEmpty>
-                        <CommandGroup heading="Kupci">
-                          {customers.map((customer: any) => (
-                            <CommandItem
-                              key={customer.id}
-                              value={`${customer.name} ${customer.company}`}
-                              onSelect={() => {
-                                setSelectedCustomer(String(customer.id));
-                                setCustomerSearchOpen(false);
-                              }}
-                              data-testid={`customer-item-${customer.id}`}
-                            >
-                              <span>{customer.name}</span>
-                              <span className="text-xs text-muted-foreground ml-2">({customer.company})</span>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <div className="space-y-2 w-full min-w-0">
-                <Label className="text-xs sm:text-sm block truncate">Odaberi proizvod</Label>
-                <Popover open={productSearchOpen} onOpenChange={setProductSearchOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={productSearchOpen}
-                      className="w-full justify-between truncate"
-                      data-testid="select-product"
-                    >
-                      <span className="truncate">
-                        {selectedProduct
-                          ? products.find((p) => String(p.id) === selectedProduct)?.name
-                          : "Odaberi proizvod..."}
-                      </span>
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 flex-shrink-0" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent side="bottom" align="start" className="w-[90vw] sm:w-[400px] max-w-full p-0">
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent side="bottom" align="start" className="w-[90vw] sm:w-[400px] max-w-full p-0">
                       <Command>
-                        <CommandInput placeholder="Pretrazi proizvode..." data-testid="input-search-products" />
+                        <CommandInput placeholder="Pretraži kupce..." data-testid="input-search-customer" />
                         <CommandList className="max-h-40 overflow-y-auto">
-                          <CommandEmpty>Nema pronadenih proizvoda.</CommandEmpty>
-                          <CommandGroup heading="Najprodavljiviji proizvodi">
-                            {sortedProducts.slice(0, 10).map((product: any) => (
+                          <CommandEmpty>Nema pronađenih kupaca.</CommandEmpty>
+                          <CommandGroup>
+                            {customers.map((customer: any) => (
                               <CommandItem
-                                key={product.id}
-                                value={`${product.name} ${product.category}`}
+                                key={customer.id}
+                                value={`${customer.name} ${customer.company}`}
                                 onSelect={() => {
-                                  setSelectedProduct(String(product.id));
-                                  setProductSearchOpen(false);
+                                  setSelectedCustomer(String(customer.id));
+                                  setCustomerSearchOpen(false);
                                 }}
-                                data-testid={`product-item-${product.id}`}
+                                data-testid={`customer-item-${customer.id}`}
                               >
-                                <span>{product.name}</span>
-                                <span className="text-xs text-muted-foreground ml-2">
-                                  ({product.category}) {product.totalSold > 0 && `${product.totalSold} kom`}
-                                </span>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                          <CommandGroup heading="Svi proizvodi">
-                            {sortedProducts.slice(10).map((product: any) => (
-                              <CommandItem
-                                key={product.id}
-                                value={`${product.name} ${product.category}`}
-                                onSelect={() => {
-                                  setSelectedProduct(String(product.id));
-                                  setProductSearchOpen(false);
-                                }}
-                                data-testid={`product-item-${product.id}`}
-                              >
-                                <span>{product.name}</span>
-                                <span className="text-xs text-muted-foreground ml-2">({product.category})</span>
+                                <span>{customer.name} - {customer.company}</span>
                               </CommandItem>
                             ))}
                           </CommandGroup>
@@ -437,55 +366,137 @@ export default function Offers() {
                       </Command>
                     </PopoverContent>
                   </Popover>
-              </div>
+                </div>
+              </CardContent>
+            </Card>
 
-              <div className="space-y-2 w-full min-w-0">
-                <Label className="text-xs sm:text-sm block truncate">Količina</Label>
-                <Input
-                  type="number"
-                  placeholder="Unesite količinu"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  className="w-full text-xs sm:text-sm"
-                  min="1"
-                  data-testid="input-quantity"
-                />
-              </div>
-
-              <Button 
-                onClick={handleAddItem} 
-                className="w-full"
-                data-testid="button-add-item"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Dodaj artikal
-              </Button>
-
-              {items.length > 0 && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Artikli u ponudi</label>
-                  <div className="space-y-3">
-                    {items.map((item, idx) => (
+            <Card className="overflow-hidden">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <CardTitle>Proizvodi</CardTitle>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddItem}
+                  data-testid="button-add-item"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Dodaj proizvod
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-4 overflow-x-hidden px-2 sm:px-6">
+                {items.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">
+                    Nema dodanih proizvoda. Kliknite "Dodaj proizvod" da započnete.
+                  </p>
+                ) : (
+                  items.map((item, idx) => {
+                    const itemTotal = calculateItemWithPDV(item);
+                    const itemWithoutVAT = itemTotal / (1 + PDV_RATE);
+                    return (
                       <div
                         key={idx}
-                        className="space-y-2 p-2 sm:p-4 border rounded-lg w-full min-w-0 overflow-hidden"
+                        className="space-y-3 p-2 sm:p-4 border rounded-lg w-full min-w-0 overflow-hidden"
                         data-testid={`offer-item-${idx}`}
                       >
-                        <div className="w-full min-w-0">
-                          <Label className="text-xs sm:text-sm block truncate">Proizvod</Label>
-                          <p className="font-medium text-xs sm:text-sm truncate bg-muted p-2 rounded">
-                            {item.productName}
-                          </p>
-                        </div>
+                        <div className="space-y-2 sm:space-y-3 w-full min-w-0">
+                          <div className="w-full min-w-0">
+                            <Label className="text-xs sm:text-sm block truncate">Proizvod</Label>
+                            <Popover 
+                              open={productSearchOpen && productSearchOpen[idx] || false}
+                              onOpenChange={(open) => setProductSearchOpen({ ...productSearchOpen, [idx]: open })}
+                            >
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  aria-expanded={productSearchOpen && productSearchOpen[idx] || false}
+                                  className="w-full justify-between truncate"
+                                  data-testid={`select-product-${idx}`}
+                                >
+                                  <span className="truncate">{item.productName}</span>
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 flex-shrink-0" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent side="bottom" align="start" className="w-[90vw] sm:w-[400px] max-w-full p-0">
+                                <Command>
+                                  <CommandInput placeholder="Pretraži proizvode..." data-testid={`input-search-product-${idx}`} />
+                                  <CommandList className="max-h-40 overflow-y-auto">
+                                    <CommandEmpty>Nema pronađenih proizvoda.</CommandEmpty>
+                                    
+                                    {sortedProducts.slice(0, 10).length > 0 && (
+                                      <CommandGroup heading="Preporučeni proizvodi (Top 10)">
+                                        {sortedProducts.slice(0, 10).map((product: any) => (
+                                          <CommandItem
+                                            key={product.id}
+                                            value={product.name}
+                                            onSelect={() => {
+                                              const newItems = [...items];
+                                              newItems[idx] = {
+                                                ...newItems[idx],
+                                                productId: product.id,
+                                                productName: product.name,
+                                                price: product.price,
+                                                category: product.category,
+                                              };
+                                              setItems(newItems);
+                                              setProductSearchOpen({ ...productSearchOpen, [idx]: false });
+                                            }}
+                                            data-testid={`product-option-${idx}-${product.id}`}
+                                          >
+                                            <div className="flex-1">
+                                              <div>{product.name}</div>
+                                              <div className="text-xs text-muted-foreground">
+                                                Prodano: {product.totalSold} | Cijena: {product.price} KM
+                                              </div>
+                                            </div>
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    )}
+                                    
+                                    <CommandGroup heading="Svi proizvodi">
+                                      {sortedProducts.map((product: any) => (
+                                        <CommandItem
+                                          key={product.id}
+                                          value={product.name}
+                                          onSelect={() => {
+                                            const newItems = [...items];
+                                            newItems[idx] = {
+                                              ...newItems[idx],
+                                              productId: product.id,
+                                              productName: product.name,
+                                              price: product.price,
+                                              category: product.category,
+                                            };
+                                            setItems(newItems);
+                                            setProductSearchOpen({ ...productSearchOpen, [idx]: false });
+                                          }}
+                                          data-testid={`all-products-option-${idx}-${product.id}`}
+                                        >
+                                          <div className="flex-1">
+                                            <div>{product.name}</div>
+                                            <div className="text-xs text-muted-foreground">
+                                              {product.category} | Cijena: {product.price} KM
+                                            </div>
+                                          </div>
+                                        </CommandItem>
+                                      ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <div className="w-full min-w-0">
                             <Label className="text-xs sm:text-sm block truncate">Cijena (KM)</Label>
                             <Input
                               type="text"
-                              value={parseFloat(item.price).toFixed(2)}
+                              value={item.price}
                               readOnly
                               className="bg-muted w-full text-xs sm:text-sm"
+                              data-testid={`input-price-${idx}`}
                             />
                           </div>
 
@@ -493,73 +504,78 @@ export default function Offers() {
                             <Label className="text-xs sm:text-sm block truncate">Količina</Label>
                             <Input
                               type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
                               value={item.quantity}
-                              readOnly
-                              className="bg-muted w-full text-xs sm:text-sm"
+                              onChange={(e) => {
+                                const newItems = [...items];
+                                newItems[idx].quantity = parseInt(e.target.value) || 1;
+                                setItems(newItems);
+                              }}
+                              className="w-full text-xs sm:text-sm"
+                              data-testid={`input-quantity-${idx}`}
                             />
                           </div>
+
+                          <div className="w-full min-w-0">
+                            <Label className="text-xs sm:text-sm block truncate">Rabat %</Label>
+                            <Input
+                              type="number"
+                              value={item.discount}
+                              onChange={(e) => handleDiscountChange(idx, e.target.value)}
+                              className="w-full text-xs sm:text-sm"
+                              min="0"
+                              max="100"
+                              data-testid={`input-discount-${idx}`}
+                            />
+                          </div>
+
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full"
+                            onClick={() => handleRemoveItem(idx)}
+                            data-testid={`button-remove-item-${idx}`}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Ukloni
+                          </Button>
                         </div>
 
-                        <div className="w-full min-w-0">
-                          <Label className="text-xs sm:text-sm block truncate">Rabat %</Label>
-                          <Input
-                            type="number"
-                            value={item.discount}
-                            onChange={(e) => handleDiscountChange(idx, e.target.value)}
-                            className="w-full text-xs sm:text-sm"
-                            min="0"
-                            max="100"
-                            data-testid={`input-discount-${idx}`}
-                          />
-                        </div>
-
-                        <div className="grid gap-2 grid-cols-3 text-[10px] sm:text-xs pt-2 border-t">
+                        <div className="grid gap-2 grid-cols-3 text-[10px] sm:text-xs pt-1 border-t">
                           <div>
                             <span className="text-muted-foreground text-[9px] sm:text-xs">Bez PDV:</span>
-                            <p className="font-semibold text-[10px] sm:text-xs">{calculateItemBezPDV(item).toFixed(2)} KM</p>
+                            <p className="font-semibold text-[10px] sm:text-xs">{itemWithoutVAT.toFixed(2)} KM</p>
                           </div>
                           <div>
                             <span className="text-muted-foreground text-[9px] sm:text-xs">PDV (17%):</span>
-                            <p className="font-semibold text-[10px] sm:text-xs">{(calculateItemWithPDV(item) - calculateItemBezPDV(item)).toFixed(2)} KM</p>
+                            <p className="font-semibold text-[10px] sm:text-xs">{(itemTotal - itemWithoutVAT).toFixed(2)} KM</p>
                           </div>
                           <div>
                             <span className="text-muted-foreground text-[9px] sm:text-xs">Sa PDV:</span>
-                            <p className="font-semibold text-[10px] sm:text-xs">{calculateItemWithPDV(item).toFixed(2)} KM</p>
+                            <p className="font-semibold text-[10px] sm:text-xs">{itemTotal.toFixed(2)} KM</p>
                           </div>
                         </div>
-
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="w-full mt-2"
-                          onClick={() => handleRemoveItem(idx)}
-                          data-testid={`button-remove-item-${idx}`}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Ukloni
-                        </Button>
                       </div>
-                    ))}
-                  </div>
-                  
-                  <div className="bg-muted/30 rounded-md p-3 space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span>Ukupno bez PDV:</span>
-                      <span className="font-medium">{totalBezPDV.toFixed(2)} KM</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>PDV (17%):</span>
-                      <span className="font-medium">{pdvIznos.toFixed(2)} KM</span>
-                    </div>
-                    <div className="flex justify-between text-base font-bold border-t pt-2">
-                      <span>UKUPNO SA PDV:</span>
-                      <span>{totalSaPDV.toFixed(2)} KM</span>
-                    </div>
-                  </div>
-                </div>
-              )}
+                    );
+                  })
+                )}
+              </CardContent>
+            </Card>
 
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between text-lg font-semibold">
+                  <span>Ukupan iznos:</span>
+                  <span className="text-2xl" data-testid="text-total-amount">
+                    {totalSaPDV.toFixed(2)} KM
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="flex flex-col gap-3">
               <Button
                 className="w-full"
                 onClick={() => createOfferMutation.mutate()}
@@ -569,8 +585,8 @@ export default function Offers() {
                 <FileText className="h-4 w-4 mr-2" />
                 {createOfferMutation.isPending ? "Kreiram..." : "Kreiraj ponudu"}
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
         <div>
