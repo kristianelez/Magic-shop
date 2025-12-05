@@ -496,7 +496,7 @@ export default function CreateOrder() {
                     </Button>
                   </div>
 
-                  <div className="grid gap-2 grid-cols-3 text-sm pt-2 border-t">
+                  <div className="grid gap-2 grid-cols-3 text-xs pt-1 border-t">
                     <div>
                       <span className="text-muted-foreground">Bez PDV:</span>
                       <p className="font-semibold">{itemWithoutVAT.toFixed(2)} KM</p>
@@ -507,7 +507,7 @@ export default function CreateOrder() {
                     </div>
                     <div>
                       <span className="text-muted-foreground">Sa PDV:</span>
-                      <p className="font-semibold text-lg">{itemTotal.toFixed(2)} KM</p>
+                      <p className="font-semibold">{itemTotal.toFixed(2)} KM</p>
                     </div>
                   </div>
                 </div>
