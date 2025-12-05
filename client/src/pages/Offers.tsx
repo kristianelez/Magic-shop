@@ -10,10 +10,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Search } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Customer, Product } from "@shared/schema";
+import type { Customer, Product, Sale } from "@shared/schema";
 
 interface OfferItem {
   productId: number;
@@ -39,6 +39,7 @@ export default function Offers() {
   const [items, setItems] = useState<OfferItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
   const [quantity, setQuantity] = useState("1");
+  const [productSearch, setProductSearch] = useState<string>("");
 
   const { data: customers = [] } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
@@ -48,9 +49,27 @@ export default function Offers() {
     queryKey: ["/api/products"],
   });
 
+  const { data: sales = [] } = useQuery<Sale[]>({
+    queryKey: ["/api/sales"],
+  });
+
   const { data: offers = [] } = useQuery<Offer[]>({
     queryKey: ["/api/offers"],
   });
+
+  // Sortiraj proizvode po broju prodaja (najprodavljiviji prvi)
+  const sortedProducts = [...products]
+    .sort((a: any, b: any) => {
+      const aSales = sales.filter((s: any) => s.productId === a.id).length;
+      const bSales = sales.filter((s: any) => s.productId === b.id).length;
+      return bSales - aSales;
+    })
+    .filter((p: any) =>
+      productSearch === ""
+        ? true
+        : p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+          p.category.toLowerCase().includes(productSearch.toLowerCase())
+    );
 
   const createOfferMutation = useMutation({
     mutationFn: async () => {
@@ -106,7 +125,7 @@ export default function Offers() {
   const handleAddItem = () => {
     if (!selectedProduct || !quantity) return;
 
-    const product = products.find((p: any) => p.id === parseInt(selectedProduct));
+    const product = sortedProducts.find((p: any) => p.id === parseInt(selectedProduct));
     if (!product) return;
 
     const newItem: OfferItem = {
@@ -163,17 +182,30 @@ export default function Offers() {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Dodaj artikle</label>
+                <div className="relative mb-2">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Pretraži proizvode..."
+                    className="pl-9"
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    data-testid="input-search-products"
+                  />
+                </div>
                 <div className="flex gap-2">
                   <Select value={selectedProduct} onValueChange={setSelectedProduct}>
                     <SelectTrigger className="flex-1" data-testid="select-product">
                       <SelectValue placeholder="Odaberi proizvod..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {products.map((p: any) => (
-                        <SelectItem key={p.id} value={p.id.toString()}>
-                          {p.name} ({p.category})
-                        </SelectItem>
-                      ))}
+                      {sortedProducts.map((p: any) => {
+                        const pSales = sales.filter((s: any) => s.productId === p.id).length;
+                        return (
+                          <SelectItem key={p.id} value={p.id.toString()}>
+                            {p.name} ({p.category}) {pSales > 0 && `- ${pSales} prodaja`}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                   <Input
