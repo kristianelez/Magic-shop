@@ -289,9 +289,18 @@ export class DatabaseStorage implements IStorage {
   async getOffers(): Promise<any[]> {
     const allOffers = await db.select().from(offers).orderBy(desc(offers.createdAt));
     const items = await db.select().from(offerItems);
+    const allProducts = await db.select().from(products);
+    const productMap = new Map(allProducts.map(p => [p.id, p]));
+    
     return allOffers.map(offer => ({
       ...offer,
-      items: items.filter(item => item.offerId === offer.id),
+      items: items
+        .filter(item => item.offerId === offer.id)
+        .map(item => ({
+          ...item,
+          productName: item.productName || productMap.get(item.productId)?.name || "N/A",
+          discount: item.discount || "0",
+        })),
     }));
   }
 
@@ -299,7 +308,17 @@ export class DatabaseStorage implements IStorage {
     const offer = await db.select().from(offers).where(eq(offers.id, id)).limit(1);
     if (!offer[0]) return undefined;
     const items = await db.select().from(offerItems).where(eq(offerItems.offerId, id));
-    return { ...offer[0], items };
+    const allProducts = await db.select().from(products);
+    const productMap = new Map(allProducts.map(p => [p.id, p]));
+    
+    return { 
+      ...offer[0], 
+      items: items.map(item => ({
+        ...item,
+        productName: item.productName || productMap.get(item.productId)?.name || "N/A",
+        discount: item.discount || "0",
+      })),
+    };
   }
 
   async createOffer(offer: InsertOffer): Promise<Offer> {

@@ -155,9 +155,9 @@ export const offerItems = pgTable("offer_items", {
   productId: integer("product_id").notNull().references(() => products.id),
   quantity: integer("quantity").notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
-  discount: decimal("discount", { precision: 5, scale: 2 }).notNull().default("0"),
+  discount: decimal("discount", { precision: 5, scale: 2 }).default("0"),
   category: text("category").notNull(),
-  productName: text("product_name").notNull(),
+  productName: text("product_name"),
 });
 
 export const insertOfferSchema = createInsertSchema(offers, {
@@ -176,9 +176,9 @@ export const insertOfferItemSchema = createInsertSchema(offerItems, {
   productId: z.number().int(),
   quantity: z.number().int().min(1),
   price: z.string(),
-  discount: z.string().optional(),
+  discount: z.string().optional().default("0"),
   category: z.string(),
-  productName: z.string(),
+  productName: z.string().optional(),
 }).omit({
   id: true,
 });
