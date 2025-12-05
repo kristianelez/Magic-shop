@@ -123,7 +123,7 @@ export default function CustomerDetail() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-hidden">
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"

@@ -301,7 +301,7 @@ export default function EditOrder() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-hidden">
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
@@ -390,10 +390,10 @@ export default function EditOrder() {
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-[400px] p-0">
+                        <PopoverContent side="bottom" align="start" className="w-[90vw] sm:w-[400px] max-w-full p-0">
                           <Command>
                             <CommandInput placeholder="Pretraži proizvode..." data-testid={`input-search-product-${realIndex}`} />
-                            <CommandList>
+                            <CommandList className="max-h-40 overflow-y-auto">
                               <CommandEmpty>Nema pronađenih proizvoda.</CommandEmpty>
                               <CommandGroup>
                                 {topProducts.map((product) => (

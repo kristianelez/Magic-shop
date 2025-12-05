@@ -25,7 +25,7 @@ export default function AIRecommendations() {
   const highPriorityCount = recommendations.filter((r: any) => r.priority === 'high').length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-hidden">
       <div>
         <h1 className="text-2xl font-semibold flex items-center gap-2" data-testid="heading-ai-recommendations">
           <Sparkles className="h-6 w-6 text-primary" />
