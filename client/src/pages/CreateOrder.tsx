@@ -359,12 +359,12 @@ export default function CreateOrder() {
                 return (
                 <div
                   key={index}
-                  className="space-y-3 p-4 border rounded-lg"
+                  className="space-y-3 p-2 sm:p-4 border rounded-lg w-full min-w-0 overflow-hidden"
                   data-testid={`order-item-${index}`}
                 >
-                  <div className="space-y-3">
-                    <div>
-                      <Label className="text-sm">Proizvod</Label>
+                  <div className="space-y-2 sm:space-y-3 w-full min-w-0">
+                    <div className="w-full min-w-0">
+                      <Label className="text-xs sm:text-sm block truncate">Proizvod</Label>
                       <Popover 
                         open={productSearchOpen[index] || false} 
                         onOpenChange={(open) => setProductSearchOpen({ ...productSearchOpen, [index]: open })}
@@ -374,11 +374,11 @@ export default function CreateOrder() {
                             variant="outline"
                             role="combobox"
                             aria-expanded={productSearchOpen[index] || false}
-                            className="w-full justify-between"
+                            className="w-full justify-between truncate"
                             data-testid={`select-product-${index}`}
                           >
-                            {item.productName}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            <span className="truncate">{item.productName}</span>
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 flex-shrink-0" />
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent side="bottom" align="start" className="w-[90vw] sm:w-[400px] max-w-full p-0">
@@ -448,19 +448,19 @@ export default function CreateOrder() {
                       </Popover>
                     </div>
 
-                    <div>
-                      <Label className="text-sm">Cijena (KM)</Label>
+                    <div className="w-full min-w-0">
+                      <Label className="text-xs sm:text-sm block truncate">Cijena (KM)</Label>
                       <Input
                         type="text"
                         value={item.price}
                         readOnly
-                        className="bg-muted"
+                        className="bg-muted w-full text-xs sm:text-sm"
                         data-testid={`input-price-${index}`}
                       />
                     </div>
 
-                    <div>
-                      <Label className="text-sm">Količina</Label>
+                    <div className="w-full min-w-0">
+                      <Label className="text-xs sm:text-sm block truncate">Količina</Label>
                       <Input
                         type="text"
                         inputMode="numeric"
@@ -468,17 +468,18 @@ export default function CreateOrder() {
                         value={item.quantity}
                         onChange={(e) => updateOrderItem(index, "quantity", e.target.value)}
                         onBlur={() => handleQuantityBlur(index)}
+                        className="w-full text-xs sm:text-sm"
                         data-testid={`input-quantity-${index}`}
                       />
                     </div>
 
-                    <div>
-                      <Label className="text-sm">Rabat %</Label>
+                    <div className="w-full min-w-0">
+                      <Label className="text-xs sm:text-sm block truncate">Rabat %</Label>
                       <Input
                         type="number"
                         value={item.discount}
                         onChange={(e) => updateOrderItem(index, "discount", e.target.value)}
-                        className="w-full"
+                        className="w-full text-xs sm:text-sm"
                         min="0"
                         max="100"
                         data-testid={`input-discount-${index}`}
