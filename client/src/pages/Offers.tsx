@@ -317,8 +317,8 @@ export default function Offers() {
         <p className="text-muted-foreground">Kreiraj i upravljaj ponudama</p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3 overflow-x-hidden">
-        <div className="lg:col-span-2">
+      <div className="grid gap-6 lg:grid-cols-3 overflow-hidden">
+        <div className="lg:col-span-2 overflow-hidden">
           <div className="space-y-6 overflow-x-hidden">
             <Card>
               <CardHeader>
@@ -384,7 +384,7 @@ export default function Offers() {
                   Dodaj proizvod
                 </Button>
               </CardHeader>
-              <CardContent className="space-y-4 overflow-x-hidden px-2 sm:px-6">
+              <CardContent className="space-y-4 overflow-hidden px-2 sm:px-6">
                 {items.length === 0 ? (
                   <p className="text-muted-foreground text-center py-8">
                     Nema dodanih proizvoda. Kliknite "Dodaj proizvod" da započnete.
@@ -589,13 +589,13 @@ export default function Offers() {
           </div>
         </div>
 
-        <div>
+        <div className="overflow-hidden">
           <Card>
             <CardHeader>
               <CardTitle>Ponude ({offers.length})</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2 max-h-96 overflow-y-auto">
+              <div className="space-y-2 max-h-96 overflow-hidden">
                 {offers.length === 0 && (
                   <p className="text-sm text-muted-foreground text-center py-4">
                     Nema kreiranih ponuda
