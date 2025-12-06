@@ -5,18 +5,19 @@ import { Search } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AddProductDialog } from "@/components/AddProductDialog";
+import type { Product } from "@shared/schema";
 
 export default function Products() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("Svi proizvodi");
 
-  const { data: products = [], isLoading } = useQuery({
+  const { data: products = [], isLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
   });
 
-  const categories = ["Svi proizvodi", ...Array.from(new Set(products.map((p: any) => p.category)))];
+  const categories = ["Svi proizvodi", ...Array.from(new Set(products.map((p) => p.category)))];
 
-  const filteredProducts = products.filter((product: any) => {
+  const filteredProducts = products.filter((product) => {
     const matchesSearch =
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.category.toLowerCase().includes(searchQuery.toLowerCase());
@@ -65,12 +66,14 @@ export default function Products() {
 
         <TabsContent value={activeCategory} className="mt-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredProducts.map((product: any) => (
+            {filteredProducts.map((product) => (
               <ProductCard 
                 key={product.id} 
-                {...product} 
                 id={String(product.id)}
+                name={product.name}
+                category={product.category}
                 price={parseFloat(product.price)}
+                unit={product.unit}
               />
             ))}
           </div>
