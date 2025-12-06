@@ -121,19 +121,19 @@ export function CustomerCard({
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex items-center justify-between gap-2 text-sm">
-          <span className="text-muted-foreground flex-shrink-0">Zadnji kontakt:</span>
-          <span className="font-medium truncate">{lastContact || "Nikad"}</span>
+      <CardContent className="space-y-2">
+        <div className="text-sm">
+          <span className="text-muted-foreground">Zadnji kontakt: </span>
+          <span className="font-medium">{lastContact || "Nikad"}</span>
         </div>
-        <div className="flex items-center justify-between gap-2 text-sm">
-          <span className="text-muted-foreground flex-shrink-0">Ukupna vrijednost:</span>
-          <span className="font-semibold text-primary truncate">{totalPurchases.toLocaleString()} KM</span>
+        <div className="text-sm">
+          <span className="text-muted-foreground">Ukupna vrijednost: </span>
+          <span className="font-semibold text-primary">{totalPurchases.toLocaleString()} KM</span>
         </div>
         {paymentTerms && (
-          <div className="flex items-center justify-between gap-2 text-sm">
-            <span className="text-muted-foreground flex-shrink-0">Plaćanje:</span>
-            <span className="font-medium truncate">{paymentTerms}</span>
+          <div className="text-sm">
+            <span className="text-muted-foreground">Plaćanje: </span>
+            <span className="font-medium">{paymentTerms}</span>
           </div>
         )}
         {favoriteProducts.length > 0 && (
@@ -141,18 +141,18 @@ export function CustomerCard({
             <p className="text-xs text-muted-foreground mb-2">Najčešći proizvodi:</p>
             <div className="flex flex-wrap gap-1">
               {favoriteProducts.slice(0, 2).map((product, idx) => (
-                <Badge key={idx} variant="secondary" className="text-xs">
-                  {product}
+                <Badge key={idx} variant="secondary" className="text-xs max-w-full">
+                  <span className="truncate">{product}</span>
                 </Badge>
               ))}
             </div>
           </div>
         )}
-        <div className="flex gap-2 pt-2 flex-col sm:flex-row">
+        <div className="grid grid-cols-1 gap-2 pt-2">
           <Button
             size="sm"
             variant="outline"
-            className="flex-1"
+            className="w-full"
             data-testid="button-call"
             onClick={handleCallClick}
             disabled={!phone || recordCallMutation.isPending}
@@ -163,7 +163,7 @@ export function CustomerCard({
           <Button
             size="sm"
             variant="outline"
-            className="flex-1"
+            className="w-full"
             data-testid={`button-view-conversations-${id}`}
             onClick={() => setLocation(`/customers/${id}`)}
           >
@@ -174,7 +174,7 @@ export function CustomerCard({
             <Button
               size="sm"
               variant="outline"
-              className="flex-1"
+              className="w-full"
               data-testid="button-email"
               asChild
             >
@@ -187,7 +187,7 @@ export function CustomerCard({
             <Button
               size="sm"
               variant="outline"
-              className="flex-1"
+              className="w-full"
               data-testid="button-email"
               disabled
             >
