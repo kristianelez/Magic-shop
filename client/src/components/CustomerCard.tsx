@@ -148,11 +148,11 @@ export function CustomerCard({
             </div>
           </div>
         )}
-        <div className="grid grid-cols-1 gap-2 pt-2">
+        <div className="flex flex-col items-center gap-2 pt-2">
           <Button
             size="sm"
             variant="outline"
-            className="w-4/5 mx-auto"
+            className="w-3/5"
             data-testid="button-call"
             onClick={handleCallClick}
             disabled={!phone || recordCallMutation.isPending}
@@ -163,7 +163,7 @@ export function CustomerCard({
           <Button
             size="sm"
             variant="outline"
-            className="w-4/5 mx-auto"
+            className="w-3/5"
             data-testid={`button-view-conversations-${id}`}
             onClick={() => setLocation(`/customers/${id}`)}
           >
@@ -174,7 +174,7 @@ export function CustomerCard({
             <Button
               size="sm"
               variant="outline"
-              className="w-4/5 mx-auto"
+              className="w-3/5"
               data-testid="button-email"
               asChild
             >
@@ -187,7 +187,7 @@ export function CustomerCard({
             <Button
               size="sm"
               variant="outline"
-              className="w-4/5 mx-auto"
+              className="w-3/5"
               data-testid="button-email"
               disabled
             >
