@@ -122,18 +122,18 @@ export function CustomerCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Zadnji kontakt:</span>
-          <span className="font-medium">{lastContact || "Nikad"}</span>
+        <div className="flex items-center justify-between gap-2 text-sm">
+          <span className="text-muted-foreground flex-shrink-0">Zadnji kontakt:</span>
+          <span className="font-medium truncate">{lastContact || "Nikad"}</span>
         </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Ukupna vrijednost:</span>
-          <span className="font-semibold text-primary">{totalPurchases.toLocaleString()} KM</span>
+        <div className="flex items-center justify-between gap-2 text-sm">
+          <span className="text-muted-foreground flex-shrink-0">Ukupna vrijednost:</span>
+          <span className="font-semibold text-primary truncate">{totalPurchases.toLocaleString()} KM</span>
         </div>
         {paymentTerms && (
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Plaćanje:</span>
-            <span className="font-medium">{paymentTerms}</span>
+          <div className="flex items-center justify-between gap-2 text-sm">
+            <span className="text-muted-foreground flex-shrink-0">Plaćanje:</span>
+            <span className="font-medium truncate">{paymentTerms}</span>
           </div>
         )}
         {favoriteProducts.length > 0 && (

@@ -213,9 +213,9 @@ export default function Orders() {
               {filteredOrders.map((order) => (
                 <Card key={order.id} className="hover-elevate" data-testid={`order-${order.id}`}>
                   <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
                           <Users className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                           <h3 className="font-semibold truncate" data-testid={`customer-name-${order.id}`}>
                             {order.customerName}
@@ -223,26 +223,28 @@ export default function Orders() {
                         </div>
                         <p className="text-sm text-muted-foreground truncate">{order.customerCompany}</p>
                         <div className="flex items-center gap-2 mt-2">
-                          <Calendar className="h-3 w-3 text-muted-foreground" />
+                          <Calendar className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                           <p className="text-xs text-muted-foreground" data-testid={`order-date-${order.id}`}>
                             {format(order.orderDate, 'dd.MM.yyyy HH:mm', { locale: bs })}
                           </p>
                         </div>
                       </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <p className="text-2xl font-bold text-primary" data-testid={`order-total-${order.id}`}>
-                          {order.totalAmount.toFixed(2)} KM
-                        </p>
-                        <Badge variant={order.status === "completed" ? "secondary" : "outline"}>
-                          {order.status === "completed" ? "Završeno" : "Na čekanju"}
-                        </Badge>
-                        <div className="flex flex-col gap-2 w-full">
+                      <div className="flex flex-col items-start sm:items-end gap-2">
+                        <div className="flex items-center justify-between w-full sm:w-auto gap-2">
+                          <p className="text-xl sm:text-2xl font-bold text-primary" data-testid={`order-total-${order.id}`}>
+                            {order.totalAmount.toFixed(2)} KM
+                          </p>
+                          <Badge variant={order.status === "completed" ? "secondary" : "outline"}>
+                            {order.status === "completed" ? "Završeno" : "Na čekanju"}
+                          </Badge>
+                        </div>
+                        <div className="flex gap-2 w-full sm:w-auto">
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => setLocation(`/edit-order/${encodeURIComponent(order.id)}`)}
                             data-testid={`button-edit-order-${order.id}`}
-                            className="w-full"
+                            className="flex-1 sm:flex-none"
                           >
                             <Pencil className="h-4 w-4 mr-2" />
                             Uredi
@@ -258,10 +260,10 @@ export default function Orders() {
                               setShowDeleteAlert(true);
                             }}
                             data-testid={`button-delete-order-${order.id}`}
-                            className="w-full"
+                            className="flex-1 sm:flex-none"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
-                            Izbrisi narudzbu
+                            Obriši
                           </Button>
                         </div>
                       </div>
