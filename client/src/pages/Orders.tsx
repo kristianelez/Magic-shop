@@ -270,26 +270,21 @@ export default function Orders() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Proizvod</TableHead>
-                          <TableHead className="text-right">Količina</TableHead>
-                          <TableHead className="text-right">Cijena</TableHead>
-                          <TableHead className="text-right">Ukupno</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {order.items.map((item, idx) => (
-                          <TableRow key={idx} data-testid={`order-item-${order.id}-${idx}`}>
-                            <TableCell className="font-medium truncate max-w-[200px]">{item.productName}</TableCell>
-                            <TableCell className="text-right">{item.quantity}</TableCell>
-                            <TableCell className="text-right">{item.price} KM</TableCell>
-                            <TableCell className="text-right font-semibold">{item.total} KM</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                    <div className="space-y-3">
+                      {order.items.map((item, idx) => (
+                        <div key={idx} data-testid={`order-item-${order.id}-${idx}`} className="pb-3 border-b last:border-b-0 last:pb-0">
+                          <p className="font-medium text-sm truncate mb-2">{item.productName}</p>
+                          <div className="flex justify-between text-sm text-muted-foreground">
+                            <span>Količina: {item.quantity}</span>
+                            <span>{item.price} KM</span>
+                          </div>
+                          <div className="flex justify-between text-sm font-semibold mt-1">
+                            <span>Ukupno:</span>
+                            <span>{item.total} KM</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </CardContent>
                 </Card>
               ))}
