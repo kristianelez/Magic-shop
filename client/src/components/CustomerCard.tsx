@@ -148,11 +148,11 @@ export function CustomerCard({
             </div>
           </div>
         )}
-        <div className="grid grid-cols-1 gap-2 pt-2">
+        <div className="grid grid-cols-1 gap-1 pt-2">
           <Button
-            size="sm"
+            size="xs"
             variant="outline"
-            className="w-full"
+            className="w-full text-xs"
             data-testid="button-call"
             onClick={handleCallClick}
             disabled={!phone || recordCallMutation.isPending}
@@ -161,9 +161,9 @@ export function CustomerCard({
             Pozovi
           </Button>
           <Button
-            size="sm"
+            size="xs"
             variant="outline"
-            className="w-full"
+            className="w-full text-xs"
             data-testid={`button-view-conversations-${id}`}
             onClick={() => setLocation(`/customers/${id}`)}
           >
@@ -172,9 +172,9 @@ export function CustomerCard({
           </Button>
           {email ? (
             <Button
-              size="sm"
+              size="xs"
               variant="outline"
-              className="w-full"
+              className="w-full text-xs"
               data-testid="button-email"
               asChild
             >
@@ -185,9 +185,9 @@ export function CustomerCard({
             </Button>
           ) : (
             <Button
-              size="sm"
+              size="xs"
               variant="outline"
-              className="w-full"
+              className="w-full text-xs"
               data-testid="button-email"
               disabled
             >
