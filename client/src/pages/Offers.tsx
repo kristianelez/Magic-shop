@@ -311,15 +311,15 @@ export default function Offers() {
   };
 
   return (
-    <div className="space-y-6 overflow-hidden">
+    <div className="space-y-6 overflow-x-hidden">
       <div>
         <h1 className="text-2xl font-semibold" data-testid="heading-offers">Ponude</h1>
         <p className="text-muted-foreground">Kreiraj i upravljaj ponudama</p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3 overflow-hidden">
-        <div className="lg:col-span-2 overflow-hidden">
-          <div className="space-y-6 overflow-hidden">
+      <div className="grid gap-6 lg:grid-cols-3 overflow-x-hidden">
+        <div className="lg:col-span-2 overflow-x-hidden">
+          <div className="space-y-6 overflow-x-hidden">
             <Card>
               <CardHeader>
                 <CardTitle>Informacije o kupcu</CardTitle>

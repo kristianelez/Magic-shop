@@ -301,7 +301,7 @@ export default function EditOrder() {
   }
 
   return (
-    <div className="space-y-6 overflow-hidden">
+    <div className="space-y-6 overflow-x-hidden">
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"

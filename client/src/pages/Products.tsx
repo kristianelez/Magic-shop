@@ -34,7 +34,7 @@ export default function Products() {
   }
 
   return (
-    <div className="space-y-6 overflow-hidden">
+    <div className="space-y-6 overflow-x-hidden">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-semibold" data-testid="heading-products">Proizvodi</h1>
