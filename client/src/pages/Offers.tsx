@@ -307,7 +307,16 @@ export default function Offers() {
     doc.text("UKUPNO SA PDV:", 100, yPos);
     doc.text(`${ukupnoSaPDV.toFixed(2)} KM`, 170, yPos);
     
-    doc.save(`Ponuda_${offer.id}_${customer?.name || "kupac"}.pdf`);
+    // Mobile-friendly download using blob URL
+    const pdfBlob = doc.output("blob");
+    const blobUrl = URL.createObjectURL(pdfBlob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = `Ponuda_${offer.id}_${customer?.name || "kupac"}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(blobUrl);
   };
 
   return (
@@ -506,11 +515,26 @@ export default function Offers() {
                               type="text"
                               inputMode="numeric"
                               pattern="[0-9]*"
-                              value={item.quantity}
+                              value={item.quantity === 0 ? "" : item.quantity}
                               onChange={(e) => {
                                 const newItems = [...items];
-                                newItems[idx].quantity = parseInt(e.target.value) || 1;
+                                const val = e.target.value;
+                                if (val === "" || val === "0") {
+                                  newItems[idx].quantity = 0;
+                                } else {
+                                  const parsed = parseInt(val);
+                                  if (!isNaN(parsed) && parsed >= 0) {
+                                    newItems[idx].quantity = parsed;
+                                  }
+                                }
                                 setItems(newItems);
+                              }}
+                              onBlur={(e) => {
+                                if (item.quantity === 0 || item.quantity < 1) {
+                                  const newItems = [...items];
+                                  newItems[idx].quantity = 1;
+                                  setItems(newItems);
+                                }
                               }}
                               className="w-full text-xs sm:text-sm"
                               data-testid={`input-quantity-${idx}`}
