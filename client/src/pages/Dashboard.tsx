@@ -108,7 +108,7 @@ export default function Dashboard() {
   }).length;
 
   return (
-    <div className="space-y-6 overflow-x-hidden">
+    <div className="space-y-6 overflow-hidden">
       <div>
         <h1 className="text-2xl font-semibold" data-testid="heading-dashboard">Dashboard</h1>
         <p className="text-muted-foreground">Pregled vaših prodajnih aktivnosti</p>

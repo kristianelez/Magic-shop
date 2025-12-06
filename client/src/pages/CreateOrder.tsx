@@ -267,7 +267,7 @@ export default function CreateOrder() {
   }
 
   return (
-    <div className="space-y-6 overflow-x-hidden">
+    <div className="space-y-6 overflow-hidden">
       <div>
         <h1 className="text-2xl font-semibold flex items-center gap-2" data-testid="heading-create-order">
           <ShoppingCart className="h-6 w-6" />
@@ -276,7 +276,7 @@ export default function CreateOrder() {
         <p className="text-muted-foreground">Kreirajte novu narudžbu za kupca</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6 overflow-x-hidden">
+      <form onSubmit={handleSubmit} className="space-y-6 overflow-hidden">
         <Card>
           <CardHeader>
             <CardTitle>Informacije o kupcu</CardTitle>
