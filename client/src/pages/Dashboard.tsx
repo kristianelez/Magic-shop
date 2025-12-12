@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { StatsCard } from "@/components/StatsCard";
 import { AIRecommendationCard } from "@/components/AIRecommendationCard";
+import { MonthlyProgressBar } from "@/components/MonthlyProgressBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, TrendingUp, Phone, Target, Clock, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -113,6 +114,8 @@ export default function Dashboard() {
         <h1 className="text-2xl font-semibold" data-testid="heading-dashboard">Dashboard</h1>
         <p className="text-muted-foreground">Pregled vaših prodajnih aktivnosti</p>
       </div>
+
+      <MonthlyProgressBar />
 
       {isLoading ? (
         <div className="text-center py-8">

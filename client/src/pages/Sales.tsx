@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatsCard } from "@/components/StatsCard";
+import { MonthlyProgressBar } from "@/components/MonthlyProgressBar";
 import { TrendingUp, DollarSign, ShoppingCart, Users, ClipboardList } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -81,8 +82,8 @@ export default function Sales() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 overflow-x-hidden">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-semibold" data-testid="heading-sales">Prodaja</h1>
           <p className="text-muted-foreground">Pregled prodajnih rezultata</p>
@@ -96,6 +97,8 @@ export default function Sales() {
           Pregled narudžbi
         </Button>
       </div>
+
+      <MonthlyProgressBar />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
