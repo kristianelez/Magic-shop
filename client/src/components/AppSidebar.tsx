@@ -15,7 +15,7 @@ import {
 
 const menuItems = [
   {
-    title: "Analitika",
+    title: "Dashboard",
     url: "/",
     icon: LayoutDashboard,
   },
@@ -43,6 +43,11 @@ const menuItems = [
     title: "AI Preporuke",
     url: "/recommendations",
     icon: Sparkles,
+  },
+  {
+    title: "Prodaja",
+    url: "/sales",
+    icon: TrendingUp,
   },
   {
     title: "Ponude",

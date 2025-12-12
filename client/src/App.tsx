@@ -13,10 +13,11 @@ import { Button } from "@/components/ui/button";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { LogOut } from "lucide-react";
-import Analytics from "@/pages/Analytics";
+import Dashboard from "@/pages/Dashboard";
 import Customers from "@/pages/Customers";
 import CustomerDetail from "@/pages/CustomerDetail";
 import Products from "@/pages/Products";
+import Sales from "@/pages/Sales";
 import CreateOrder from "@/pages/CreateOrder";
 import EditOrder from "@/pages/EditOrder";
 import Orders from "@/pages/Orders";
@@ -37,7 +38,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
-      <Route path="/" component={Analytics} />
+      <Route path="/" component={Dashboard} />
       <Route path="/customers" component={Customers} />
       <Route path="/customers/:customerId" component={CustomerDetail} />
       <Route path="/products" component={Products} />
@@ -48,6 +49,7 @@ function Router() {
           </Suspense>
         )}
       </Route>
+      <Route path="/sales" component={Sales} />
       <Route path="/offers" component={Offers} />
       <Route path="/create-order" component={CreateOrder} />
       <Route path="/edit-order/:orderId" component={EditOrder} />
