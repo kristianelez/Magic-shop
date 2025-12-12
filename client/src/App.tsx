@@ -13,10 +13,9 @@ import { Button } from "@/components/ui/button";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { LogOut } from "lucide-react";
-import Dashboard from "@/pages/Dashboard";
+import Analytics from "@/pages/Analytics";
 import Customers from "@/pages/Customers";
 import CustomerDetail from "@/pages/CustomerDetail";
-import Products from "@/pages/Products";
 import Sales from "@/pages/Sales";
 import CreateOrder from "@/pages/CreateOrder";
 import EditOrder from "@/pages/EditOrder";
@@ -38,10 +37,9 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
-      <Route path="/" component={Dashboard} />
+      <Route path="/" component={Analytics} />
       <Route path="/customers" component={Customers} />
       <Route path="/customers/:customerId" component={CustomerDetail} />
-      <Route path="/products" component={Products} />
       <Route path="/recommendations">
         {() => (
           <Suspense fallback={<LoadingFallback />}>
