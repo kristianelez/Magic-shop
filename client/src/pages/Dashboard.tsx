@@ -151,7 +151,7 @@ export default function Dashboard() {
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Main content loads first */}
             <div>
-              <h2 className="text-lg font-semibold mb-4">AI Preporuke</h2>
+              <h2 className="text-lg font-semibold mb-4">Preporuke u prodaji</h2>
               <div className="space-y-4">
                 {aiRecommendations.length > 0 ? (
                   aiRecommendations.slice(0, 3).map((rec, idx) => (

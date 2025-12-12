@@ -40,7 +40,7 @@ const menuItems = [
     icon: Package,
   },
   {
-    title: "AI Preporuke",
+    title: "Preporuke u prodaji",
     url: "/recommendations",
     icon: Sparkles,
   },

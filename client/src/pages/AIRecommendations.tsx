@@ -29,7 +29,7 @@ export default function AIRecommendations() {
       <div>
         <h1 className="text-2xl font-semibold flex items-center gap-2" data-testid="heading-ai-recommendations">
           <Sparkles className="h-6 w-6 text-primary" />
-          AI Preporuke
+          Preporuke u prodaji
         </h1>
         <p className="text-muted-foreground">
           Pametne preporuke za kontakte sa kupcima baziran na njihovim kupovnim navikama
