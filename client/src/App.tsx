@@ -16,7 +16,7 @@ import { LogOut } from "lucide-react";
 import Analytics from "@/pages/Analytics";
 import Customers from "@/pages/Customers";
 import CustomerDetail from "@/pages/CustomerDetail";
-import Sales from "@/pages/Sales";
+import Products from "@/pages/Products";
 import CreateOrder from "@/pages/CreateOrder";
 import EditOrder from "@/pages/EditOrder";
 import Orders from "@/pages/Orders";
@@ -40,6 +40,7 @@ function Router() {
       <Route path="/" component={Analytics} />
       <Route path="/customers" component={Customers} />
       <Route path="/customers/:customerId" component={CustomerDetail} />
+      <Route path="/products" component={Products} />
       <Route path="/recommendations">
         {() => (
           <Suspense fallback={<LoadingFallback />}>
@@ -47,7 +48,6 @@ function Router() {
           </Suspense>
         )}
       </Route>
-      <Route path="/sales" component={Sales} />
       <Route path="/offers" component={Offers} />
       <Route path="/create-order" component={CreateOrder} />
       <Route path="/edit-order/:orderId" component={EditOrder} />

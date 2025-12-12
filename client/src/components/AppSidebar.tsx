@@ -35,14 +35,14 @@ const menuItems = [
     icon: Users,
   },
   {
+    title: "Proizvodi",
+    url: "/products",
+    icon: Package,
+  },
+  {
     title: "AI Preporuke",
     url: "/recommendations",
     icon: Sparkles,
-  },
-  {
-    title: "Prodaja",
-    url: "/sales",
-    icon: TrendingUp,
   },
   {
     title: "Ponude",
