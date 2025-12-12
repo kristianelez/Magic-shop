@@ -30,7 +30,10 @@ export function CustomerCard({
       return await apiRequest("POST", `/api/activities/call/${customerId}`);
     },
     onSuccess: async () => {
-      await queryClient.refetchQueries({ queryKey: ['/api/customers'] });
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['/api/customers'] }),
+        queryClient.refetchQueries({ queryKey: ['/api/activities'] }),
+      ]);
     },
   });
 
