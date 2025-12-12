@@ -124,7 +124,7 @@ export default function Sales() {
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2 overflow-x-hidden">
+      <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -183,15 +183,9 @@ export default function Sales() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{product.name}</p>
-                        <div className="flex items-center justify-between mt-1 gap-2">
+                        <div className="flex items-center justify-between mt-1">
                           <span className="text-xs text-muted-foreground">{product.sold} kom</span>
                           <span className="text-sm font-semibold text-primary">{product.revenue.toFixed(0)} KM</span>
-                        </div>
-                        <div className="w-full bg-muted rounded-full h-1.5 mt-1.5">
-                          <div
-                            className="bg-primary h-1.5 rounded-full"
-                            style={{ width: `${(product.sold / maxSold) * 100}%` }}
-                          />
                         </div>
                       </div>
                     </div>
