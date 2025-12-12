@@ -141,7 +141,7 @@ export default function Dashboard() {
               icon={TrendingUp}
             />
             <StatsCard
-              title="Topproizvod"
+              title="Top proizvodi"
               value={topProducts[0]?.name || "-"}
               icon={Package}
               description={topProducts[0] ? `${topProducts[0].quantity} kom` : "nema podataka"}
