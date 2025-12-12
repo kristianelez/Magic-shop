@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Package, Sparkles, ShoppingCart, ClipboardList, FileText } from "lucide-react";
+import { LayoutDashboard, Users, Package, Sparkles, ShoppingCart, ClipboardList, FileText, Trophy } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
   Sidebar,
@@ -48,6 +48,11 @@ const menuItems = [
     title: "Ponude",
     url: "/offers",
     icon: FileText,
+  },
+  {
+    title: "Bonusi",
+    url: "/bonuses",
+    icon: Trophy,
   },
 ];
 
