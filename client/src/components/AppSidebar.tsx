@@ -15,7 +15,7 @@ import {
 
 const menuItems = [
   {
-    title: "Dashboard",
+    title: "Analitika",
     url: "/",
     icon: LayoutDashboard,
   },
