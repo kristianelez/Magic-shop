@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatsCard } from "@/components/StatsCard";
 import { MonthlyProgressBar } from "@/components/MonthlyProgressBar";
-import { TrendingUp, DollarSign, ShoppingCart, Users, ClipboardList } from "lucide-react";
+import { TrendingUp, DollarSign, ShoppingCart, Users, ClipboardList, TrendingDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
@@ -124,29 +124,32 @@ export default function Sales() {
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2 overflow-x-hidden">
         <Card>
-          <CardHeader>
-            <CardTitle>Nedavne prodaje</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <TrendingDown className="h-4 w-4" />
+              Nedavne prodaje
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
+          <CardContent className="px-3 sm:px-6">
+            <div className="space-y-2">
               {recentSales.map((sale) => (
                 <div
                   key={sale.id}
-                  className="flex items-center justify-between p-3 rounded-md border border-border hover-elevate"
+                  className="p-2.5 rounded-md border border-border hover-elevate"
                   data-testid={`sale-${sale.id}`}
                 >
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{sale.customer}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5 truncate">{sale.product}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{sale.date}</p>
-                  </div>
-                  <div className="text-right flex flex-col items-end gap-1">
-                    <p className="font-semibold text-primary">{sale.amount.toFixed(2)} KM</p>
-                    <Badge variant={sale.status === "completed" ? "secondary" : "outline"}>
-                      {sale.status === "completed" ? "Završeno" : "Na čekanju"}
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <p className="font-medium text-sm truncate flex-1">{sale.customer}</p>
+                    <Badge variant={sale.status === "completed" ? "secondary" : "outline"} className="text-[10px] flex-shrink-0">
+                      {sale.status === "completed" ? "Završeno" : "Čeka"}
                     </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate">{sale.product}</p>
+                  <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-border/50">
+                    <span className="text-[10px] text-muted-foreground">{sale.date}</span>
+                    <span className="text-xs font-semibold text-primary">{sale.amount.toFixed(0)} KM</span>
                   </div>
                 </div>
               ))}
@@ -155,33 +158,42 @@ export default function Sales() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Top proizvodi</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ShoppingCart className="h-4 w-4" />
+              Top proizvodi
+            </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 sm:px-6">
             {topProducts.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">
-                Nema podataka o prodaji proizvoda.
+              <p className="text-center text-muted-foreground py-8 text-sm">
+                Nema podataka o prodaji
               </p>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {topProducts.map((product, idx) => (
-                  <div key={idx} className="space-y-2 min-w-0" data-testid={`top-product-${idx}`}>
-                    <div className="flex items-center justify-between min-w-0 gap-2">
-                      <span className="font-medium text-sm truncate">{product.name}</span>
-                      <span className="text-sm font-semibold text-primary">
-                        {product.revenue.toFixed(2)} KM
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{product.sold} prodatih jedinica</span>
-                      <span>#{idx + 1}</span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div
-                        className="bg-primary h-2 rounded-full"
-                        style={{ width: `${(product.sold / maxSold) * 100}%` }}
-                      />
+                  <div 
+                    key={idx} 
+                    className="p-2.5 rounded-md border border-border hover-elevate"
+                    data-testid={`top-product-${idx}`}
+                  >
+                    <div className="flex items-start gap-2">
+                      <div className="flex items-center justify-center h-7 w-7 rounded-md bg-primary/10 text-primary font-bold text-sm flex-shrink-0">
+                        {idx + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{product.name}</p>
+                        <div className="flex items-center justify-between mt-1 gap-2">
+                          <span className="text-xs text-muted-foreground">{product.sold} kom</span>
+                          <span className="text-sm font-semibold text-primary">{product.revenue.toFixed(0)} KM</span>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-1.5 mt-1.5">
+                          <div
+                            className="bg-primary h-1.5 rounded-full"
+                            style={{ width: `${(product.sold / maxSold) * 100}%` }}
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
