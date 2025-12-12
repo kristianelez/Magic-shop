@@ -179,31 +179,31 @@ export default function Dashboard() {
             </div>
 
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Clock className="h-4 w-4" />
                   Nedavne aktivnosti
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
+              <CardContent className="px-3 sm:px-6">
+                <div className="space-y-2">
                   {recentActivitiesList.map((activity) => (
                     <div
                       key={activity.id}
-                      className="flex items-start justify-between p-3 rounded-md hover-elevate border border-border"
+                      className="p-2.5 rounded-md hover-elevate border border-border"
                       data-testid={`activity-${activity.id}`}
                     >
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{activity.customer}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{activity.product}</p>
-                      </div>
-                      <div className="text-right">
-                        <Badge variant="secondary" className="mb-1">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <p className="font-medium text-sm truncate flex-1">{activity.customer}</p>
+                        <Badge variant="secondary" className="text-[10px] flex-shrink-0">
                           {activity.action}
                         </Badge>
-                        <p className="text-xs text-muted-foreground">{activity.time}</p>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">{activity.product}</p>
+                      <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-border/50">
+                        <span className="text-[10px] text-muted-foreground">{activity.time}</span>
                         {activity.amount !== "-" && (
-                          <p className="text-xs font-semibold text-primary mt-0.5">{activity.amount}</p>
+                          <span className="text-xs font-semibold text-primary">{activity.amount}</span>
                         )}
                       </div>
                     </div>
@@ -215,20 +215,30 @@ export default function Dashboard() {
 
           {topProducts.length > 0 && (
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Package className="h-4 w-4" />
                   Top proizvodi ovaj mjesec
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-3 sm:px-6">
                 <div className="space-y-2">
                   {topProducts.map((product, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-2 rounded border border-border">
-                      <span className="text-sm font-medium">{product.name}</span>
-                      <div className="text-right">
-                        <p className="text-xs text-muted-foreground">{product.quantity} kom</p>
-                        <p className="text-sm font-semibold">{product.revenue.toFixed(2)} KM</p>
+                    <div 
+                      key={idx} 
+                      className="p-2.5 rounded-md border border-border hover-elevate"
+                    >
+                      <div className="flex items-start gap-2">
+                        <div className="flex items-center justify-center h-7 w-7 rounded-md bg-primary/10 text-primary font-bold text-sm flex-shrink-0">
+                          {idx + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{product.name}</p>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-xs text-muted-foreground">{product.quantity} kom</span>
+                            <span className="text-sm font-semibold text-primary">{product.revenue.toFixed(0)} KM</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))}
