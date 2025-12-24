@@ -282,7 +282,7 @@ async function suggestProductsForCustomerOptimized(
       )
     : allProducts;
 
-  const favoriteProductsToReorder = pattern.favoriteProducts.slice(0, 2);
+  const favoriteProductsToReorder = pattern.favoriteProducts.slice(0, 3);
 
   const season = getCurrentSeason();
   const seasonalProducts = customerTypeProducts
@@ -290,18 +290,35 @@ async function suggestProductsForCustomerOptimized(
       const factor = getSeasonalFactor(p.category);
       return factor > 1.1;
     })
-    .map((p) => p.name)
-    .slice(0, 1);
-
-  const categoryProducts = customerTypeProducts
-    .filter((p) => pattern.favoriteCategories.includes(p.category))
     .filter((p) => !favoriteProductsToReorder.includes(p.name))
     .map((p) => p.name)
     .slice(0, 1);
 
+  const notYetPurchasedFromEssentials: string[] = [];
+  for (const category of [
+    "Sredstva za čišćenje podova",
+    "Sredstva za čišćenje toaleta",
+    "Sredstva za čišćenje staklenih površina",
+    "Oprema za čišćenje",
+    "Ubrusi za ruke",
+    "Toaletni papir",
+  ]) {
+    const hasPurchasedFromCategory = pattern.favoriteCategories.includes(category);
+    if (!hasPurchasedFromCategory) {
+      const categoryProduct = customerTypeProducts.find((p) => p.category === category);
+      if (categoryProduct && !favoriteProductsToReorder.includes(categoryProduct.name)) {
+        notYetPurchasedFromEssentials.push(categoryProduct.name);
+      }
+    }
+  }
+
   const suggestedProducts = Array.from(
-    new Set([...favoriteProductsToReorder, ...seasonalProducts, ...categoryProducts])
-  ).slice(0, 3);
+    new Set([
+      ...favoriteProductsToReorder,
+      ...notYetPurchasedFromEssentials.slice(0, 2),
+      ...seasonalProducts,
+    ])
+  ).slice(0, 6);
 
   const reasons = [];
   
@@ -319,8 +336,16 @@ async function suggestProductsForCustomerOptimized(
     reasons.push(`Očekivana nova narudžba za ${daysUntilExpected} dana`);
   }
 
+  if (favoriteProductsToReorder.length > 0) {
+    reasons.push(`Ponovna narudžba: ${favoriteProductsToReorder.join(", ")}`);
+  }
+
+  if (notYetPurchasedFromEssentials.length > 0) {
+    reasons.push(`Novi artikli za ponuditi: ${notYetPurchasedFromEssentials.slice(0, 2).join(", ")}`);
+  }
+
   if (seasonalProducts.length > 0) {
-    reasons.push(`Trenutna sezona (${season}) povećava potražnju za ${seasonalProducts[0]}`);
+    reasons.push(`Sezonska ponuda: ${seasonalProducts[0]}`);
   }
 
   const reasoning = reasons.join(". ") + ".";
@@ -343,6 +368,15 @@ const customerTypeLabels: Record<string, string> = {
   ostalo: "Ostalo",
 };
 
+const essentialCategories = [
+  "Sredstva za čišćenje podova",
+  "Sredstva za čišćenje toaleta",
+  "Sredstva za čišćenje staklenih površina",
+  "Oprema za čišćenje",
+  "Ubrusi za ruke",
+  "Toaletni papir",
+];
+
 function buildFirstTimeRecommendations(
   customer: Customer,
   allProducts: Product[]
@@ -359,19 +393,35 @@ function buildFirstTimeRecommendations(
   }
 
   const season = getCurrentSeason();
-  const scoredProducts = relevantProducts.map((p) => {
-    let score = 1.0;
-    score *= getSeasonalFactor(p.category);
-    return { product: p, score };
-  });
+  const selectedProducts: string[] = [];
 
-  scoredProducts.sort((a, b) => b.score - a.score);
+  for (const category of essentialCategories) {
+    const categoryProducts = relevantProducts.filter((p) => p.category === category);
+    
+    if (categoryProducts.length > 0) {
+      const scoredCategoryProducts = categoryProducts.map((p) => {
+        let score = 1.0;
+        score *= getSeasonalFactor(p.category);
+        return { product: p, score };
+      });
+      scoredCategoryProducts.sort((a, b) => b.score - a.score);
+      selectedProducts.push(scoredCategoryProducts[0].product.name);
+    }
+  }
 
-  const topProducts = scoredProducts.slice(0, 5).map((sp) => sp.product.name);
+  if (selectedProducts.length < 3) {
+    const remainingProducts = relevantProducts
+      .filter((p) => !selectedProducts.includes(p.name))
+      .slice(0, 6 - selectedProducts.length);
+    
+    for (const p of remainingProducts) {
+      selectedProducts.push(p.name);
+    }
+  }
 
   const reasons = [
     `Novi kupac - ${customerTypeLabel}`,
-    `Preporučeni proizvodi za ${customerTypeLabel.toLowerCase()} kategoriju`,
+    `Osnovni asortiman: sredstva za pod, WC, stakla, oprema, ubrusi i toalet papir`,
   ];
 
   if (season === "ljeto" || season === "zima") {
@@ -379,7 +429,7 @@ function buildFirstTimeRecommendations(
   }
 
   return {
-    products: topProducts,
+    products: selectedProducts,
     reasoning: reasons.join(". ") + ".",
   };
 }
