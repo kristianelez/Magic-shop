@@ -297,6 +297,10 @@ async function suggestProductsForCustomerOptimized(
   const notYetPurchasedFromEssentials: string[] = [];
   const floorCleaningProducts = ["Tergon Frutal", "Tergon Limon"];
   const useAlternate = pattern.customerId % 2 === 0;
+  const scotchBriteProducts = [
+    "3M Scotch-Brite Essential Microfiber Wipes 2012 Red",
+    "3M Scotch-Brite Microfiber Wipe 2012, Blue"
+  ];
 
   for (const category of [
     "Sredstva za čišćenje podova",
@@ -323,11 +327,14 @@ async function suggestProductsForCustomerOptimized(
     }
   }
 
+  const scotchBrite = scotchBriteProducts[useAlternate ? 1 : 0];
+
   const suggestedProducts = Array.from(
     new Set([
       ...favoriteProductsToReorder,
       ...notYetPurchasedFromEssentials.slice(0, 2),
       ...seasonalProducts,
+      scotchBrite,
     ])
   ).slice(0, 6);
 
@@ -391,7 +398,10 @@ const essentialCategories = [
 function replaceSpecialProducts(products: string[], customerId: number): string[] {
   return products.map((product) => {
     if (product.toLowerCase().includes("stochbrite") || product.toLowerCase().includes("3m stochbrite")) {
-      const magicScrubbies = ["3M Crvena", "3M Plava"];
+      const magicScrubbies = [
+        "3M Scotch-Brite Essential Microfiber Wipes 2012 Red",
+        "3M Scotch-Brite Microfiber Wipe 2012, Blue"
+      ];
       return magicScrubbies[customerId % 2];
     }
     return product;
@@ -417,6 +427,10 @@ function buildFirstTimeRecommendations(
   const selectedProducts: string[] = [];
   const floorCleaningProducts = ["Tergon Frutal", "Tergon Limon"];
   const useAlternate = customer.id % 2 === 0;
+  const scotchBriteProducts = [
+    "3M Scotch-Brite Essential Microfiber Wipes 2012 Red",
+    "3M Scotch-Brite Microfiber Wipe 2012, Blue"
+  ];
 
   for (const category of essentialCategories) {
     let product: string | null = null;
@@ -443,6 +457,9 @@ function buildFirstTimeRecommendations(
     }
   }
 
+  const scotchBrite = scotchBriteProducts[useAlternate ? 1 : 0];
+  selectedProducts.push(scotchBrite);
+
   if (selectedProducts.length < 3) {
     const remainingProducts = relevantProducts
       .filter((p) => !selectedProducts.includes(p.name))
@@ -463,7 +480,7 @@ function buildFirstTimeRecommendations(
   }
 
   return {
-    products: replaceSpecialProducts(selectedProducts, customer.id),
+    products: selectedProducts,
     reasoning: reasons.join(". ") + ".",
   };
 }
