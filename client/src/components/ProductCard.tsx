@@ -1,6 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Package, Percent } from "lucide-react";
+import { Package } from "lucide-react";
 
 interface ProductCardProps {
   id: string;
@@ -12,13 +11,6 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ id, name, category, price, unit }: ProductCardProps) {
-  const discountTiers = [
-    { minQty: 1, maxQty: 10, discount: 0 },
-    { minQty: 11, maxQty: 50, discount: 5 },
-    { minQty: 51, maxQty: 100, discount: 10 },
-    { minQty: 101, maxQty: null, discount: 15 },
-  ];
-
   return (
     <Card className="hover-elevate" data-testid={`card-product-${id}`}>
       <CardContent className="p-4 space-y-4">
@@ -37,28 +29,6 @@ export function ProductCard({ id, name, category, price, unit }: ProductCardProp
         <div className="flex items-baseline gap-1">
           <span className="text-xl font-bold text-primary">{price.toFixed(2)} KM</span>
           <span className="text-sm text-muted-foreground">/ {unit}</span>
-        </div>
-
-        <div className="pt-2 border-t border-border">
-          <div className="flex items-center gap-2 mb-2">
-            <Percent className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-            <span className="text-sm font-medium">Rabatna skala</span>
-          </div>
-          <div className="space-y-1.5">
-            {discountTiers.map((tier, idx) => (
-              <div key={idx} className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">
-                  {tier.maxQty ? `${tier.minQty}-${tier.maxQty} ${unit}` : `${tier.minQty}+ ${unit}`}
-                </span>
-                <Badge 
-                  variant={tier.discount === 0 ? "outline" : "secondary"} 
-                  className="text-xs"
-                >
-                  {tier.discount === 0 ? "Osnovna cijena" : `-${tier.discount}%`}
-                </Badge>
-              </div>
-            ))}
-          </div>
         </div>
       </CardContent>
     </Card>

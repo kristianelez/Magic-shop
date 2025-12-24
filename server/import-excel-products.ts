@@ -3,15 +3,6 @@ import { db } from "./db";
 import { products } from "@shared/schema";
 import { sql } from "drizzle-orm";
 
-const ALLOWED_CATEGORIES = [
-  "Osvježivači",
-  "Automobilska kozmetika",
-  "Oprema za čišćenje",
-  "Salvete",
-  "Toaletni papir",
-  "Ubrusi za ruke",
-];
-
 function mapKategorijaKupca(kategorijaKupca: string): string[] {
   if (!kategorijaKupca) return ["ostalo"];
   
@@ -45,25 +36,23 @@ async function importProducts() {
   
   console.log(`Total rows in Excel: ${data.length}`);
   
-  const filteredData = data.filter(row => {
-    const category = row["Kategorija robe"];
-    return ALLOWED_CATEGORIES.includes(category);
-  });
-  
-  console.log(`Filtered to ${filteredData.length} products in allowed categories`);
-  
   console.log("Deleting all existing products...");
   await db.execute(sql`TRUNCATE TABLE products RESTART IDENTITY CASCADE`);
   
-  console.log("Inserting new products...");
+  console.log("Inserting all products...");
   let inserted = 0;
   
-  for (const row of filteredData) {
+  for (const row of data) {
     const name = row["Naziv"];
     const category = row["Kategorija robe"];
     const priceWithVAT = parseFloat(row["Cijena sa PDV"]) || 0;
     const kategorijaKupca = row["Kategorija kupca "] || "";
     const recommendedFor = mapKategorijaKupca(kategorijaKupca);
+    
+    if (!name || !category) {
+      console.log(`Skipping row with missing name or category`);
+      continue;
+    }
     
     try {
       await db.insert(products).values({
@@ -85,13 +74,15 @@ async function importProducts() {
   console.log(`Successfully inserted ${inserted} products`);
   
   const categoryCounts: Record<string, number> = {};
-  filteredData.forEach(row => {
+  data.forEach(row => {
     const cat = row["Kategorija robe"];
-    categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+    if (cat) {
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+    }
   });
   
   console.log("\nProducts by category:");
-  Object.entries(categoryCounts).forEach(([cat, count]) => {
+  Object.entries(categoryCounts).sort((a, b) => b[1] - a[1]).forEach(([cat, count]) => {
     console.log(`  ${cat}: ${count}`);
   });
   

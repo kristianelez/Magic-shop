@@ -20,6 +20,7 @@ interface OfferItem {
   productId: number;
   quantity: number;
   price: string;
+  discount: string;
   category: string;
   productName: string;
 }
@@ -75,7 +76,9 @@ export default function Offers() {
   // Cijena sa PDV-om = item.price (originalna cijena iz baze)
   // Cijena bez PDV-a = item.price / 1.17
   const calculateItemWithPDV = (item: OfferItem) => {
-    return parseFloat(item.price) * item.quantity;
+    const priceSaPDV = parseFloat(item.price) * item.quantity;
+    const discountAmount = priceSaPDV * (parseFloat(item.discount || "0") / 100);
+    return priceSaPDV - discountAmount;
   };
 
   const calculateItemBezPDV = (item: OfferItem) => {
@@ -106,7 +109,7 @@ export default function Offers() {
           productId: item.productId,
           quantity: item.quantity,
           price: item.price,
-          discount: "0",
+          discount: item.discount || "0",
           category: item.category,
           productName: item.productName,
         });
@@ -146,6 +149,7 @@ export default function Offers() {
         productId: firstProduct.id,
         quantity: 1,
         price: firstProduct.price,
+        discount: "0",
         category: firstProduct.category,
         productName: firstProduct.name,
       };
@@ -156,6 +160,12 @@ export default function Offers() {
 
   const handleRemoveItem = (index: number) => {
     setItems(items.filter((_, i) => i !== index));
+  };
+
+  const handleDiscountChange = (index: number, discountValue: string) => {
+    const newItems = [...items];
+    newItems[index].discount = discountValue;
+    setItems(newItems);
   };
 
   const generatePDF = (offer: Offer) => {
@@ -204,10 +214,11 @@ export default function Offers() {
     doc.setFont("times", "bold");
     doc.setFontSize(9);
     doc.text("Artikal", 17, yPos);
-    doc.text("Kol.", 80, yPos);
-    doc.text("Cijena", 100, yPos);
-    doc.text("Bez PDV", 130, yPos);
-    doc.text("Sa PDV", 165, yPos);
+    doc.text("Kol.", 72, yPos);
+    doc.text("Cijena", 88, yPos);
+    doc.text("Rabat", 112, yPos);
+    doc.text("Bez PDV", 138, yPos);
+    doc.text("Sa PDV", 170, yPos);
     
     doc.setFont("times", "normal");
     yPos += 8;
@@ -218,7 +229,10 @@ export default function Offers() {
     (offer.items || []).forEach((item: any) => {
       const price = parseFloat(item.price);
       const qty = item.quantity;
-      const saPDV = price * qty;
+      const discount = parseFloat(item.discount || "0");
+      const baseTotal = price * qty;
+      const discountAmount = baseTotal * (discount / 100);
+      const saPDV = baseTotal - discountAmount;
       const bezPDV = saPDV / (1 + PDV_RATE);
       
       ukupnoSaPDV += saPDV;
@@ -249,10 +263,11 @@ export default function Offers() {
       
       // Prvi red sa svim podacima
       doc.text(nameLines[0], 17, yPos);
-      doc.text(String(qty), 80, yPos);
-      doc.text(`${price.toFixed(2)}`, 100, yPos);
-      doc.text(`${bezPDV.toFixed(2)}`, 130, yPos);
-      doc.text(`${saPDV.toFixed(2)}`, 165, yPos);
+      doc.text(String(qty), 72, yPos);
+      doc.text(`${price.toFixed(2)}`, 88, yPos);
+      doc.text(`${discount.toFixed(0)}%`, 112, yPos);
+      doc.text(`${bezPDV.toFixed(2)}`, 138, yPos);
+      doc.text(`${saPDV.toFixed(2)}`, 170, yPos);
       
       // Dodatni redovi za dugacak naziv
       for (let i = 1; i < nameLines.length; i++) {
@@ -526,6 +541,19 @@ export default function Offers() {
                             />
                           </div>
 
+                          <div className="w-full min-w-0">
+                            <Label className="text-xs sm:text-sm block truncate">Rabat %</Label>
+                            <Input
+                              type="number"
+                              value={item.discount}
+                              onChange={(e) => handleDiscountChange(idx, e.target.value)}
+                              className="w-full text-xs sm:text-sm"
+                              min="0"
+                              max="100"
+                              data-testid={`input-discount-${idx}`}
+                            />
+                          </div>
+
                           <Button
                             type="button"
                             variant="outline"
@@ -599,15 +627,17 @@ export default function Offers() {
                 )}
                 {offers.map((offer: any) => {
                   const customer = customers.find((c: any) => c.id === offer.customerId);
-                  let offerTotal = 0;
+                  let offerTotalBezPDV = 0;
                   (offer.items || []).forEach((item: any) => {
                     const price = parseFloat(item.price);
                     const qty = item.quantity;
-                    offerTotal += price * qty;
+                    const discount = parseFloat(item.discount || "0");
+                    const baseTotal = price * qty;
+                    const discountAmount = baseTotal * (discount / 100);
+                    offerTotalBezPDV += baseTotal - discountAmount;
                   });
-                  const offerTotalBezPDV = offerTotal / (1 + PDV_RATE);
-                  const offerPDV = offerTotal - offerTotalBezPDV;
-                  const offerTotalSaPDV = offerTotal;
+                  const offerPDV = offerTotalBezPDV * PDV_RATE;
+                  const offerTotalSaPDV = offerTotalBezPDV + offerPDV;
                   
                   return (
                     <div
