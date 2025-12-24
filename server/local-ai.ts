@@ -295,6 +295,9 @@ async function suggestProductsForCustomerOptimized(
     .slice(0, 1);
 
   const notYetPurchasedFromEssentials: string[] = [];
+  const floorCleaningProducts = ["Tergon Frutal", "Tergon Limon"];
+  const useAlternate = pattern.customerId % 2 === 0;
+
   for (const category of [
     "Sredstva za čišćenje podova",
     "Sredstva za čišćenje toaleta",
@@ -305,7 +308,15 @@ async function suggestProductsForCustomerOptimized(
   ]) {
     const hasPurchasedFromCategory = pattern.favoriteCategories.includes(category);
     if (!hasPurchasedFromCategory) {
-      const categoryProduct = customerTypeProducts.find((p) => p.category === category);
+      let categoryProduct: Product | undefined;
+
+      if (category === "Sredstva za čišćenje podova") {
+        const floorProduct = floorCleaningProducts[useAlternate ? 1 : 0];
+        categoryProduct = customerTypeProducts.find((p) => p.name === floorProduct);
+      } else {
+        categoryProduct = customerTypeProducts.find((p) => p.category === category);
+      }
+
       if (categoryProduct && !favoriteProductsToReorder.includes(categoryProduct.name)) {
         notYetPurchasedFromEssentials.push(categoryProduct.name);
       }
@@ -394,18 +405,31 @@ function buildFirstTimeRecommendations(
 
   const season = getCurrentSeason();
   const selectedProducts: string[] = [];
+  const floorCleaningProducts = ["Tergon Frutal", "Tergon Limon"];
+  const useAlternate = customer.id % 2 === 0;
 
   for (const category of essentialCategories) {
-    const categoryProducts = relevantProducts.filter((p) => p.category === category);
-    
-    if (categoryProducts.length > 0) {
-      const scoredCategoryProducts = categoryProducts.map((p) => {
-        let score = 1.0;
-        score *= getSeasonalFactor(p.category);
-        return { product: p, score };
-      });
-      scoredCategoryProducts.sort((a, b) => b.score - a.score);
-      selectedProducts.push(scoredCategoryProducts[0].product.name);
+    let product: string | null = null;
+
+    if (category === "Sredstva za čišćenje podova") {
+      const floorProduct = floorCleaningProducts[useAlternate ? 1 : 0];
+      const productExists = relevantProducts.find((p) => p.name === floorProduct);
+      product = productExists ? floorProduct : null;
+    } else {
+      const categoryProducts = relevantProducts.filter((p) => p.category === category);
+      if (categoryProducts.length > 0) {
+        const scoredCategoryProducts = categoryProducts.map((p) => {
+          let score = 1.0;
+          score *= getSeasonalFactor(p.category);
+          return { product: p, score };
+        });
+        scoredCategoryProducts.sort((a, b) => b.score - a.score);
+        product = scoredCategoryProducts[0].product.name;
+      }
+    }
+
+    if (product) {
+      selectedProducts.push(product);
     }
   }
 
