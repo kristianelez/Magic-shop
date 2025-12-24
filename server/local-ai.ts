@@ -190,6 +190,9 @@ function getOptimalContactTime(customerType: string | null): string {
     kafic: "10:00 - 12:00",
     pekara: "13:00 - 15:00",
     fabrika: "10:00 - 15:00",
+    veseraj: "08:00 - 10:00",
+    medicinska_ustanova: "09:00 - 11:00",
+    autokozmetika: "09:00 - 12:00",
     ostalo: "10:00 - 16:00",
   };
 

@@ -14,10 +14,9 @@ function mapKategorijaKupca(kategorijaKupca: string): string[] {
   if (kupci.includes("kafić") || kupci.includes("kafic")) result.push("kafic");
   if (kupci.includes("pekara")) result.push("pekara");
   if (kupci.includes("firma") || kupci.includes("industrija")) result.push("fabrika");
-  
-  if (kupci.includes("autokozmetika") && result.length === 0) {
-    return [];
-  }
+  if (kupci.includes("vešeraj") || kupci.includes("veseraj")) result.push("veseraj");
+  if (kupci.includes("medicinska") || kupci.includes("ustanova")) result.push("medicinska_ustanova");
+  if (kupci.includes("autokozmetika")) result.push("autokozmetika");
   
   if (result.length === 0) {
     result.push("ostalo");

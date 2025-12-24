@@ -3,7 +3,7 @@ import { pgTable, text, varchar, serial, integer, decimal, timestamp } from "dri
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const customerTypes = ["hotel", "pekara", "kafic", "restoran", "fabrika", "ostalo"] as const;
+export const customerTypes = ["hotel", "pekara", "kafic", "restoran", "fabrika", "veseraj", "medicinska_ustanova", "autokozmetika", "ostalo"] as const;
 
 export const userRoles = ["admin", "sales_director", "sales_manager"] as const;
 
