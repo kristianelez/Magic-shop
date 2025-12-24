@@ -331,15 +331,88 @@ async function suggestProductsForCustomerOptimized(
   };
 }
 
+const customerTypeLabels: Record<string, string> = {
+  hotel: "Hotel",
+  pekara: "Pekara",
+  kafic: "Kafić",
+  restoran: "Restoran",
+  fabrika: "Fabrika",
+  veseraj: "Vešeraj",
+  medicinska_ustanova: "Medicinska ustanova",
+  autokozmetika: "Autokozmetika",
+  ostalo: "Ostalo",
+};
+
+function buildFirstTimeRecommendations(
+  customer: Customer,
+  allProducts: Product[]
+): { products: string[]; reasoning: string } {
+  const customerType = customer.customerType || "ostalo";
+  const customerTypeLabel = customerTypeLabels[customerType] || customerType;
+  
+  const relevantProducts = allProducts.filter(
+    (p) => p.recommendedFor && p.recommendedFor.includes(customerType)
+  );
+
+  if (relevantProducts.length === 0) {
+    return { products: [], reasoning: "" };
+  }
+
+  const season = getCurrentSeason();
+  const scoredProducts = relevantProducts.map((p) => {
+    let score = 1.0;
+    score *= getSeasonalFactor(p.category);
+    return { product: p, score };
+  });
+
+  scoredProducts.sort((a, b) => b.score - a.score);
+
+  const topProducts = scoredProducts.slice(0, 5).map((sp) => sp.product.name);
+
+  const reasons = [
+    `Novi kupac - ${customerTypeLabel}`,
+    `Preporučeni proizvodi za ${customerTypeLabel.toLowerCase()} kategoriju`,
+  ];
+
+  if (season === "ljeto" || season === "zima") {
+    reasons.push(`Sezonska ponuda za ${season}`);
+  }
+
+  return {
+    products: topProducts,
+    reasoning: reasons.join(". ") + ".",
+  };
+}
+
 export async function generateLocalRecommendations(): Promise<LocalRecommendation[]> {
   const customers = await storage.getCustomers();
   const allProducts = await getAllProductsCached();
   const recommendations: LocalRecommendation[] = [];
 
   for (const customer of customers) {
+    if (customer.status === "inactive") continue;
+
     const pattern = await analyzeCustomerPurchasePattern(customer.id);
 
-    if (!pattern) continue;
+    if (!pattern) {
+      const { products, reasoning } = buildFirstTimeRecommendations(customer, allProducts);
+      
+      if (products.length === 0) continue;
+
+      recommendations.push({
+        customerId: customer.id,
+        customerName: customer.name,
+        customerCompany: customer.company,
+        customerEmail: customer.email || null,
+        customerPhone: customer.phone || null,
+        suggestedProducts: products,
+        reasoning,
+        priority: "medium",
+        optimalContactTime: getOptimalContactTime(customer.customerType),
+        localGenerated: true,
+      });
+      continue;
+    }
 
     const needsContact = pattern.daysSinceLastPurchase >= pattern.averageDaysBetweenPurchases * 0.8;
 
