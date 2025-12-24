@@ -88,6 +88,9 @@ export function CustomerCard({
     kafic: "Kafić",
     restoran: "Restoran",
     fabrika: "Fabrika",
+    veseraj: "Vešeraj",
+    medicinska_ustanova: "Medicinska ustanova",
+    autokozmetika: "Autokozmetika",
     ostalo: "Ostalo",
   };
 

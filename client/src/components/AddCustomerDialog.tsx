@@ -204,6 +204,9 @@ export function AddCustomerDialog({ customer, trigger }: CustomerDialogProps) {
                       <SelectItem value="kafic">Kafić</SelectItem>
                       <SelectItem value="restoran">Restoran</SelectItem>
                       <SelectItem value="fabrika">Fabrika</SelectItem>
+                      <SelectItem value="veseraj">Vešeraj</SelectItem>
+                      <SelectItem value="medicinska_ustanova">Medicinska ustanova</SelectItem>
+                      <SelectItem value="autokozmetika">Autokozmetika</SelectItem>
                       <SelectItem value="ostalo">Ostalo</SelectItem>
                     </SelectContent>
                   </Select>
