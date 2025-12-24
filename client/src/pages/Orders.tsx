@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingCart, Calendar, Package, Users, Pencil, TrendingUp, Trash2 } from "lucide-react";
+import { ShoppingCart, Calendar, Package, Users, Pencil, Trash2 } from "lucide-react";
 import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { bs } from "date-fns/locale";
 import type { Sale, Customer, Product } from "@shared/schema";
@@ -160,22 +160,12 @@ export default function Orders() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold flex items-center gap-2" data-testid="heading-orders">
-            <ShoppingCart className="h-6 w-6" />
-            Narudžbe
-          </h1>
-          <p className="text-muted-foreground">Pregled svih narudžbi sa filterima</p>
-        </div>
-        <Button 
-          onClick={() => setLocation("/sales")} 
-          variant="outline"
-          data-testid="button-view-sales"
-        >
-          <TrendingUp className="h-4 w-4 mr-2" />
-          Pregled prodaje
-        </Button>
+      <div>
+        <h1 className="text-2xl font-semibold flex items-center gap-2" data-testid="heading-orders">
+          <ShoppingCart className="h-6 w-6" />
+          Narudžbe
+        </h1>
+        <p className="text-muted-foreground">Pregled svih narudžbi sa filterima</p>
       </div>
 
       <Card>
