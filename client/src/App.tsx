@@ -28,6 +28,7 @@ import NotFound from "@/pages/not-found";
 
 // Lazy load slow pages for faster initial load
 const AIRecommendations = lazy(() => import("@/pages/AIRecommendations"));
+const CustomerContacts = lazy(() => import("@/pages/CustomerContacts"));
 
 const LoadingFallback = () => (
   <div className="flex items-center justify-center h-64">
@@ -47,6 +48,13 @@ function Router() {
         {() => (
           <Suspense fallback={<LoadingFallback />}>
             <AIRecommendations />
+          </Suspense>
+        )}
+      </Route>
+      <Route path="/contacts">
+        {() => (
+          <Suspense fallback={<LoadingFallback />}>
+            <CustomerContacts />
           </Suspense>
         )}
       </Route>

@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Package, Sparkles, ShoppingCart, ClipboardList, FileText, Trophy, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Users, Package, Sparkles, ShoppingCart, ClipboardList, FileText, Trophy, BarChart3, Bell } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
   Sidebar,
@@ -43,6 +43,11 @@ const menuItems = [
     title: "Preporuke u prodaji",
     url: "/recommendations",
     icon: Sparkles,
+  },
+  {
+    title: "Kontaktiranje kupaca",
+    url: "/contacts",
+    icon: Bell,
   },
   {
     title: "Ponude",
