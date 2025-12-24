@@ -388,6 +388,16 @@ const essentialCategories = [
   "Toaletni papir",
 ];
 
+function replaceSpecialProducts(products: string[], customerId: number): string[] {
+  return products.map((product) => {
+    if (product.toLowerCase().includes("stochbrite") || product.toLowerCase().includes("3m stochbrite")) {
+      const magicScrubbies = ["3M Crvena", "3M Plava"];
+      return magicScrubbies[customerId % 2];
+    }
+    return product;
+  });
+}
+
 function buildFirstTimeRecommendations(
   customer: Customer,
   allProducts: Product[]
@@ -453,7 +463,7 @@ function buildFirstTimeRecommendations(
   }
 
   return {
-    products: selectedProducts,
+    products: replaceSpecialProducts(selectedProducts, customer.id),
     reasoning: reasons.join(". ") + ".",
   };
 }
@@ -469,7 +479,8 @@ export async function generateLocalRecommendations(): Promise<LocalRecommendatio
     const pattern = await analyzeCustomerPurchasePattern(customer.id);
 
     if (!pattern) {
-      const { products, reasoning } = buildFirstTimeRecommendations(customer, allProducts);
+      const { products: rawProducts, reasoning } = buildFirstTimeRecommendations(customer, allProducts);
+      const products = replaceSpecialProducts(rawProducts, customer.id);
       
       if (products.length === 0) continue;
 
@@ -492,7 +503,8 @@ export async function generateLocalRecommendations(): Promise<LocalRecommendatio
 
     if (!needsContact) continue;
 
-    const { products, reasoning } = await suggestProductsForCustomerOptimized(pattern, allProducts);
+    const { products: rawProducts, reasoning } = await suggestProductsForCustomerOptimized(pattern, allProducts);
+    const products = replaceSpecialProducts(rawProducts, pattern.customerId);
 
     if (products.length === 0) continue;
 
