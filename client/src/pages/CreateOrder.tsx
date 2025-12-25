@@ -148,7 +148,13 @@ export default function CreateOrder() {
         newItems[index].total = calculateItemTotal({ ...newItems[index], quantity: qty });
       }
     } else if (field === "discount") {
-      newItems[index].discount = value || "0";
+      // Allow empty string or just typing while clearing
+      const val = value;
+      if (val === "" || val === null || val === undefined) {
+        newItems[index].discount = "" as any;
+      } else {
+        newItems[index].discount = val;
+      }
       newItems[index].total = calculateItemTotal(newItems[index]);
     }
 
@@ -162,9 +168,15 @@ export default function CreateOrder() {
     // If empty or invalid, set to 1
     if (typeof currentQty === "string" || currentQty === null || currentQty === undefined || currentQty < 1) {
       newItems[index].quantity = 1;
-      newItems[index].total = calculateItemTotal(newItems[index]);
-      setOrderItems(newItems);
     }
+
+    // Ensure discount is at least "0" on blur
+    if (!newItems[index].discount || newItems[index].discount === "") {
+      newItems[index].discount = "0";
+    }
+
+    newItems[index].total = calculateItemTotal(newItems[index]);
+    setOrderItems(newItems);
   };
 
   const totalAmount = orderItems.reduce((sum, item) => sum + item.total, 0);

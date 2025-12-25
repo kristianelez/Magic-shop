@@ -164,8 +164,20 @@ export default function Offers() {
 
   const handleDiscountChange = (index: number, discountValue: string) => {
     const newItems = [...items];
-    newItems[index].discount = discountValue;
+    if (discountValue === "" || discountValue === null || discountValue === undefined) {
+      newItems[index].discount = "" as any;
+    } else {
+      newItems[index].discount = discountValue;
+    }
     setItems(newItems);
+  };
+
+  const handleDiscountBlur = (index: number) => {
+    const newItems = [...items];
+    if (!newItems[index].discount || newItems[index].discount === "") {
+      newItems[index].discount = "0";
+      setItems(newItems);
+    }
   };
 
   const generatePDF = (offer: Offer) => {
@@ -538,6 +550,7 @@ export default function Offers() {
                               type="number"
                               value={item.discount}
                               onChange={(e) => handleDiscountChange(idx, e.target.value)}
+                              onBlur={() => handleDiscountBlur(idx)}
                               className="w-full text-xs sm:text-sm"
                               min="0"
                               max="100"
