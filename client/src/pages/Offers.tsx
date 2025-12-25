@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Plus, Trash2, ChevronsUpDown, Download, FileText } from "lucide-react";
+import { Plus, Trash2, ChevronsUpDown, Download, FileText, Pencil } from "lucide-react";
+import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,6 +39,7 @@ interface Offer {
 export default function Offers() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
   const [selectedCustomer, setSelectedCustomer] = useState<string>("");
   const [items, setItems] = useState<OfferItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string>("");
@@ -661,6 +663,15 @@ export default function Offers() {
                           </div>
                         </div>
                         <div className="flex flex-col gap-1">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setLocation(`/edit-offer/${offer.id}`)}
+                            data-testid={`button-edit-offer-${offer.id}`}
+                            title="Uredi ponudu"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="outline"
                             size="icon"

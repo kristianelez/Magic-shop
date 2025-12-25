@@ -19,6 +19,7 @@ import CustomerDetail from "@/pages/CustomerDetail";
 import Products from "@/pages/Products";
 import CreateOrder from "@/pages/CreateOrder";
 import EditOrder from "@/pages/EditOrder";
+import EditOffer from "@/pages/EditOffer";
 import Orders from "@/pages/Orders";
 import Offers from "@/pages/Offers";
 import Bonuses from "@/pages/Bonuses";
@@ -59,6 +60,7 @@ function Router() {
         )}
       </Route>
       <Route path="/offers" component={Offers} />
+      <Route path="/edit-offer/:offerId" component={EditOffer} />
       <Route path="/bonuses" component={Bonuses} />
       <Route path="/statistika" component={Statistika} />
       <Route path="/create-order" component={CreateOrder} />

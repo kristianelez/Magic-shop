@@ -76,7 +76,9 @@ export interface IStorage {
   getOffers(): Promise<any[]>;
   getOffer(id: number): Promise<any>;
   createOffer(offer: any): Promise<any>;
+  updateOffer(id: number, offer: Partial<InsertOffer>): Promise<Offer | undefined>;
   addOfferItem(item: any): Promise<any>;
+  deleteOfferItems(offerId: number): Promise<boolean>;
   deleteOffer(id: number): Promise<boolean>;
 
   // Analytics
@@ -329,6 +331,16 @@ export class DatabaseStorage implements IStorage {
   async addOfferItem(item: InsertOfferItem): Promise<OfferItem> {
     const result = await db.insert(offerItems).values(item).returning();
     return result[0];
+  }
+
+  async updateOffer(id: number, offer: Partial<InsertOffer>): Promise<Offer | undefined> {
+    const result = await db.update(offers).set(offer).where(eq(offers.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteOfferItems(offerId: number): Promise<boolean> {
+    await db.delete(offerItems).where(eq(offerItems.offerId, offerId));
+    return true;
   }
 
   async deleteOffer(id: number): Promise<boolean> {

@@ -471,6 +471,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/offers/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const offer = await storage.getOffer(id);
+      if (!offer) {
+        return res.status(404).json({ error: "Offer not found" });
+      }
+      res.json(offer);
+    } catch (error) {
+      console.error("Error fetching offer:", error);
+      res.status(500).json({ error: "Failed to fetch offer" });
+    }
+  });
+
+  app.patch("/api/offers/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { customerId, totalAmount, status, items } = req.body;
+      
+      const offer = await storage.updateOffer(id, {
+        customerId,
+        totalAmount,
+        status,
+      });
+      
+      if (!offer) {
+        return res.status(404).json({ error: "Offer not found" });
+      }
+
+      if (items && items.length > 0) {
+        await storage.deleteOfferItems(id);
+        for (const item of items) {
+          await storage.addOfferItem({
+            offerId: id,
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+            discount: item.discount || "0",
+            category: item.category,
+            productName: item.productName,
+          });
+        }
+      }
+
+      const updatedOffer = await storage.getOffer(id);
+      res.json(updatedOffer);
+    } catch (error) {
+      console.error("Error updating offer:", error);
+      res.status(500).json({ error: "Failed to update offer" });
+    }
+  });
+
   app.delete("/api/offers/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
