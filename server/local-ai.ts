@@ -295,7 +295,10 @@ async function suggestProductsForCustomerOptimized(
     .slice(0, 1);
 
   const notYetPurchasedFromEssentials: string[] = [];
-  const floorCleaningProducts = ["Tergon Frutal", "Tergon Limon"];
+  const floorCleaningProducts = [
+    "TERGON FRUTAL 5L- univerzalno neutralno sredstvo za ručno pranje i čišćenje vodootpornih  površina", 
+    "TERGON  LIMON 5L- sredstvo za čišćenje svih vodootpornih površina"
+  ];
   const useAlternate = pattern.customerId % 2 === 0;
   const scotchBriteProducts = [
     "3M Scotch-Brite Essential Microfiber Wipes 2012 Red",
@@ -316,7 +319,7 @@ async function suggestProductsForCustomerOptimized(
 
       if (category === "Sredstva za čišćenje podova") {
         const floorProduct = floorCleaningProducts[useAlternate ? 1 : 0];
-        categoryProduct = customerTypeProducts.find((p) => p.name === floorProduct);
+        categoryProduct = allProducts.find((p) => p.name === floorProduct);
       } else {
         categoryProduct = customerTypeProducts.find((p) => p.category === category);
       }
@@ -427,19 +430,19 @@ function buildFirstTimeRecommendations(
 
   const season = getCurrentSeason();
   const selectedProducts: string[] = [];
-  const floorCleaningProducts = ["Tergon Frutal", "Tergon Limon"];
-  const useAlternate = customer.id % 2 === 0;
-  const scotchBriteProducts = [
-    "3M Scotch-Brite Essential Microfiber Wipes 2012 Red",
-    "3M Scotch-Brite Microfiber Wipe 2012, Blue"
+  const floorCleaningProducts = [
+    "TERGON FRUTAL 5L- univerzalno neutralno sredstvo za ručno pranje i čišćenje vodootpornih  površina", 
+    "TERGON  LIMON 5L- sredstvo za čišćenje svih vodootpornih površina"
   ];
+  const useAlternate = customer.id % 2 === 0;
 
   for (const category of essentialCategories) {
     let product: string | null = null;
 
     if (category === "Sredstva za čišćenje podova") {
       const floorProduct = floorCleaningProducts[useAlternate ? 1 : 0];
-      const productExists = relevantProducts.find((p) => p.name === floorProduct);
+      // We look for the product in allProducts to ensure it exists, not just in relevantProducts
+      const productExists = allProducts.find((p) => p.name === floorProduct);
       product = productExists ? floorProduct : null;
     } else {
       const categoryProducts = relevantProducts.filter((p) => p.category === category);
@@ -459,6 +462,10 @@ function buildFirstTimeRecommendations(
     }
   }
 
+  const scotchBriteProducts = [
+    "3M Scotch-Brite Essential Microfiber Wipes 2012 Red",
+    "3M Scotch-Brite Microfiber Wipe 2012, Blue"
+  ];
   const scotchBrite = scotchBriteProducts[useAlternate ? 1 : 0];
   selectedProducts.push(scotchBrite);
 
