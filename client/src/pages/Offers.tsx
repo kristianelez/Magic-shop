@@ -180,7 +180,8 @@ export default function Offers() {
     // Broj ponude i datum
     doc.setFont("times", "normal");
     doc.setFontSize(11);
-    doc.text(`Broj ponude: ${offer.id}`, 20, 35);
+    const offerNumber = `${String(offer.id).padStart(5, '0')}-26`;
+    doc.text(`Broj ponude: ${offerNumber}`, 20, 35);
     doc.text(`Datum: ${format(new Date(offer.createdAt), "dd.MM.yyyy")}`, 20, 42);
     
     // Podaci o kupcu - naslov
@@ -195,16 +196,6 @@ export default function Offers() {
     doc.text(`Kompanija: ${customer?.company || "N/A"}`, 20, 70);
     if (customer?.phone) doc.text(`Telefon: ${customer.phone}`, 20, 77);
     if (customer?.email) doc.text(`Email: ${customer.email}`, 20, 84);
-    
-    // Komercijalista - naslov
-    doc.setFont("times", "bold");
-    doc.setFontSize(12);
-    doc.text("Komercijalista:", 120, 55);
-    
-    // Komercijalista - ime (isti font kao ostali podaci)
-    doc.setFont("times", "normal");
-    doc.setFontSize(11);
-    doc.text(`${user?.fullName || "N/A"}`, 120, 63);
     
     // Tabela - zaglavlje
     let yPos = 100;
@@ -312,7 +303,7 @@ export default function Offers() {
     const blobUrl = URL.createObjectURL(pdfBlob);
     const link = document.createElement("a");
     link.href = blobUrl;
-    link.download = `Ponuda_${offer.id}_${customer?.name || "kupac"}.pdf`;
+    link.download = `Ponuda_${String(offer.id).padStart(5, '0')}-26_${customer?.name || "kupac"}.pdf`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
