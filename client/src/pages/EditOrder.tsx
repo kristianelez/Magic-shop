@@ -383,11 +383,11 @@ export default function EditOrder() {
                             variant="outline"
                             role="combobox"
                             aria-expanded={productSearchOpen[realIndex] || false}
-                            className="w-full justify-between"
+                            className="w-full justify-between overflow-hidden"
                             data-testid={`select-product-${realIndex}`}
                           >
-                            {item.productName}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            <span className="truncate flex-1 text-left">{item.productName}</span>
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 flex-shrink-0" />
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent side="bottom" align="start" className="w-[90vw] sm:w-[400px] max-w-full p-0">
