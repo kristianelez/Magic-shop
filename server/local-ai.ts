@@ -396,7 +396,9 @@ const essentialCategories = [
 ];
 
 function replaceSpecialProducts(products: string[], customerId: number): string[] {
-  return products.map((product) => {
+  return products.filter(product => 
+    !product.toLowerCase().includes("14' scorch-brite standard range floor pad")
+  ).map((product) => {
     if (product.toLowerCase().includes("stochbrite") || product.toLowerCase().includes("3m stochbrite")) {
       const magicScrubbies = [
         "3M Scotch-Brite Essential Microfiber Wipes 2012 Red",
