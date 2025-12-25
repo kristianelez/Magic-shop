@@ -338,6 +338,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Toggle invoice verified status for multiple sales (grouped order)
+  app.post("/api/sales/verify-invoice", requireAuth, async (req, res) => {
+    try {
+      const { saleIds, verified } = req.body;
+      
+      if (!Array.isArray(saleIds) || saleIds.length === 0) {
+        return res.status(400).json({ error: "saleIds must be a non-empty array" });
+      }
+      
+      const verifiedValue = verified === true || verified === "true" ? "true" : "false";
+      
+      for (const saleId of saleIds) {
+        await storage.updateSale(parseInt(saleId), { invoiceVerified: verifiedValue } as any);
+      }
+      
+      res.json({ success: true, verified: verifiedValue });
+    } catch (error) {
+      console.error("Error updating invoice verification:", error);
+      res.status(500).json({ error: "Failed to update invoice verification" });
+    }
+  });
+
   // Activities API
   app.get("/api/activities", requireAuth, async (req, res) => {
     try {

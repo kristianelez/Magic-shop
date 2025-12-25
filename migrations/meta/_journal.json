@@ -8,6 +8,13 @@
       "when": 1766592483701,
       "tag": "0000_sweet_mesmero",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1766681556002,
+      "tag": "0001_brief_sentry",
+      "breakpoints": true
     }
   ]
 }

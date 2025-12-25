@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingCart, Calendar, Package, Users, Pencil, Trash2 } from "lucide-react";
+import { ShoppingCart, Calendar, Package, Users, Pencil, Trash2, CheckCircle, XCircle } from "lucide-react";
 import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { bs } from "date-fns/locale";
 import type { Sale, Customer, Product } from "@shared/schema";
@@ -26,6 +26,7 @@ interface GroupedOrder {
   customerCompany: string;
   orderDate: Date;
   items: {
+    saleId: number;
     productId: number;
     productName: string;
     quantity: number;
@@ -34,6 +35,7 @@ interface GroupedOrder {
   }[];
   totalAmount: number;
   status: string;
+  invoiceVerified: boolean;
 }
 
 export default function Orders() {
@@ -85,6 +87,26 @@ export default function Orders() {
     },
   });
 
+  const verifyInvoiceMutation = useMutation({
+    mutationFn: async ({ saleIds, verified }: { saleIds: number[]; verified: boolean }) => {
+      return await apiRequest("POST", "/api/sales/verify-invoice", { saleIds, verified });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Uspješno",
+        description: "Status fakture je ažuriran",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
+    },
+    onError: () => {
+      toast({
+        title: "Greška",
+        description: "Nije moguće ažurirati status fakture",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Grupa narudžbe po kupcu i datumu (isti kupac + isti datum = jedna narudžba)
   const groupedOrders: GroupedOrder[] = sales.reduce((acc: GroupedOrder[], sale) => {
     const customer = customers.find(c => c.id === sale.customerId);
@@ -107,12 +129,14 @@ export default function Orders() {
         items: [],
         totalAmount: 0,
         status: sale.status,
+        invoiceVerified: (sale as any).invoiceVerified === "true",
       };
       acc.push(order);
     }
 
     const itemTotal = parseFloat(sale.totalAmount);
     order.items.push({
+      saleId: sale.id,
       productId: product.id,
       productName: product.name,
       quantity: sale.quantity,
@@ -120,6 +144,10 @@ export default function Orders() {
       total: itemTotal.toFixed(2),
     });
     order.totalAmount += itemTotal;
+    // Ako je bilo koji sale u grupi verified, smatraj cijelu narudžbu verified
+    if ((sale as any).invoiceVerified === "true") {
+      order.invoiceVerified = true;
+    }
 
     return acc;
   }, []);
@@ -224,9 +252,29 @@ export default function Orders() {
                           <p className="text-xl sm:text-2xl font-bold text-primary" data-testid={`order-total-${order.id}`}>
                             {order.totalAmount.toFixed(2)} KM
                           </p>
-                          <Badge variant={order.status === "completed" ? "secondary" : "outline"}>
-                            {order.status === "completed" ? "Završeno" : "Na čekanju"}
-                          </Badge>
+                          <Button
+                            size="sm"
+                            variant={order.invoiceVerified ? "default" : "outline"}
+                            className={order.invoiceVerified ? "bg-green-600 hover:bg-green-700" : ""}
+                            onClick={() => {
+                              const saleIds = order.items.map(item => item.saleId);
+                              verifyInvoiceMutation.mutate({ saleIds, verified: !order.invoiceVerified });
+                            }}
+                            disabled={verifyInvoiceMutation.isPending}
+                            data-testid={`button-verify-invoice-${order.id}`}
+                          >
+                            {order.invoiceVerified ? (
+                              <>
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Ovjereno
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="h-4 w-4 mr-1" />
+                                Nije ovjereno
+                              </>
+                            )}
+                          </Button>
                         </div>
                         <div className="flex gap-2 w-full sm:w-auto">
                           <Button

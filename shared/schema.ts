@@ -93,6 +93,7 @@ export const sales = pgTable("sales", {
   quantity: integer("quantity").notNull(),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
   status: text("status").notNull().default("completed"),
+  invoiceVerified: text("invoice_verified").notNull().default("false"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

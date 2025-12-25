@@ -1,0 +1,1 @@
+ALTER TABLE "sales" ADD COLUMN "invoice_verified" text DEFAULT 'false' NOT NULL;
