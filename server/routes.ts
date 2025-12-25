@@ -2,10 +2,15 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
-import { insertCustomerSchema, insertProductSchema, insertSaleSchema, insertActivitySchema, type InsertCustomer } from "@shared/schema";
+import { insertCustomerSchema, insertProductSchema, insertSaleSchema, insertActivitySchema, type InsertCustomer, products } from "@shared/schema";
 import { generateHybridRecommendations } from "./ai";
 import { requireAuth } from "./auth";
 import { z } from "zod";
+import XLSX from "xlsx";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
+import path from "path";
+import fs from "fs";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication API
@@ -471,6 +476,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error generating recommendations:", error);
       res.status(500).json({ error: "Failed to generate recommendations" });
+    }
+  });
+
+  // Admin: Import products from Excel
+  app.post("/api/admin/import-products", requireAuth, async (req, res) => {
+    try {
+      if (req.user?.role !== "admin") {
+        return res.status(403).json({ error: "Samo admin može importovati proizvode" });
+      }
+
+      console.log("Starting product import from Excel...");
+      
+      const excelPath = path.join(process.cwd(), "attached_assets/finalni_cjenovnik_1766590832986.xlsx");
+      
+      if (!fs.existsSync(excelPath)) {
+        return res.status(404).json({ error: "Excel datoteka nije pronađena" });
+      }
+
+      const workbook = XLSX.readFile(excelPath);
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const data = XLSX.utils.sheet_to_json(sheet) as any[];
+
+      console.log(`Total rows in Excel: ${data.length}`);
+
+      // Delete existing products
+      await db.execute(sql`TRUNCATE TABLE products RESTART IDENTITY CASCADE`);
+
+      let inserted = 0;
+
+      function mapKategorijaKupca(kategorijaKupca: string): string[] {
+        if (!kategorijaKupca) return ["ostalo"];
+        const kupci = kategorijaKupca.toLowerCase();
+        const result: string[] = [];
+        if (kupci.includes("hotel")) result.push("hotel");
+        if (kupci.includes("restoran")) result.push("restoran");
+        if (kupci.includes("kafić") || kupci.includes("kafic")) result.push("kafic");
+        if (kupci.includes("pekara")) result.push("pekara");
+        if (kupci.includes("firma") || kupci.includes("industrija")) result.push("fabrika");
+        if (kupci.includes("vešeraj") || kupci.includes("veseraj")) result.push("veseraj");
+        if (kupci.includes("medicinska") || kupci.includes("ustanova")) result.push("medicinska_ustanova");
+        if (kupci.includes("autokozmetika")) result.push("autokozmetika");
+        if (result.length === 0) result.push("ostalo");
+        return result;
+      }
+
+      for (const row of data) {
+        const name = row["Naziv"];
+        const category = row["Kategorija robe"];
+        const priceWithVAT = parseFloat(row["Cijena sa PDV"]) || 0;
+        const kategorijaKupca = row["Kategorija kupca "] || "";
+        const recommendedFor = mapKategorijaKupca(kategorijaKupca);
+
+        if (!name || !category) continue;
+
+        try {
+          await db.insert(products).values({
+            name: name,
+            category: category,
+            price: priceWithVAT.toFixed(2),
+            stock: 100,
+            unit: "kom",
+            description: `Šifra: ${row["Šifra"]}`,
+            vendor: "Greentime",
+            recommendedFor: recommendedFor.length > 0 ? recommendedFor : null,
+          });
+          inserted++;
+        } catch (error) {
+          console.error(`Failed to insert product: ${name}`, error);
+        }
+      }
+
+      console.log(`Successfully inserted ${inserted} products`);
+      res.json({ message: `Uspješno importovano ${inserted} proizvoda`, count: inserted });
+    } catch (error) {
+      console.error("Import error:", error);
+      res.status(500).json({ error: "Greška pri importu proizvoda" });
+    }
+  });
+
+  // Admin: Seed database (users, customers, sample data)
+  app.post("/api/admin/seed-database", requireAuth, async (req, res) => {
+    try {
+      if (req.user?.role !== "admin") {
+        return res.status(403).json({ error: "Samo admin može pokrenuti seeding" });
+      }
+
+      const existingUsers = await storage.getUsers();
+      if (existingUsers.length === 0) {
+        const hashedPassword1 = await bcrypt.hash("pedja2024", 10);
+        const hashedPassword2 = await bcrypt.hash("kacacaka0607", 10);
+        const hashedPassword3 = await bcrypt.hash("kikoris12", 10);
+
+        await storage.createUser({ username: "PredragPetrusic", password: hashedPassword1, fullName: "Predrag Petrusić", role: "sales_manager" });
+        await storage.createUser({ username: "DraganElez", password: hashedPassword2, fullName: "Dragan Elez", role: "sales_director" });
+        await storage.createUser({ username: "Greentimeadmin", password: hashedPassword3, fullName: "Admin", role: "admin" });
+      }
+
+      res.json({ message: "Baza podataka je uspješno seedovana" });
+    } catch (error) {
+      console.error("Seed error:", error);
+      res.status(500).json({ error: "Greška pri seedovanju baze" });
     }
   });
 
