@@ -358,7 +358,7 @@ export default function EditOrder() {
               Dodaj proizvod
             </Button>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 overflow-x-hidden px-2 sm:px-6">
             {activeItems.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
                 Nema dodanih proizvoda. Kliknite "Dodaj proizvod" da započnete.
@@ -369,108 +369,111 @@ export default function EditOrder() {
                 return (
                   <div
                     key={realIndex}
-                    className="grid gap-4 md:grid-cols-[2fr_1fr_1fr_1fr_auto] items-end p-4 border rounded-lg"
+                    className="space-y-3 p-2 sm:p-4 border rounded-lg w-full min-w-0 overflow-hidden"
                     data-testid={`order-item-${realIndex}`}
                   >
-                    <div>
-                      <Label>Proizvod (Top 10 najprodavanijih)</Label>
-                      <Popover 
-                        open={productSearchOpen[realIndex] || false} 
-                        onOpenChange={(open) => setProductSearchOpen({ ...productSearchOpen, [realIndex]: open })}
-                      >
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            aria-expanded={productSearchOpen[realIndex] || false}
-                            className="w-full justify-between overflow-hidden"
-                            data-testid={`select-product-${realIndex}`}
-                          >
-                            <span className="truncate flex-1 text-left">{item.productName}</span>
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 flex-shrink-0" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent side="bottom" align="start" className="w-[90vw] sm:w-[400px] max-w-full p-0">
-                          <Command>
-                            <CommandInput placeholder="Pretraži proizvode..." data-testid={`input-search-product-${realIndex}`} />
-                            <CommandList className="max-h-40 overflow-y-auto">
-                              <CommandEmpty>Nema pronađenih proizvoda.</CommandEmpty>
-                              <CommandGroup>
-                                {topProducts.map((product) => (
-                                  <CommandItem
-                                    key={product.id}
-                                    value={product.name}
-                                    onSelect={() => {
-                                      updateOrderItem(realIndex, "productId", String(product.id));
-                                      setProductSearchOpen({ ...productSearchOpen, [realIndex]: false });
-                                    }}
-                                    data-testid={`product-option-${realIndex}-${product.id}`}
-                                  >
-                                    <Check
-                                      className={cn(
-                                        "mr-2 h-4 w-4",
-                                        item.productId === product.id ? "opacity-100" : "opacity-0"
-                                      )}
-                                    />
-                                    <div className="flex-1">
-                                      <div>{product.name}</div>
-                                      <div className="text-xs text-muted-foreground">
-                                        Prodano: {product.totalSold} | Cijena: {product.price} KM
+                    <div className="space-y-2 sm:space-y-3 w-full min-w-0">
+                      <div className="w-full min-w-0">
+                        <Label className="text-xs sm:text-sm block truncate">Proizvod (Top 10 najprodavanijih)</Label>
+                        <Popover 
+                          open={productSearchOpen[realIndex] || false} 
+                          onOpenChange={(open) => setProductSearchOpen({ ...productSearchOpen, [realIndex]: open })}
+                        >
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={productSearchOpen[realIndex] || false}
+                              className="w-full justify-between overflow-hidden"
+                              data-testid={`select-product-${realIndex}`}
+                            >
+                              <span className="truncate flex-1 text-left">{item.productName}</span>
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 flex-shrink-0" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent side="bottom" align="start" className="w-[90vw] sm:w-[400px] max-w-full p-0">
+                            <Command>
+                              <CommandInput placeholder="Pretraži proizvode..." data-testid={`input-search-product-${realIndex}`} />
+                              <CommandList className="max-h-40 overflow-y-auto">
+                                <CommandEmpty>Nema pronađenih proizvoda.</CommandEmpty>
+                                <CommandGroup>
+                                  {topProducts.map((product) => (
+                                    <CommandItem
+                                      key={product.id}
+                                      value={product.name}
+                                      onSelect={() => {
+                                        updateOrderItem(realIndex, "productId", String(product.id));
+                                        setProductSearchOpen({ ...productSearchOpen, [realIndex]: false });
+                                      }}
+                                      data-testid={`product-option-${realIndex}-${product.id}`}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          item.productId === product.id ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      <div className="flex-1 min-w-0">
+                                        <div className="truncate">{product.name}</div>
+                                        <div className="text-xs text-muted-foreground">
+                                          Prodano: {product.totalSold} | Cijena: {product.price} KM
+                                        </div>
                                       </div>
-                                    </div>
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
 
-                    <div>
-                      <Label>Cijena (KM)</Label>
-                      <Input
-                        type="text"
-                        value={item.price}
-                        readOnly
-                        className="bg-muted"
-                        data-testid={`input-price-${realIndex}`}
-                      />
-                    </div>
+                      <div className="w-full min-w-0">
+                        <Label className="text-xs sm:text-sm block truncate">Cijena (KM)</Label>
+                        <Input
+                          type="text"
+                          value={item.price}
+                          readOnly
+                          className="bg-muted w-full text-xs sm:text-sm"
+                          data-testid={`input-price-${realIndex}`}
+                        />
+                      </div>
 
-                    <div>
-                      <Label>Količina</Label>
-                      <Input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={item.quantity}
-                        onChange={(e) => updateOrderItem(realIndex, "quantity", e.target.value)}
-                        onBlur={() => handleQuantityBlur(realIndex)}
-                        data-testid={`input-quantity-${realIndex}`}
-                      />
-                    </div>
+                      <div className="w-full min-w-0">
+                        <Label className="text-xs sm:text-sm block truncate">Količina</Label>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={item.quantity}
+                          onChange={(e) => updateOrderItem(realIndex, "quantity", e.target.value)}
+                          onBlur={() => handleQuantityBlur(realIndex)}
+                          className="w-full text-xs sm:text-sm"
+                          data-testid={`input-quantity-${realIndex}`}
+                        />
+                      </div>
 
-                    <div>
-                      <Label>Ukupno (KM)</Label>
-                      <Input
-                        type="text"
-                        value={item.total.toFixed(2)}
-                        readOnly
-                        className="bg-muted font-semibold"
-                        data-testid={`input-total-${realIndex}`}
-                      />
-                    </div>
+                      <div className="w-full min-w-0">
+                        <Label className="text-xs sm:text-sm block truncate">Ukupno (KM)</Label>
+                        <Input
+                          type="text"
+                          value={item.total.toFixed(2)}
+                          readOnly
+                          className="bg-muted font-semibold w-full text-xs sm:text-sm"
+                          data-testid={`input-total-${realIndex}`}
+                        />
+                      </div>
 
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeOrderItem(realIndex)}
-                      data-testid={`button-remove-item-${realIndex}`}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeOrderItem(realIndex)}
+                        data-testid={`button-remove-item-${realIndex}`}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
                 );
               })
