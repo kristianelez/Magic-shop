@@ -34,7 +34,7 @@ export default function AIRecommendations() {
           Preporuke u prodaji
         </h1>
         <p className="text-muted-foreground">
-          AI preporuke za artikle koje trebate ponuditi kupcima na osnovu njihovih kupovnih navika
+          Preporuke za artikle koje trebate ponuditi kupcima na osnovu njihovih kupovnih navika
         </p>
       </div>
 
@@ -77,7 +77,7 @@ export default function AIRecommendations() {
           {isLoading ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">
-                Generišem AI preporuke (može potrajati do 30 sekundi)...
+                Generišem preporuke (može potrajati do 30 sekundi)...
               </p>
             </div>
           ) : recommendations.length > 0 ? (
@@ -102,7 +102,7 @@ export default function AIRecommendations() {
               <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">Nema preporuka</h3>
               <p className="text-muted-foreground">
-                AI će generisati preporuke kada kupci budu spremni za ponovno naručivanje na osnovu njihovih kupovnih obrazaca.
+                Sistem će generisati preporuke kada kupci budu spremni za ponovno naručivanje na osnovu njihovih kupovnih obrazaca.
               </p>
             </div>
           )}
