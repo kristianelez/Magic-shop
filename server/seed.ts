@@ -1,31 +1,8 @@
 import { storage } from "./storage";
-import { db } from "./db";
-import { products } from "@shared/schema";
-import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-
-async function updateProductNames() {
-  try {
-    // Update 3M Scotch-Brite product names to Serbian
-    await db.update(products)
-      .set({ name: "3M Scotch-Brite Essential Mikrofiber krpa 2012 Crvena" })
-      .where(eq(products.id, 139));
-    
-    await db.update(products)
-      .set({ name: "3M Scotch-Brite Mikrofiber krpa 2012 Plava" })
-      .where(eq(products.id, 140));
-    
-    console.log("Product names updated to Serbian successfully");
-  } catch (error) {
-    console.log("Product name update skipped or failed:", error);
-  }
-}
 
 export async function seedDatabase() {
   try {
-    // Always run product name updates
-    await updateProductNames();
-    
     const existingCustomers = await storage.getCustomers();
     if (existingCustomers.length > 0) {
       console.log("Database already seeded, skipping...");
