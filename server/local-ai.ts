@@ -301,8 +301,8 @@ async function suggestProductsForCustomerOptimized(
   ];
   const useAlternate = pattern.customerId % 2 === 0;
   const scotchBriteProducts = [
-    "3M Scotch-Brite Essential Microfiber Wipes 2012 Red",
-    "3M Scotch-Brite Microfiber Wipe 2012, Blue"
+    "3M Scotch-Brite Essential Mikrofiber krpa 2012 Crvena",
+    "3M Scotch-Brite Mikrofiber krpa 2012 Plava"
   ];
 
   for (const category of [
@@ -404,8 +404,8 @@ function replaceSpecialProducts(products: string[], customerId: number): string[
   ).map((product) => {
     if (product.toLowerCase().includes("stochbrite") || product.toLowerCase().includes("3m stochbrite")) {
       const magicScrubbies = [
-        "3M Scotch-Brite Essential Microfiber Wipes 2012 Red",
-        "3M Scotch-Brite Microfiber Wipe 2012, Blue"
+        "3M Scotch-Brite Essential Mikrofiber krpa 2012 Crvena",
+        "3M Scotch-Brite Mikrofiber krpa 2012 Plava"
       ];
       return magicScrubbies[customerId % 2];
     }
@@ -463,8 +463,8 @@ function buildFirstTimeRecommendations(
   }
 
   const scotchBriteProducts = [
-    "3M Scotch-Brite Essential Microfiber Wipes 2012 Red",
-    "3M Scotch-Brite Microfiber Wipe 2012, Blue"
+    "3M Scotch-Brite Essential Mikrofiber krpa 2012 Crvena",
+    "3M Scotch-Brite Mikrofiber krpa 2012 Plava"
   ];
   const scotchBrite = scotchBriteProducts[useAlternate ? 1 : 0];
   selectedProducts.push(scotchBrite);
