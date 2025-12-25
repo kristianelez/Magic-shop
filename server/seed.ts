@@ -3,43 +3,49 @@ import bcrypt from "bcryptjs";
 
 export async function seedDatabase() {
   try {
+    // Always check and create users first if they don't exist
+    const existingAdmin = await storage.getUserByUsername("Greentimeadmin");
+    if (!existingAdmin) {
+      console.log("Creating default users...");
+      const hashedPassword1 = await bcrypt.hash("pedja2024", 10);
+      const hashedPassword2 = await bcrypt.hash("kacacaka0607", 10);
+      const hashedPassword3 = await bcrypt.hash("kikoris12", 10);
+
+      await Promise.all([
+        storage.createUser({ 
+          username: "PredragPetrusic", 
+          password: hashedPassword1, 
+          fullName: "Predrag Petrusić",
+          role: "sales_manager" 
+        }),
+        storage.createUser({ 
+          username: "DraganElez", 
+          password: hashedPassword2, 
+          fullName: "Dragan Elez",
+          role: "sales_director" 
+        }),
+        storage.createUser({ 
+          username: "Greentimeadmin", 
+          password: hashedPassword3, 
+          fullName: "Admin",
+          role: "admin" 
+        }),
+      ]);
+      console.log("Default users created!");
+    }
+
     const existingCustomers = await storage.getCustomers();
     if (existingCustomers.length > 0) {
-      console.log("Database already seeded, skipping...");
+      console.log("Database already seeded, skipping sample data...");
       return;
     }
 
-    console.log("Seeding database with initial data...");
+    console.log("Seeding database with sample data...");
 
-    // Seed users with hashed passwords
-    const hashedPassword1 = await bcrypt.hash("pedja2024", 10);
-    const hashedPassword2 = await bcrypt.hash("kacacaka0607", 10);
-    const hashedPassword3 = await bcrypt.hash("kikoris12", 10);
+    // Get user for sales assignment
+    const user = await storage.getUserByUsername("PredragPetrusic");
 
-    const users = await Promise.all([
-      storage.createUser({ 
-        username: "PredragPetrusic", 
-        password: hashedPassword1, 
-        fullName: "Predrag Petrusić",
-        role: "sales_manager" 
-      }),
-      storage.createUser({ 
-        username: "DraganElez", 
-        password: hashedPassword2, 
-        fullName: "Dragan Elez",
-        role: "sales_director" 
-      }),
-      storage.createUser({ 
-        username: "Greentimeadmin", 
-        password: hashedPassword3, 
-        fullName: "Admin",
-        role: "admin" 
-      }),
-    ]);
-
-    console.log(`Created ${users.length} users`);
-
-    // Seed products
+    // Seed sample products
     const products = await Promise.all([
       storage.createProduct({ name: "VORAX GT 5kg", category: "Sredstva za čišćenje", price: "89.90", stock: 45, unit: "kom" }),
       storage.createProduct({ name: "BACTER WC 5L", category: "Sredstva za čišćenje", price: "32.50", stock: 28, unit: "kom" }),
@@ -63,26 +69,18 @@ export async function seedDatabase() {
       storage.createCustomer({ name: "Haris Begić", company: "Tržni centar BBI", email: "haris@bbi.ba", phone: "+387 33 678 901", status: "vip" }),
     ]);
 
-    // Seed sales (assign to Predrag Petrusic - sales manager)
-    const now = new Date();
-    const daysAgo = (days: number) => new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-
-    await Promise.all([
-      // Hotel Bristol purchases
-      storage.createSale({ customerId: customers[0].id, productId: products[0].id, quantity: 10, totalAmount: "899.00", status: "completed", salesPersonId: users[0].id }),
-      storage.createSale({ customerId: customers[0].id, productId: products[4].id, quantity: 6, totalAmount: "270.00", status: "completed", salesPersonId: users[0].id }),
-      
-      // Bolnica Koševo purchases  
-      storage.createSale({ customerId: customers[1].id, productId: products[1].id, quantity: 15, totalAmount: "487.50", status: "completed", salesPersonId: users[0].id }),
-      storage.createSale({ customerId: customers[1].id, productId: products[2].id, quantity: 8, totalAmount: "199.20", status: "completed", salesPersonId: users[0].id }),
-      
-      // Restoran Kod Muje purchases
-      storage.createSale({ customerId: customers[2].id, productId: products[6].id, quantity: 8, totalAmount: "231.20", status: "pending", salesPersonId: users[0].id }),
-      
-      // Tržni centar BBI purchases
-      storage.createSale({ customerId: customers[5].id, productId: products[2].id, quantity: 20, totalAmount: "498.00", status: "completed", salesPersonId: users[0].id }),
-      storage.createSale({ customerId: customers[5].id, productId: products[5].id, quantity: 12, totalAmount: "810.00", status: "completed", salesPersonId: users[0].id }),
-    ]);
+    // Seed sales
+    if (user) {
+      await Promise.all([
+        storage.createSale({ customerId: customers[0].id, productId: products[0].id, quantity: 10, totalAmount: "899.00", status: "completed", salesPersonId: user.id }),
+        storage.createSale({ customerId: customers[0].id, productId: products[4].id, quantity: 6, totalAmount: "270.00", status: "completed", salesPersonId: user.id }),
+        storage.createSale({ customerId: customers[1].id, productId: products[1].id, quantity: 15, totalAmount: "487.50", status: "completed", salesPersonId: user.id }),
+        storage.createSale({ customerId: customers[1].id, productId: products[2].id, quantity: 8, totalAmount: "199.20", status: "completed", salesPersonId: user.id }),
+        storage.createSale({ customerId: customers[2].id, productId: products[6].id, quantity: 8, totalAmount: "231.20", status: "pending", salesPersonId: user.id }),
+        storage.createSale({ customerId: customers[5].id, productId: products[2].id, quantity: 20, totalAmount: "498.00", status: "completed", salesPersonId: user.id }),
+        storage.createSale({ customerId: customers[5].id, productId: products[5].id, quantity: 12, totalAmount: "810.00", status: "completed", salesPersonId: user.id }),
+      ]);
+    }
 
     // Seed activities
     await Promise.all([
