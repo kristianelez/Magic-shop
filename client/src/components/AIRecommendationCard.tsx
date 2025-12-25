@@ -112,12 +112,12 @@ export function AIRecommendationCard({
           <p className="text-sm text-foreground">{reasoning}</p>
         </div>
         
-        <div>
+        <div className="overflow-hidden">
           <p className="text-xs font-medium text-muted-foreground mb-2">Preporučeni proizvodi:</p>
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-col gap-1">
             {suggestedProducts.map((product, idx) => (
-              <Badge key={idx} variant="secondary">
-                {product}
+              <Badge key={idx} variant="secondary" className="max-w-full justify-start overflow-hidden">
+                <span className="truncate">{product}</span>
               </Badge>
             ))}
           </div>
