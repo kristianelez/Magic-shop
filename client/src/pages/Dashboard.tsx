@@ -148,36 +148,7 @@ export default function Dashboard() {
             />
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Main content loads first */}
-            <div>
-              <h2 className="text-lg font-semibold mb-4">Preporuke u prodaji</h2>
-              <div className="space-y-4">
-                {aiRecommendations.length > 0 ? (
-                  aiRecommendations.slice(0, 3).map((rec, idx) => (
-                    <AIRecommendationCard 
-                      key={idx}
-                      id={rec.customerId.toString()}
-                      customerName={rec.customerName}
-                      customerCompany={rec.customerCompany}
-                      customerEmail={rec.customerEmail}
-                      customerPhone={rec.customerPhone}
-                      suggestedProducts={rec.suggestedProducts}
-                      reasoning={rec.reasoning}
-                      priority={rec.priority}
-                      optimalTime={rec.optimalContactTime}
-                    />
-                  ))
-                ) : (
-                  <Card>
-                    <CardContent className="pt-6 text-center text-muted-foreground">
-                      Nema preporuka u ovom trenutku
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            </div>
-
+          <div className="grid gap-6">
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base">
