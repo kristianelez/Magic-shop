@@ -88,7 +88,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/customers", requireAuth, async (req, res) => {
     try {
       // Use optimized batch loading instead of N+1 queries
-      const customersWithStats = await storage.getCustomersWithStats();
+      let customersWithStats = await storage.getCustomersWithStats();
+      
+      // Filter for predragpetrusic - he should not see "Paper Paradise"
+      if (req.user!.username === "predragpetrusic") {
+        customersWithStats = customersWithStats.filter(c => 
+          !c.company?.toLowerCase().includes("paper paradise") && 
+          !c.name?.toLowerCase().includes("paper paradise")
+        );
+      }
+      
       res.json(customersWithStats);
     } catch (error) {
       console.error("Error fetching customers:", error);
