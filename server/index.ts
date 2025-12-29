@@ -5,6 +5,7 @@ import { Pool } from "pg";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedDatabase } from "./seed";
+import "./cleanup-prod";
 
 const app = express();
 
