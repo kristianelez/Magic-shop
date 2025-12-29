@@ -90,8 +90,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use optimized batch loading instead of N+1 queries
       let customersWithStats = await storage.getCustomersWithStats();
       
-      // Filter for predragpetrusic - he should not see "Paper Paradise"
-      if (req.user!.username === "predragpetrusic") {
+      // Filter "Paper Paradise" - only DraganElez can see it
+      if (req.user!.username !== "DraganElez") {
         customersWithStats = customersWithStats.filter(c => 
           !c.company?.toLowerCase().includes("paper paradise") && 
           !c.name?.toLowerCase().includes("paper paradise")
