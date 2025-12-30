@@ -12,7 +12,6 @@ async function importCustomers() {
 
     console.log(`Found ${data.length} rows in Excel.`);
     
-    // Get user IDs
     const kristina = await storage.getUserByUsername('KristinaPopović');
     const andrea = await storage.getUserByUsername('Andrea');
     const mladen = await storage.getUserByUsername('Mladen');
@@ -32,12 +31,12 @@ async function importCustomers() {
 
     let count = 0;
     for (const row of data) {
-      // Based on sample row: "Naziv Kupca" and "Komercijalista " (with space)
       const companyName = row['Naziv Kupca'] || row['Partner'] || row['Naziv kupca'] || row['Kupac'] || row['NAZIV'];
       if (!companyName) continue;
 
+      const phone = row['Broj telefona'] || row['Telefon'] || row['MOB'] || row['TEL'] || '';
+
       let komercijalista = '';
-      // Check for exact key with trailing space
       if (row['Komercijalista ']) {
         komercijalista = String(row['Komercijalista ']).toLowerCase().trim();
       } else if (row['Komercijalista']) {
@@ -51,6 +50,7 @@ async function importCustomers() {
       const customerData = {
         name: String(companyName).trim(),
         company: String(companyName).trim(),
+        phone: String(phone).trim(),
         salesPersonId: salesPersonId,
         status: 'active',
         customerType: 'ostalo'
@@ -60,7 +60,7 @@ async function importCustomers() {
       count++;
     }
 
-    console.log(`Successfully imported ${count} customers.`);
+    console.log(`Successfully imported ${count} customers with phone numbers.`);
   } catch (error) {
     console.error('Error during import:', error);
   }
