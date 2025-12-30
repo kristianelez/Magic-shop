@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
 import { insertCustomerSchema, insertProductSchema, insertSaleSchema, insertActivitySchema, type InsertCustomer } from "@shared/schema";
-import { generateHybridRecommendations } from "./ai";
+import { generateLocalRecommendations } from "./local-ai";
 import { requireAuth } from "./auth";
 import { z } from "zod";
 
@@ -557,10 +557,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI Recommendations API (Hybrid: Local + OpenAI)
+  // AI Recommendations API (Pure Local)
   app.get("/api/recommendations", requireAuth, async (req, res) => {
     try {
-      const recommendations = await generateHybridRecommendations();
+      const recommendations = await generateLocalRecommendations();
       res.json(recommendations);
     } catch (error) {
       console.error("Error generating recommendations:", error);
