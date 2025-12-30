@@ -81,7 +81,7 @@ export function AppSidebar() {
     }
   };
 
-  const userRoleDisplay = user?.role === 'admin' ? "Direktor prodaje" : "Komercijalista";
+  const userRoleDisplay = user?.role === 'admin' ? "Admin" : "Komercijalista";
 
   return (
     <Sidebar>

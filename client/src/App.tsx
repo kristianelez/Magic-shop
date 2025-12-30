@@ -114,7 +114,7 @@ function AppContent() {
                   {user.fullName}
                 </span>
                 <span className="text-xs md:text-sm text-muted-foreground hidden sm:inline truncate">
-                  ({user.role === "admin" ? "Admin" : user.role === "sales_director" ? "Direktor prodaje" : "Sales manager"})
+                  ({user.role === "admin" ? "Admin" : "Komercijalista"})
                 </span>
               </div>
             </div>
