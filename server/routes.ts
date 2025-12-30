@@ -367,7 +367,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Activities API
   app.get("/api/activities", requireAuth, async (req, res) => {
     try {
-      const activities = await storage.getActivities();
+      let activities;
+      if (req.user!.role === "admin") {
+        activities = await storage.getActivities();
+      } else {
+        // Simple filtering for sales person's customers
+        const allActivities = await storage.getActivities();
+        const myCustomers = await storage.getCustomers(req.user!.id, req.user!.role);
+        const myCustomerIds = new Set(myCustomers.map(c => c.id));
+        activities = allActivities.filter(a => myCustomerIds.has(a.customerId));
+      }
       res.json(activities);
     } catch (error) {
       console.error("Error fetching activities:", error);
@@ -434,7 +443,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Offers API
   app.get("/api/offers", requireAuth, async (req, res) => {
     try {
-      const offers = await storage.getOffers();
+      let offers;
+      if (req.user!.role === "admin") {
+        offers = await storage.getOffers();
+      } else {
+        offers = await storage.getOffers();
+        offers = offers.filter(o => o.salesPersonId === req.user!.id);
+      }
       res.json(offers);
     } catch (error) {
       console.error("Error fetching offers:", error);
