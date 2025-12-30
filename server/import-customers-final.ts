@@ -11,10 +11,7 @@ async function importCustomers() {
     const data: any[] = XLSX.utils.sheet_to_json(worksheet);
 
     console.log(`Found ${data.length} rows in Excel.`);
-    if (data.length > 0) {
-      console.log('Sample row:', JSON.stringify(data[0], null, 2));
-    }
-
+    
     // Get user IDs
     const kristina = await storage.getUserByUsername('KristinaPopović');
     const andrea = await storage.getUserByUsername('Andrea');
@@ -35,11 +32,20 @@ async function importCustomers() {
 
     let count = 0;
     for (const row of data) {
-      // Look for the specific header from the user's Excel if known, otherwise try common ones
-      const companyName = row['Partner'] || row['Naziv kupca'] || row['Kupac'] || row['NAZIV'];
+      // Based on sample row: "Naziv Kupca" and "Komercijalista " (with space)
+      const companyName = row['Naziv Kupca'] || row['Partner'] || row['Naziv kupca'] || row['Kupac'] || row['NAZIV'];
       if (!companyName) continue;
 
-      const komercijalista = String(row['Komercijalista'] || row['KOMERCIJALISTA'] || '').toLowerCase().trim();
+      let komercijalista = '';
+      // Check for exact key with trailing space
+      if (row['Komercijalista ']) {
+        komercijalista = String(row['Komercijalista ']).toLowerCase().trim();
+      } else if (row['Komercijalista']) {
+        komercijalista = String(row['Komercijalista']).toLowerCase().trim();
+      } else if (row['KOMERCIJALISTA']) {
+        komercijalista = String(row['KOMERCIJALISTA']).toLowerCase().trim();
+      }
+      
       const salesPersonId = userMap[komercijalista] || kristina.id;
       
       const customerData = {
