@@ -24,7 +24,7 @@ export default function Login() {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
       toast({
         title: "Uspješna prijava",
-        description: "Dobrodošli u Greentime CRM",
+        description: "Dobrodošli u Magic Shop",
       });
       setLocation("/");
     },
@@ -46,7 +46,7 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-background">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Greentime CRM</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">Magic Shop</CardTitle>
           <CardDescription className="text-center">
             Prijavite se na vaš račun
           </CardDescription>

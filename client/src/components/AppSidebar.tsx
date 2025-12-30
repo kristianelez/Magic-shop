@@ -87,8 +87,8 @@ export function AppSidebar() {
             <Package className="h-5 w-5 text-primary-foreground" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-sidebar-foreground">Greentime</h2>
-            <p className="text-xs text-muted-foreground">Sales Manager</p>
+            <h2 className="text-lg font-semibold text-sidebar-foreground">Magic Shop</h2>
+            <p className="text-xs text-muted-foreground">Direktor prodaje</p>
           </div>
         </div>
       </SidebarHeader>

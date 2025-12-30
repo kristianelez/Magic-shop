@@ -1,4 +1,4 @@
-# Design Guidelines: Greentime Sales Management Application
+# Design Guidelines: Magic Shop Sales Management Application
 
 ## Design Approach
 

@@ -39,7 +39,7 @@ export default function Products() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-semibold" data-testid="heading-products">Proizvodi</h1>
-          <p className="text-muted-foreground">Katalog Greentime proizvoda</p>
+          <p className="text-muted-foreground">Katalog Magic Shop proizvoda</p>
         </div>
         <AddProductDialog />
       </div>

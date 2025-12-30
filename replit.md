@@ -1,8 +1,8 @@
-# Greentime Sales Management Application
+# Magic Shop Sales Management Application
 
 ## Overview
 
-Greentime is a CRM (Customer Relationship Management) sales management application designed for B2B sales operations in Bosnia and Herzegovina. The application helps sales representatives manage customers, track products, record sales, and receive AI-powered recommendations for customer outreach based on purchasing patterns.
+Magic Shop is a CRM (Customer Relationship Management) sales management application designed for B2B sales operations in Bosnia and Herzegovina. The application helps sales representatives manage customers, track products, record sales, and receive AI-powered recommendations for customer outreach based on purchasing patterns.
 
 The application is built as a full-stack web application with a React frontend and Express backend, utilizing PostgreSQL for data persistence and OpenAI's GPT-5 for intelligent customer recommendations.
 

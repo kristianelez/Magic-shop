@@ -5,14 +5,14 @@ import { z } from "zod";
 
 export const customerTypes = ["hotel", "pekara", "kafic", "restoran", "fabrika", "veseraj", "medicinska_ustanova", "autokozmetika", "ostalo"] as const;
 
-export const userRoles = ["admin", "sales_director", "sales_manager"] as const;
+export const userRoles = ["admin", "sales_director", "sales_manager", "komercijalista"] as const;
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   fullName: text("full_name").notNull(),
-  role: text("role").notNull().default("sales_manager"),
+  role: text("role").notNull().default("komercijalista"),
 });
 
 export const insertUserSchema = createInsertSchema(users, {
