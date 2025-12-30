@@ -36,6 +36,7 @@ export const customers = pgTable("customers", {
   customerType: text("customer_type").default("ostalo"),
   status: text("status").notNull().default("active"),
   paymentTerms: text("payment_terms"),
+  salesPersonId: varchar("sales_person_id").references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -47,6 +48,7 @@ export const insertCustomerSchema = createInsertSchema(customers, {
   customerType: z.enum(customerTypes).optional(),
   status: z.string().optional(),
   paymentTerms: z.string().optional(),
+  salesPersonId: z.string().optional(),
 }).omit({
   id: true,
   createdAt: true,

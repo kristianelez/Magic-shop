@@ -44,8 +44,8 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
 
   // Customers
-  getCustomers(): Promise<Customer[]>;
-  getCustomersWithStats(): Promise<CustomerWithStats[]>;
+  getCustomers(userId?: string, role?: string): Promise<Customer[]>;
+  getCustomersWithStats(userId?: string, role?: string): Promise<CustomerWithStats[]>;
   getCustomer(id: number): Promise<Customer | undefined>;
   createCustomer(customer: InsertCustomer): Promise<Customer>;
   updateCustomer(id: number, customer: Partial<InsertCustomer>): Promise<Customer | undefined>;
@@ -107,14 +107,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Customers
-  async getCustomers(): Promise<Customer[]> {
-    return await db.select().from(customers).orderBy(desc(customers.createdAt));
+  async getCustomers(userId?: string, role?: string): Promise<Customer[]> {
+    if (role === 'admin' || !userId) {
+      return await db.select().from(customers).orderBy(desc(customers.createdAt));
+    }
+    return await db.select().from(customers).where(eq(customers.salesPersonId, userId)).orderBy(desc(customers.createdAt));
   }
 
-  async getCustomersWithStats(): Promise<CustomerWithStats[]> {
+  async getCustomersWithStats(userId?: string, role?: string): Promise<CustomerWithStats[]> {
     // Batch load all data in just 3 queries instead of N+1
     const [allCustomers, allActivities, allSales, allProducts] = await Promise.all([
-      db.select().from(customers).orderBy(desc(customers.createdAt)),
+      role === 'admin' || !userId 
+        ? db.select().from(customers).orderBy(desc(customers.createdAt))
+        : db.select().from(customers).where(eq(customers.salesPersonId, userId)).orderBy(desc(customers.createdAt)),
       db.select().from(activities).orderBy(desc(activities.createdAt)),
       db.select().from(sales),
       db.select().from(products),

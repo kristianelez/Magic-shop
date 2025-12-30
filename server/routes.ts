@@ -88,16 +88,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/customers", requireAuth, async (req, res) => {
     try {
       // Use optimized batch loading instead of N+1 queries
-      let customersWithStats = await storage.getCustomersWithStats();
-      
-      // Filter "Paper Paradise" - only DraganElez can see it
-      if (req.user!.username !== "DraganElez") {
-        customersWithStats = customersWithStats.filter(c => 
-          !c.company?.toLowerCase().includes("paper paradise") && 
-          !c.name?.toLowerCase().includes("paper paradise")
-        );
-      }
-      
+      const customersWithStats = await storage.getCustomersWithStats(req.user!.id, req.user!.role);
       res.json(customersWithStats);
     } catch (error) {
       console.error("Error fetching customers:", error);
@@ -138,7 +129,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/customers", requireAuth, async (req, res) => {
     try {
       const customerData = insertCustomerSchema.parse(req.body);
-      const customer = await storage.createCustomer(customerData);
+      const customerWithSalesPerson = {
+        ...customerData,
+        salesPersonId: customerData.salesPersonId || req.user!.id
+      };
+      const customer = await storage.createCustomer(customerWithSalesPerson);
       res.status(201).json(customer);
     } catch (error) {
       if (error instanceof z.ZodError) {
