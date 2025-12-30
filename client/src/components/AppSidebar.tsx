@@ -1,5 +1,6 @@
 import { LayoutDashboard, Users, Package, Sparkles, ShoppingCart, ClipboardList, FileText, Trophy, BarChart3, Bell } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Sidebar,
   SidebarContent,
@@ -69,6 +70,7 @@ const menuItems = [
 export function AppSidebar() {
   const [location, setLocation] = useLocation();
   const { setOpenMobile, isMobile } = useSidebar();
+  const { user } = useAuth();
 
   const handleLinkClick = (url: string) => {
     setLocation(url);
@@ -79,6 +81,8 @@ export function AppSidebar() {
     }
   };
 
+  const userRoleDisplay = user?.role === 'admin' ? "Direktor prodaje" : "Komercijalista";
+
   return (
     <Sidebar>
       <SidebarHeader className="p-4 border-b border-sidebar-border">
@@ -88,7 +92,7 @@ export function AppSidebar() {
           </div>
           <div>
             <h2 className="text-lg font-semibold text-sidebar-foreground">Magic Shop</h2>
-            <p className="text-xs text-muted-foreground">Direktor prodaje</p>
+            <p className="text-xs text-muted-foreground">{userRoleDisplay}</p>
           </div>
         </div>
       </SidebarHeader>
