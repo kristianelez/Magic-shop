@@ -467,6 +467,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         quantity,
         price,
         category,
+        discount: "0",
       });
       res.status(201).json(item);
     } catch (error) {
