@@ -372,7 +372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.user!.role === "admin") {
         activities = await storage.getActivities();
       } else {
-        // Simple filtering for sales person's customers
+        // Filter activities for sales person's customers and their own activities
         const allActivities = await storage.getActivities();
         const myCustomers = await storage.getCustomers(req.user!.id, req.user!.role);
         const myCustomerIds = new Set(myCustomers.map(c => c.id));

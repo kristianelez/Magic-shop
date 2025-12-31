@@ -142,6 +142,7 @@ export class DatabaseStorage implements IStorage {
     // Group sales by customer and calculate stats (already filtered by salesPersonId above)
     const salesByCustomer = new Map<number, { total: number; productCounts: Map<number, number> }>();
     for (const sale of allSales) {
+      // Only include sales that belong to this customer
       const existing = salesByCustomer.get(sale.customerId) || { total: 0, productCounts: new Map() };
       existing.total += parseFloat(sale.totalAmount);
       existing.productCounts.set(sale.productId, (existing.productCounts.get(sale.productId) || 0) + 1);
