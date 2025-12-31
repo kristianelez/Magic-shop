@@ -75,11 +75,11 @@ export default function Customers() {
   }
 
   return (
-    <div className="space-y-6 overflow-x-hidden">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold" data-testid="heading-customers">Kupci</h1>
-          <p className="text-muted-foreground">Upravljajte vašim klijentima</p>
+    <div className="space-y-6 max-w-full overflow-hidden">
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold truncate" data-testid="heading-customers">Kupci</h1>
+          <p className="text-muted-foreground truncate">Upravljajte klijentima</p>
         </div>
         <AddCustomerDialog />
       </div>

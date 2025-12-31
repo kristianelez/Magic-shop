@@ -106,9 +106,9 @@ export function CustomerCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <Users className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <h3 className="font-semibold text-base truncate" data-testid="text-customer-name">{name}</h3>
+              <h3 className="font-semibold text-base truncate" data-testid="text-customer-name" title={name}>{name}</h3>
             </div>
-            <p className="text-sm text-muted-foreground truncate">{company}</p>
+            <p className="text-sm text-muted-foreground truncate" title={company}>{company}</p>
           </div>
           <AddCustomerDialog
             customer={customer}

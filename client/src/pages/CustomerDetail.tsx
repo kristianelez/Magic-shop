@@ -133,9 +133,11 @@ export default function CustomerDetail() {
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div>
-          <h1 className="text-2xl font-semibold" data-testid="heading-customer-detail">{customer.name}</h1>
-          <p className="text-muted-foreground">{customer.company}</p>
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-2xl font-semibold truncate" data-testid="heading-customer-detail" title={customer.name}>
+            {customer.name}
+          </h1>
+          <p className="text-muted-foreground truncate" title={customer.company}>{customer.company}</p>
         </div>
       </div>
 
@@ -145,33 +147,33 @@ export default function CustomerDetail() {
             <CardTitle className="text-base">Informacije</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Status:</span>
-              <Badge>{customer.status === "active" ? "Aktivan" : customer.status}</Badge>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-muted-foreground shrink-0">Status:</span>
+              <Badge className="truncate max-w-[150px]">{customer.status === "active" ? "Aktivan" : customer.status}</Badge>
             </div>
             {customer.email && (
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <a href={`mailto:${customer.email}`} className="text-primary hover:underline text-sm">
+              <div className="flex items-center gap-2 min-w-0">
+                <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                <a href={`mailto:${customer.email}`} className="text-primary hover:underline text-sm truncate" title={customer.email}>
                   {customer.email}
                 </a>
               </div>
             )}
             {customer.phone && (
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <a href={`tel:${customer.phone}`} className="text-primary hover:underline text-sm">
+              <div className="flex items-center gap-2 min-w-0">
+                <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+                <a href={`tel:${customer.phone}`} className="text-primary hover:underline text-sm truncate" title={customer.phone}>
                   {customer.phone}
                 </a>
               </div>
             )}
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Ukupna vrijednost:</span>
-              <span className="font-semibold text-primary">{customer.totalPurchases.toLocaleString()} KM</span>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-muted-foreground shrink-0">Ukupna vrijednost:</span>
+              <span className="font-semibold text-primary truncate">{customer.totalPurchases.toLocaleString()} KM</span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Zadnji kontakt:</span>
-              <span className="text-sm">{customer.lastContact || "Nikad"}</span>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-muted-foreground shrink-0">Zadnji kontakt:</span>
+              <span className="text-sm truncate">{customer.lastContact || "Nikad"}</span>
             </div>
           </CardContent>
         </Card>
