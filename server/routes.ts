@@ -203,6 +203,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/products/stats", requireAuth, async (req, res) => {
+    try {
+      // Logic for product stats could be here
+      res.json([]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch product stats" });
+    }
+  });
+
   app.get("/api/products/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);

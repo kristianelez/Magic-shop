@@ -242,6 +242,7 @@ export class DatabaseStorage implements IStorage {
     if (role === 'admin' || !userId) {
       return await db.select().from(sales).orderBy(desc(sales.createdAt));
     }
+    // Strict salesperson filtering
     return await db.select().from(sales).where(eq(sales.salesPersonId, userId)).orderBy(desc(sales.createdAt));
   }
 
