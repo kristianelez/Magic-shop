@@ -272,14 +272,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Sales API
   app.get("/api/sales", requireAuth, async (req, res) => {
     try {
-      let sales;
-
-      if (req.user!.role === "sales_manager") {
-        sales = await storage.getSalesBySalesPerson(req.user!.id);
-      } else {
-        sales = await storage.getSales();
-      }
-
+      const sales = await storage.getSales(req.user!.id, req.user!.role);
       res.json(sales);
     } catch (error) {
       console.error("Error fetching sales:", error);

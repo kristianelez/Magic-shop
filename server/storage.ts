@@ -59,7 +59,7 @@ export interface IStorage {
   deleteProduct(id: number): Promise<boolean>;
 
   // Sales
-  getSales(): Promise<Sale[]>;
+  getSales(userId?: string, role?: string): Promise<Sale[]>;
   getSalesByCustomer(customerId: number, userId?: string, role?: string): Promise<Sale[]>;
   getSalesBySalesPerson(salesPersonId: string): Promise<Sale[]>;
   createSale(sale: InsertSale): Promise<Sale>;
@@ -157,7 +157,7 @@ export class DatabaseStorage implements IStorage {
       const customerSalesData = salesByCustomer.get(customer.id);
       const totalPurchases = customerSalesData?.total || 0;
       
-      // Get top 3 favorite products
+      // Get top 3 favorite products (already filtered by salesPersonId in allSales above)
       const favoriteProducts: string[] = [];
       if (customerSalesData) {
         const topProductIds = Array.from(customerSalesData.productCounts.entries())
@@ -238,8 +238,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Sales
-  async getSales(): Promise<Sale[]> {
-    return await db.select().from(sales).orderBy(desc(sales.createdAt));
+  async getSales(userId?: string, role?: string): Promise<Sale[]> {
+    if (role === 'admin' || !userId) {
+      return await db.select().from(sales).orderBy(desc(sales.createdAt));
+    }
+    return await db.select().from(sales).where(eq(sales.salesPersonId, userId)).orderBy(desc(sales.createdAt));
   }
 
   async getSalesByCustomer(customerId: number, userId?: string, role?: string): Promise<Sale[]> {
