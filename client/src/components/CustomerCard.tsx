@@ -95,8 +95,8 @@ export function CustomerCard({
   };
 
   return (
-    <Card className="hover-elevate" data-testid={`card-customer-${id}`}>
-      <CardContent className="p-4 space-y-4">
+    <Card className="hover-elevate overflow-hidden" data-testid={`card-customer-${id}`}>
+      <CardContent className="p-3 md:p-4 space-y-3">
         <div className="flex items-start gap-3">
           <Avatar className="flex-shrink-0 h-10 w-10">
             <AvatarFallback className="bg-primary text-primary-foreground text-sm">
@@ -104,11 +104,11 @@ export function CustomerCard({
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <Users className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <h3 className="font-semibold text-base truncate" data-testid="text-customer-name" title={name}>{name}</h3>
+            <div className="flex items-center gap-2 mb-0.5">
+              <Users className="h-4 w-4 text-muted-foreground shrink-0" />
+              <h3 className="font-bold text-sm md:text-base truncate leading-tight" data-testid="text-customer-name" title={name}>{name}</h3>
             </div>
-            <p className="text-sm text-muted-foreground truncate" title={company}>{company}</p>
+            <p className="text-[11px] md:text-sm text-muted-foreground truncate leading-tight" title={company}>{company}</p>
           </div>
           <AddCustomerDialog
             customer={customer}
@@ -131,24 +131,30 @@ export function CustomerCard({
           )}
         </div>
 
-        <div className="space-y-3 pt-2 border-t border-border">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-            <span className="text-sm text-muted-foreground">Zadnji kontakt:</span>
-            <span className="text-sm font-medium ml-auto">{lastContact || "Nikad"}</span>
+        <div className="space-y-2 pt-2 border-t border-border">
+          <div className="flex items-center gap-2 justify-between min-w-0 h-5">
+            <div className="flex items-center gap-1.5 shrink-0 overflow-hidden">
+              <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="text-[11px] md:text-sm text-muted-foreground truncate">Zadnji kontakt:</span>
+            </div>
+            <span className="text-[11px] md:text-sm font-medium truncate ml-1 text-right">{lastContact || "Nikad"}</span>
           </div>
           
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-            <span className="text-sm text-muted-foreground">Ukupna vrijednost:</span>
-            <span className="text-sm font-semibold text-primary ml-auto">{totalPurchases.toLocaleString()} KM</span>
+          <div className="flex items-center gap-2 justify-between min-w-0 h-5">
+            <div className="flex items-center gap-1.5 shrink-0 overflow-hidden">
+              <TrendingUp className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="text-[11px] md:text-sm text-muted-foreground truncate">Ukupna vrijednost:</span>
+            </div>
+            <span className="text-[11px] md:text-sm font-semibold text-primary truncate ml-1 text-right">{totalPurchases.toLocaleString()} KM</span>
           </div>
           
           {paymentTerms && (
-            <div className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <span className="text-sm text-muted-foreground">Plaćanje:</span>
-              <span className="text-sm font-medium ml-auto">{paymentTerms}</span>
+            <div className="flex items-center gap-2 justify-between min-w-0 h-5">
+              <div className="flex items-center gap-1.5 shrink-0 overflow-hidden">
+                <CreditCard className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="text-[11px] md:text-sm text-muted-foreground truncate">Plaćanje:</span>
+              </div>
+              <span className="text-[11px] md:text-sm font-medium truncate ml-1 text-right">{paymentTerms}</span>
             </div>
           )}
         </div>
@@ -166,51 +172,40 @@ export function CustomerCard({
           </div>
         )}
 
-        <div className="flex flex-wrap gap-2 pt-2">
+        <div className="flex gap-1.5 pt-2">
           <Button
             size="sm"
             variant="outline"
-            className="flex-1 min-w-[100px]"
+            className="flex-1 h-8 px-1 text-[10px] md:text-xs"
             data-testid="button-call"
             onClick={handleCallClick}
             disabled={!phone || recordCallMutation.isPending}
           >
-            <Phone className="h-3 w-3 mr-1" />
-            Pozovi
+            <Phone className="h-3 w-3 mr-1 shrink-0" />
+            <span className="truncate">Pozovi</span>
           </Button>
           <Button
             size="sm"
             variant="outline"
-            className="flex-1 min-w-[100px]"
+            className="flex-1 h-8 px-1 text-[10px] md:text-xs"
             data-testid={`button-view-conversations-${id}`}
             onClick={() => setLocation(`/customers/${id}`)}
           >
-            <MessageSquare className="h-3 w-3 mr-1" />
-            Razgovori
+            <MessageSquare className="h-3 w-3 mr-1 shrink-0" />
+            <span className="truncate">Razgovori</span>
           </Button>
-          {email ? (
+          {email && (
             <Button
               size="sm"
               variant="outline"
-              className="flex-1 min-w-[100px]"
+              className="flex-1 h-8 px-1 text-[10px] md:text-xs"
               data-testid="button-email"
               asChild
             >
               <a href={`mailto:${email}`}>
-                <Mail className="h-3 w-3 mr-1" />
-                Email
+                <Mail className="h-3 w-3 mr-1 shrink-0" />
+                <span className="truncate">Email</span>
               </a>
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1 min-w-[100px]"
-              data-testid="button-email"
-              disabled
-            >
-              <Mail className="h-3 w-3 mr-1" />
-              Email
             </Button>
           )}
         </div>

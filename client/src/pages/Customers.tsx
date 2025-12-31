@@ -84,12 +84,12 @@ export default function Customers() {
         <AddCustomerDialog />
       </div>
 
-      <div className="flex gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="flex gap-2 flex-nowrap overflow-hidden">
+        <div className="relative flex-1 min-w-0">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
-            placeholder="Pretraži kupce..."
-            className="pl-9"
+            placeholder="Pretraži..."
+            className="pl-8 h-9 text-sm"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             data-testid="input-search-customers"
@@ -97,10 +97,10 @@ export default function Customers() {
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" data-testid="button-filter">
-              <Filter className="h-4 w-4 mr-2" />
-              Sortiraj
-              <ChevronDown className="h-4 w-4 ml-2" />
+            <Button variant="outline" size="sm" className="h-9 shrink-0" data-testid="button-filter">
+              <Filter className="h-3.5 w-3.5 mr-1.5" />
+              <span className="hidden sm:inline">Sortiraj</span>
+              <ChevronDown className="h-3.5 w-3.5 ml-1.5 opacity-50" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
