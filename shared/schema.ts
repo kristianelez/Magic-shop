@@ -103,7 +103,7 @@ export const insertSaleSchema = createInsertSchema(sales, {
   customerId: z.number().int(),
   productId: z.number().int(),
   salesPersonId: z.string().optional(),
-  quantity: z.number().int().min(1),
+  quantity: z.number().int(),
   totalAmount: z.string(),
   status: z.string().optional(),
 }).omit({
@@ -177,7 +177,7 @@ export const insertOfferSchema = createInsertSchema(offers, {
 export const insertOfferItemSchema = createInsertSchema(offerItems, {
   offerId: z.number().int(),
   productId: z.number().int(),
-  quantity: z.number().int().min(1),
+  quantity: z.number().int(),
   price: z.string(),
   discount: z.string().optional().default("0"),
   category: z.string(),
