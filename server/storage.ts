@@ -117,6 +117,7 @@ export class DatabaseStorage implements IStorage {
   async getCustomersWithStats(userId?: string, role?: string): Promise<CustomerWithStats[]> {
     // Batch load all data in just 4 queries instead of N+1
     // Filter sales by salesPersonId for non-admin users so each salesperson only sees their own revenue
+    // Kristina (admin) sees all customers and all sales
     const [allCustomers, allActivities, allSales, allProducts] = await Promise.all([
       role === 'admin' || !userId 
         ? db.select().from(customers).orderBy(desc(customers.createdAt))
@@ -239,7 +240,7 @@ export class DatabaseStorage implements IStorage {
 
   // Sales
   async getSales(userId?: string, role?: string): Promise<Sale[]> {
-    if (role === 'admin' || !userId) {
+    if (role === 'admin' || role === 'sales_director' || !userId) {
       return await db.select().from(sales).orderBy(desc(sales.createdAt));
     }
     // Strict salesperson filtering
