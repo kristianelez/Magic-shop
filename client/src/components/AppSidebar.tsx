@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Package, Sparkles, ShoppingCart, ClipboardList, FileText, Trophy, BarChart3, Bell } from "lucide-react";
+import { LayoutDashboard, Users, Package, Sparkles, ShoppingCart, ClipboardList, FileText, Trophy, BarChart3, Bell, RotateCcw } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -24,6 +24,11 @@ const menuItems = [
     title: "Nova narudžba",
     url: "/create-order",
     icon: ShoppingCart,
+  },
+  {
+    title: "Povrat robe",
+    url: "/create-return",
+    icon: RotateCcw,
   },
   {
     title: "Narudžbe",

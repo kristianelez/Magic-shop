@@ -18,6 +18,7 @@ import Customers from "@/pages/Customers";
 import CustomerDetail from "@/pages/CustomerDetail";
 import Products from "@/pages/Products";
 import CreateOrder from "@/pages/CreateOrder";
+import CreateReturn from "@/pages/CreateReturn";
 import EditOrder from "@/pages/EditOrder";
 import EditOffer from "@/pages/EditOffer";
 import Orders from "@/pages/Orders";
@@ -64,6 +65,7 @@ function Router() {
       <Route path="/bonuses" component={Bonuses} />
       <Route path="/statistika" component={Statistika} />
       <Route path="/create-order" component={CreateOrder} />
+      <Route path="/create-return" component={CreateReturn} />
       <Route path="/edit-order/:orderId" component={EditOrder} />
       <Route path="/orders" component={Orders} />
       <Route component={NotFound} />
