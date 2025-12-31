@@ -105,9 +105,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Customer not found" });
       }
       
-      const stats = await storage.getCustomerStats(id);
+      // Pass user info for proper sales filtering
+      const stats = await storage.getCustomerStats(id, req.user!.id, req.user!.role);
       const activities = await storage.getActivitiesByCustomer(id);
-      const sales = await storage.getSalesByCustomer(id);
+      const sales = await storage.getSalesByCustomer(id, req.user!.id, req.user!.role);
       const lastContact = activities.length > 0 
         ? new Date(activities[0].createdAt).toLocaleDateString('bs-BA')
         : undefined;

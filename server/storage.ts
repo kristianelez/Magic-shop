@@ -60,7 +60,7 @@ export interface IStorage {
 
   // Sales
   getSales(): Promise<Sale[]>;
-  getSalesByCustomer(customerId: number): Promise<Sale[]>;
+  getSalesByCustomer(customerId: number, userId?: string, role?: string): Promise<Sale[]>;
   getSalesBySalesPerson(salesPersonId: string): Promise<Sale[]>;
   createSale(sale: InsertSale): Promise<Sale>;
   updateSale(id: number, sale: Partial<InsertSale>): Promise<Sale | undefined>;
@@ -82,7 +82,7 @@ export interface IStorage {
   deleteOffer(id: number): Promise<boolean>;
 
   // Analytics
-  getCustomerStats(customerId: number): Promise<{
+  getCustomerStats(customerId: number, userId?: string, role?: string): Promise<{
     totalPurchases: number;
     lastPurchaseDate: Date | null;
     favoriteProducts: string[];
@@ -115,13 +115,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCustomersWithStats(userId?: string, role?: string): Promise<CustomerWithStats[]> {
-    // Batch load all data in just 3 queries instead of N+1
+    // Batch load all data in just 4 queries instead of N+1
+    // Filter sales by salesPersonId for non-admin users so each salesperson only sees their own revenue
     const [allCustomers, allActivities, allSales, allProducts] = await Promise.all([
       role === 'admin' || !userId 
         ? db.select().from(customers).orderBy(desc(customers.createdAt))
         : db.select().from(customers).where(eq(customers.salesPersonId, userId)).orderBy(desc(customers.createdAt)),
       db.select().from(activities).orderBy(desc(activities.createdAt)),
-      db.select().from(sales),
+      role === 'admin' || !userId
+        ? db.select().from(sales)
+        : db.select().from(sales).where(eq(sales.salesPersonId, userId)),
       db.select().from(products),
     ]);
 
@@ -136,7 +139,7 @@ export class DatabaseStorage implements IStorage {
       activitiesByCustomer.set(activity.customerId, existing);
     }
 
-    // Group sales by customer and calculate stats
+    // Group sales by customer and calculate stats (already filtered by salesPersonId above)
     const salesByCustomer = new Map<number, { total: number; productCounts: Map<number, number> }>();
     for (const sale of allSales) {
       const existing = salesByCustomer.get(sale.customerId) || { total: 0, productCounts: new Map() };
@@ -238,11 +241,18 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(sales).orderBy(desc(sales.createdAt));
   }
 
-  async getSalesByCustomer(customerId: number): Promise<Sale[]> {
+  async getSalesByCustomer(customerId: number, userId?: string, role?: string): Promise<Sale[]> {
+    if (role === 'admin' || !userId) {
+      return await db
+        .select()
+        .from(sales)
+        .where(eq(sales.customerId, customerId))
+        .orderBy(desc(sales.createdAt));
+    }
     return await db
       .select()
       .from(sales)
-      .where(eq(sales.customerId, customerId))
+      .where(and(eq(sales.customerId, customerId), eq(sales.salesPersonId, userId)))
       .orderBy(desc(sales.createdAt));
   }
 
@@ -355,19 +365,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Analytics
-  async getCustomerStats(customerId: number): Promise<{
+  async getCustomerStats(customerId: number, userId?: string, role?: string): Promise<{
     totalPurchases: number;
     lastPurchaseDate: Date | null;
     favoriteProducts: string[];
   }> {
-    const customerSales = await db
-      .select({
-        totalAmount: sales.totalAmount,
-        createdAt: sales.createdAt,
-        productId: sales.productId,
-      })
-      .from(sales)
-      .where(eq(sales.customerId, customerId));
+    let customerSales;
+    if (role === 'admin' || !userId) {
+      customerSales = await db
+        .select({
+          totalAmount: sales.totalAmount,
+          createdAt: sales.createdAt,
+          productId: sales.productId,
+        })
+        .from(sales)
+        .where(eq(sales.customerId, customerId));
+    } else {
+      customerSales = await db
+        .select({
+          totalAmount: sales.totalAmount,
+          createdAt: sales.createdAt,
+          productId: sales.productId,
+        })
+        .from(sales)
+        .where(and(eq(sales.customerId, customerId), eq(sales.salesPersonId, userId)));
+    }
 
     const totalPurchases = customerSales.reduce((sum, sale) => sum + parseFloat(sale.totalAmount), 0);
     
