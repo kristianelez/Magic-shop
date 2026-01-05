@@ -4,31 +4,29 @@ import bcrypt from "bcryptjs";
 export async function seedDatabase() {
   try {
     // Always check and create users first if they don't exist
-    const existingAdmin = await storage.getUserByUsername("Greentimeadmin");
-    if (!existingAdmin) {
+    const existingKristina = await storage.getUserByUsername("Kristina");
+    if (!existingKristina) {
       console.log("Creating default users...");
-      const hashedPassword1 = await bcrypt.hash("pedja2024", 10);
-      const hashedPassword2 = await bcrypt.hash("kacacaka0607", 10);
-      const hashedPassword3 = await bcrypt.hash("kikoris12", 10);
+      const hashedPassword = await bcrypt.hash("magic2024", 10);
 
       await Promise.all([
         storage.createUser({ 
-          username: "PredragPetrusic", 
-          password: hashedPassword1, 
-          fullName: "Predrag Petrusić",
-          role: "sales_manager" 
+          username: "Kristina", 
+          password: hashedPassword, 
+          fullName: "Kristina",
+          role: "admin" 
         }),
         storage.createUser({ 
-          username: "DraganElez", 
-          password: hashedPassword2, 
-          fullName: "Dragan Elez",
+          username: "Mladen", 
+          password: hashedPassword, 
+          fullName: "Mladen",
           role: "sales_director" 
         }),
         storage.createUser({ 
-          username: "Greentimeadmin", 
-          password: hashedPassword3, 
-          fullName: "Admin",
-          role: "admin" 
+          username: "Andrea", 
+          password: hashedPassword, 
+          fullName: "Andrea",
+          role: "sales_manager" 
         }),
       ]);
       console.log("Default users created!");
