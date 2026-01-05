@@ -136,8 +136,11 @@ export default function Statistika() {
               {users
                 .filter(u => u.role === "sales_manager" || u.role === "komercijalista")
                 .map(salesperson => {
-                  const personSales = sales.filter(s => s.salesPersonId === salesperson.id);
+                  // Prebacujemo IDs u string za sigurnu usporedbu
+                  const sid = String(salesperson.id);
+                  const personSales = sales.filter(s => String(s.salesPersonId) === sid);
                   const total = personSales.reduce((sum, s) => sum + parseFloat(s.totalAmount) / 1.17, 0);
+                  
                   return (
                     <div 
                       key={salesperson.id} 
