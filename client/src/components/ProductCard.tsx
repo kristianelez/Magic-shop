@@ -8,9 +8,11 @@ interface ProductCardProps {
   price: number;
   stock?: number;
   unit: string;
+  vendor?: string | null;
+  barcode?: string | null;
 }
 
-export function ProductCard({ id, name, category, price, unit }: ProductCardProps) {
+export function ProductCard({ id, name, category, price, unit, vendor, barcode }: ProductCardProps) {
   return (
     <Card className="hover-elevate" data-testid={`card-product-${id}`}>
       <CardContent className="p-4 space-y-4">
@@ -22,7 +24,12 @@ export function ProductCard({ id, name, category, price, unit }: ProductCardProp
             <h3 className="font-semibold text-sm leading-tight line-clamp-2" data-testid="text-product-name">
               {name}
             </h3>
-            <p className="text-xs text-muted-foreground mt-1 truncate">{category}</p>
+            <div className="flex flex-col gap-0.5 mt-1">
+              <p className="text-[10px] text-muted-foreground font-mono">
+                Šifra: {vendor || "N/A"} | Barkod: {barcode || "N/A"}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">{category}</p>
+            </div>
           </div>
         </div>
 

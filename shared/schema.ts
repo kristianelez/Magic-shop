@@ -66,6 +66,7 @@ export const products = pgTable("products", {
   unit: text("unit").notNull().default("kom"),
   description: text("description"),
   vendor: text("vendor"),
+  barcode: text("barcode"),
   recommendedFor: text("recommended_for").array(),
 });
 

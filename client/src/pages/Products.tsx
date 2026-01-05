@@ -74,6 +74,8 @@ export default function Products() {
                 category={product.category}
                 price={parseFloat(product.price)}
                 unit={product.unit}
+                vendor={product.vendor}
+                barcode={product.barcode}
               />
             ))}
           </div>
