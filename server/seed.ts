@@ -7,20 +7,20 @@ export async function seedDatabase() {
     const existingKristina = await storage.getUserByUsername("Kristina");
     if (!existingKristina) {
       console.log("Creating default users...");
-      const hashedPassword = await bcrypt.hash("magic2024", 10);
+      const hashedPassword = await bcrypt.hash("1234", 10);
 
       await Promise.all([
         storage.createUser({ 
           username: "Kristina", 
           password: hashedPassword, 
           fullName: "Kristina",
-          role: "admin" 
+          role: "sales_director" 
         }),
         storage.createUser({ 
           username: "Mladen", 
           password: hashedPassword, 
           fullName: "Mladen",
-          role: "sales_director" 
+          role: "sales_manager" 
         }),
         storage.createUser({ 
           username: "Andrea", 

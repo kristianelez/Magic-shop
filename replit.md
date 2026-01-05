@@ -137,9 +137,9 @@ Preferred communication style: Simple, everyday language.
 - All other resources (customers, products, activities, recommendations) accessible to all authenticated users
 
 **Default Users (seeded automatically):**
-- **Kristina** (username: Kristina, password: magic2024, role: admin)
-- **Mladen** (username: Mladen, password: magic2024, role: sales_director)
-- **Andrea** (username: Andrea, password: magic2024, role: sales_manager)
+- **Kristina** (username: Kristina, password: 1234, role: sales_director)
+- **Mladen** (username: Mladen, password: 1234, role: sales_manager)
+- **Andrea** (username: Andrea, password: 1234, role: sales_manager)
 
 **Security Features:**
 - Passwords hashed using bcrypt with salt rounds
