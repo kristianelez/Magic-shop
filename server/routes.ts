@@ -84,6 +84,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
+  // Users API
+  app.get("/api/users", async (req, res) => {
+    try {
+      const allUsers = await storage.getUsers();
+      // Remove passwords from response
+      const usersWithoutPasswords = allUsers.map(({ password, ...user }) => user);
+      res.json(usersWithoutPasswords);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
   // Customers API
   app.get("/api/customers", requireAuth, async (req, res) => {
     try {
