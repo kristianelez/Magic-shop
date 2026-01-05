@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, PieChart as PieChartIcon, TrendingUp, Calendar } from "lucide-react";
+import { BarChart3, PieChart as PieChartIcon, TrendingUp, Users } from "lucide-react";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell, Legend,
@@ -8,6 +8,7 @@ import {
 } from "recharts";
 import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { bs } from "date-fns/locale";
+import { useAuth } from "@/contexts/AuthContext";
 import type { Sale, User } from "@shared/schema";
 
 interface SaleWithProduct extends Sale {
@@ -18,6 +19,9 @@ interface SaleWithProduct extends Sale {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#ff7300'];
 
 export default function Statistika() {
+  const { user } = useAuth();
+  const isSalesDirector = user?.role === "sales_director" || user?.role === "admin";
+
   const { data: sales = [], isLoading: salesLoading } = useQuery<SaleWithProduct[]>({
     queryKey: ["/api/sales"],
     staleTime: 30 * 60 * 1000,
@@ -118,6 +122,42 @@ export default function Statistika() {
           Pregled prodaje po komercijalisti i kategorijama
         </p>
       </div>
+
+      {isSalesDirector && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Users className="h-4 w-4" />
+              Ukupan promet po komercijalisti (bez PDV-a)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {users
+                .filter(u => u.role === "sales_manager" || u.role === "komercijalista")
+                .map(salesperson => {
+                  const personSales = sales.filter(s => s.salesPersonId === salesperson.id);
+                  const total = personSales.reduce((sum, s) => sum + parseFloat(s.totalAmount) / 1.17, 0);
+                  return (
+                    <div 
+                      key={salesperson.id} 
+                      className="p-4 rounded-lg bg-muted/50 border"
+                      data-testid={`card-sales-${salesperson.username}`}
+                    >
+                      <p className="text-sm text-muted-foreground">{salesperson.fullName}</p>
+                      <p className="text-2xl font-bold text-primary">
+                        {total.toLocaleString("bs-BA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KM
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {personSales.length} prodaja
+                      </p>
+                    </div>
+                  );
+                })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader className="pb-2">
