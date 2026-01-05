@@ -73,7 +73,7 @@ export interface IStorage {
   updateActivity(id: number, activity: Partial<InsertActivity>): Promise<Activity | undefined>;
 
   // Offers
-  getOffers(): Promise<any[]>;
+  getOffers(userId?: string, role?: string): Promise<any[]>;
   getOffer(id: number): Promise<any>;
   createOffer(offer: any): Promise<any>;
   updateOffer(id: number, offer: Partial<InsertOffer>): Promise<Offer | undefined>;
@@ -108,22 +108,25 @@ export class DatabaseStorage implements IStorage {
 
   // Customers
   async getCustomers(userId?: string, role?: string): Promise<Customer[]> {
-    if (role === 'admin' || !userId) {
+    // admin or sales_director can see all customers
+    if (role === 'admin' || role === 'sales_director' || !userId) {
       return await db.select().from(customers).orderBy(desc(customers.createdAt));
     }
+    // sales_manager can only see their own customers
     return await db.select().from(customers).where(eq(customers.salesPersonId, userId)).orderBy(desc(customers.createdAt));
   }
 
   async getCustomersWithStats(userId?: string, role?: string): Promise<CustomerWithStats[]> {
     // Batch load all data in just 4 queries instead of N+1
     // Filter sales by salesPersonId for non-admin users so each salesperson only sees their own revenue
-    // Kristina (admin) sees all customers and all sales
+    // Kristina (sales_director) sees all customers and all sales
+    const canSeeAll = role === 'admin' || role === 'sales_director' || !userId;
     const [allCustomers, allActivities, allSales, allProducts] = await Promise.all([
-      role === 'admin' || !userId 
+      canSeeAll
         ? db.select().from(customers).orderBy(desc(customers.createdAt))
         : db.select().from(customers).where(eq(customers.salesPersonId, userId)).orderBy(desc(customers.createdAt)),
       db.select().from(activities).orderBy(desc(activities.createdAt)),
-      role === 'admin' || !userId
+      canSeeAll
         ? db.select().from(sales)
         : db.select().from(sales).where(eq(sales.salesPersonId, userId)),
       db.select().from(products),
@@ -248,7 +251,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getSalesByCustomer(customerId: number, userId?: string, role?: string): Promise<Sale[]> {
-    if (role === 'admin' || !userId) {
+    if (role === 'admin' || role === 'sales_director' || !userId) {
       return await db
         .select()
         .from(sales)
@@ -309,8 +312,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Offers
-  async getOffers(): Promise<any[]> {
-    const allOffers = await db.select().from(offers).orderBy(desc(offers.createdAt));
+  async getOffers(userId?: string, role?: string): Promise<any[]> {
+    // admin or sales_director can see all offers
+    const canSeeAll = role === 'admin' || role === 'sales_director' || !userId;
+    const allOffers = canSeeAll
+      ? await db.select().from(offers).orderBy(desc(offers.createdAt))
+      : await db.select().from(offers).where(eq(offers.salesPersonId, userId)).orderBy(desc(offers.createdAt));
     const allOfferItems = await db.select().from(offerItems);
     const allProducts = await db.select().from(products);
     const productMap = new Map(allProducts.map(p => [p.id, p]));
@@ -377,7 +384,7 @@ export class DatabaseStorage implements IStorage {
     favoriteProducts: string[];
   }> {
     let customerSales;
-    if (role === 'admin' || !userId) {
+    if (role === 'admin' || role === 'sales_director' || !userId) {
       customerSales = await db
         .select({
           totalAmount: sales.totalAmount,

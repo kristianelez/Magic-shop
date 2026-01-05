@@ -446,13 +446,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Offers API
   app.get("/api/offers", requireAuth, async (req, res) => {
     try {
-      let offers;
-      if (req.user!.role === "admin") {
-        offers = await storage.getOffers();
-      } else {
-        offers = await storage.getOffers();
-        offers = offers.filter(o => o.salesPersonId === req.user!.id);
-      }
+      const offers = await storage.getOffers(req.user!.id, req.user!.role);
       res.json(offers);
     } catch (error) {
       console.error("Error fetching offers:", error);
