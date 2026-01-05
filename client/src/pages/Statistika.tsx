@@ -134,9 +134,8 @@ export default function Statistika() {
           <CardContent>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {users
-                .filter(u => u.role === "sales_manager" || u.role === "komercijalista")
+                .filter(u => u.username === "Mladen" || u.username === "Andrea")
                 .map(salesperson => {
-                  // Prebacujemo IDs u string za sigurnu usporedbu
                   const sid = String(salesperson.id);
                   const personSales = sales.filter(s => String(s.salesPersonId) === sid);
                   const total = personSales.reduce((sum, s) => sum + parseFloat(s.totalAmount) / 1.17, 0);
