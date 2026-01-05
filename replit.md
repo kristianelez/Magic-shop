@@ -48,12 +48,12 @@ Preferred communication style: Simple, everyday language.
   - Permanent deletion with warning message showing customer name
   - Atomic operation ensures no orphaned records remain
   - Automatic cache invalidation and UI update after deletion
-- Products - Product catalog with inventory tracking (128 unique products after related products filtering)
+- Products - Product catalog with inventory tracking
 - AI Recommendations - Smart customer outreach suggestions
 - Sales - Sales history and analytics
 - **Create Order** (Nova narudžba) - Order creation with smart product selection:
   - Displays **Top 10 preporučenih proizvoda** (suggested products based on sales volume)
-  - Enables **search through ALL 128 products** via searchable dropdown
+  - Enables **search through products** via searchable dropdown
   - Two-group product selector: "Preporučeni proizvodi (Top 10)" and "Svi proizvodi"
   - Real-time search filtering across both groups
   - Automatic price population on product selection
@@ -110,17 +110,9 @@ Preferred communication style: Simple, everyday language.
 
 **Data Seeding:**
 - Automatic database seeding on first run via `server/seed.ts`
-- Creates sample customers (hotels, hospitals, restaurants)
+- Creates sample customers
 - Generates historical sales data for testing
-- **Product Import from greentime.ba** - `server/import-greentime-products.ts` imports products directly from greentime.ba website:
-  - Uses Cheerio for HTML parsing to extract product data
-  - Scrapes 18 product categories from greentime.ba
-  - **Smart Related Products Filtering**: Detects and removes products appearing in 10+ categories (related/recommended products that greentime.ba shows on every category page)
-  - Filters out 8 related products (BACTER WC, WC LIMP, TAX FORTE, INOXARP, BRISSOL, CRISSOL, TERGOSAN BACT, AIRON BD) that appear in all 18 categories
-  - Imports 129 unique, category-relevant products with accurate pricing
-  - Top categories: Oprema za čišćenje objekata (24), Profesionalna sredstva za čišćenje (19), Dispenzeri (16)
-  - Automatically assigns customer type recommendations based on category
-  - Replaces all existing products to ensure catalog stays up-to-date with greentime.ba
+- Replaces all existing products to ensure catalog stays up-to-date
 
 ### Authentication and Authorization
 
