@@ -311,13 +311,13 @@ export class DatabaseStorage implements IStorage {
   // Offers
   async getOffers(): Promise<any[]> {
     const allOffers = await db.select().from(offers).orderBy(desc(offers.createdAt));
-    const items = await db.select().from(offerItems);
+    const allOfferItems = await db.select().from(offerItems);
     const allProducts = await db.select().from(products);
     const productMap = new Map(allProducts.map(p => [p.id, p]));
     
     return allOffers.map(offer => ({
       ...offer,
-      items: items
+      items: allOfferItems
         .filter(item => item.offerId === offer.id)
         .map(item => ({
           ...item,
