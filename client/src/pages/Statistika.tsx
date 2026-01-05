@@ -125,14 +125,14 @@ export default function Statistika() {
 
       {isSalesDirector && (
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Users className="h-4 w-4" />
-              Ukupan promet po komercijalisti (bez PDV-a)
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              Promet komercijalista
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-4">
               {users
                 .filter(u => u.username === "Mladen" || u.username === "Andrea")
                 .map(salesperson => {
@@ -143,16 +143,26 @@ export default function Statistika() {
                   return (
                     <div 
                       key={salesperson.id} 
-                      className="p-4 rounded-lg bg-muted/50 border"
+                      className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border"
                       data-testid={`card-sales-${salesperson.username}`}
                     >
-                      <p className="text-sm text-muted-foreground">{salesperson.fullName}</p>
-                      <p className="text-2xl font-bold text-primary">
-                        {total.toLocaleString("bs-BA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KM
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {personSales.length} prodaja
-                      </p>
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-primary font-semibold">
+                            {salesperson.fullName.charAt(0)}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="font-medium">Komercijalista: {salesperson.fullName}</p>
+                          <p className="text-xs text-muted-foreground">{personSales.length} prodaja</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-muted-foreground">Promet</p>
+                        <p className="text-xl font-bold text-primary">
+                          {total.toLocaleString("bs-BA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KM
+                        </p>
+                      </div>
                     </div>
                   );
                 })}
