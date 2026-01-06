@@ -20,6 +20,7 @@ interface OrderItem {
   productName: string;
   quantity: number | string;
   price: string;
+  discount: string;
   total: number;
   isDeleted?: boolean;
 }
@@ -103,10 +104,12 @@ export default function EditOrder() {
     }
 
     // Popuni order items sa postojećim podacima
+    // Koristimo jediničnu cijenu iz prodaje (totalAmount/quantity) - to je cijena koja je zapravo naplaćena
+    // Rabat postavljamo na 0 jer je cijena već efektivna cijena (uključujući bilo kakav prethodni rabat)
     const items: OrderItem[] = orderSales.map((sale) => {
       const product = products.find(p => p.id === sale.productId);
       const itemTotal = parseFloat(sale.totalAmount);
-      const unitPrice = itemTotal / sale.quantity;
+      const unitPrice = sale.quantity > 0 ? itemTotal / sale.quantity : 0;
       
       return {
         saleId: sale.id,
@@ -114,6 +117,7 @@ export default function EditOrder() {
         productName: product?.name || "Unknown",
         quantity: sale.quantity,
         price: unitPrice.toFixed(2),
+        discount: "0",
         total: itemTotal,
       };
     });
@@ -176,20 +180,25 @@ export default function EditOrder() {
     },
   });
 
+  const calculateItemTotal = (item: OrderItem) => {
+    const qty = typeof item.quantity === 'string' ? parseInt(item.quantity as string) || 0 : (item.quantity || 0);
+    const baseTotal = parseFloat(item.price || "0") * qty;
+    const discountAmount = baseTotal * (parseFloat(item.discount || "0") / 100);
+    return baseTotal - discountAmount;
+  };
+
   const addOrderItem = () => {
-    if (topProducts.length > 0) {
-      const firstProduct = topProducts[0];
-      setOrderItems([
-        ...orderItems,
-        {
-          productId: firstProduct.id,
-          productName: firstProduct.name,
-          quantity: 1,
-          price: firstProduct.price,
-          total: parseFloat(firstProduct.price),
-        },
-      ]);
-    }
+    setOrderItems([
+      ...orderItems,
+      {
+        productId: 0,
+        productName: "",
+        quantity: 1,
+        price: "0",
+        discount: "0",
+        total: 0,
+      },
+    ]);
   };
 
   const removeOrderItem = (index: number) => {
@@ -209,14 +218,12 @@ export default function EditOrder() {
     const newItems = [...orderItems];
     
     if (field === "productId") {
-      const product = topProducts.find((p) => p.id === parseInt(value));
+      const product = products.find((p) => p.id === parseInt(value));
       if (product) {
         newItems[index].productId = product.id;
         newItems[index].productName = product.name;
         newItems[index].price = product.price;
-        const qty = typeof newItems[index].quantity === 'string' ? 
-          parseInt(newItems[index].quantity as string) : newItems[index].quantity;
-        newItems[index].total = parseFloat(product.price) * (qty as number);
+        newItems[index].total = calculateItemTotal({ ...newItems[index], price: product.price });
       }
     } else if (field === "quantity") {
       if (value === "" || value === null || value === undefined) {
@@ -226,8 +233,15 @@ export default function EditOrder() {
         const parsedQty = parseInt(value);
         const qty = isNaN(parsedQty) || parsedQty < 1 ? 1 : parsedQty;
         newItems[index].quantity = qty;
-        newItems[index].total = parseFloat(newItems[index].price) * qty;
+        newItems[index].total = calculateItemTotal({ ...newItems[index], quantity: qty });
       }
+    } else if (field === "discount") {
+      if (value === "" || value === null || value === undefined) {
+        newItems[index].discount = "" as any;
+      } else {
+        newItems[index].discount = value;
+      }
+      newItems[index].total = calculateItemTotal(newItems[index]);
     }
 
     setOrderItems(newItems);
@@ -239,7 +253,18 @@ export default function EditOrder() {
     
     if (typeof currentQty === "string" || currentQty === null || currentQty === undefined || currentQty < 1) {
       newItems[index].quantity = 1;
-      newItems[index].total = parseFloat(newItems[index].price) * 1;
+      newItems[index].total = calculateItemTotal({ ...newItems[index], quantity: 1 });
+      setOrderItems(newItems);
+    }
+  };
+
+  const handleDiscountBlur = (index: number) => {
+    const newItems = [...orderItems];
+    const currentDiscount = newItems[index].discount;
+    
+    if (currentDiscount === "" || currentDiscount === null || currentDiscount === undefined) {
+      newItems[index].discount = "0";
+      newItems[index].total = calculateItemTotal(newItems[index]);
       setOrderItems(newItems);
     }
   };
@@ -266,6 +291,17 @@ export default function EditOrder() {
       return;
     }
     
+    // Validate product selection
+    const unselectedProduct = activeItems.find(item => !item.productId || item.productId === 0);
+    if (unselectedProduct) {
+      toast({
+        title: "Greška",
+        description: "Molimo odaberite artikal za sve stavke",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const invalidItem = activeItems.find(item => {
       const qty = typeof item.quantity === 'string' ? parseInt(item.quantity) : item.quantity;
       return !item.quantity || isNaN(qty) || qty <= 0;
@@ -274,6 +310,17 @@ export default function EditOrder() {
       toast({
         title: "Greška",
         description: "Količina mora biti pozitivan broj",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validate totals are valid numbers
+    const invalidTotal = activeItems.find(item => isNaN(item.total));
+    if (invalidTotal) {
+      toast({
+        title: "Greška",
+        description: "Nevažeći ukupni iznos",
         variant: "destructive",
       });
       return;
@@ -351,7 +398,7 @@ export default function EditOrder() {
               type="button"
               size="sm"
               onClick={addOrderItem}
-              disabled={topProducts.length === 0}
+              disabled={products.length === 0}
               data-testid="button-add-product"
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -387,7 +434,7 @@ export default function EditOrder() {
                               className="w-full justify-between overflow-hidden"
                               data-testid={`select-product-${realIndex}`}
                             >
-                              <span className="truncate flex-1 text-left">{item.productName}</span>
+                              <span className="truncate flex-1 text-left">{item.productName || "Odaberi artikal"}</span>
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 flex-shrink-0" />
                             </Button>
                           </PopoverTrigger>
@@ -396,8 +443,38 @@ export default function EditOrder() {
                               <CommandInput placeholder="Pretraži proizvode..." data-testid={`input-search-product-${realIndex}`} />
                               <CommandList className="max-h-40 overflow-y-auto">
                                 <CommandEmpty>Nema pronađenih proizvoda.</CommandEmpty>
-                                <CommandGroup>
-                                  {topProducts.map((product) => (
+                                
+                                {topProducts.length > 0 && (
+                                  <CommandGroup heading="Preporučeni proizvodi (Top 10)">
+                                    {topProducts.map((product) => (
+                                      <CommandItem
+                                        key={product.id}
+                                        value={product.name}
+                                        onSelect={() => {
+                                          updateOrderItem(realIndex, "productId", String(product.id));
+                                          setProductSearchOpen({ ...productSearchOpen, [realIndex]: false });
+                                        }}
+                                        data-testid={`product-option-${realIndex}-${product.id}`}
+                                      >
+                                        <Check
+                                          className={cn(
+                                            "mr-2 h-4 w-4",
+                                            item.productId === product.id ? "opacity-100" : "opacity-0"
+                                          )}
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                          <div className="truncate">{product.name}</div>
+                                          <div className="text-xs text-muted-foreground">
+                                            Prodano: {product.totalSold} | Cijena: {product.price} KM
+                                          </div>
+                                        </div>
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                )}
+                                
+                                <CommandGroup heading="Svi proizvodi">
+                                  {products.map((product) => (
                                     <CommandItem
                                       key={product.id}
                                       value={product.name}
@@ -405,7 +482,7 @@ export default function EditOrder() {
                                         updateOrderItem(realIndex, "productId", String(product.id));
                                         setProductSearchOpen({ ...productSearchOpen, [realIndex]: false });
                                       }}
-                                      data-testid={`product-option-${realIndex}-${product.id}`}
+                                      data-testid={`all-products-option-${realIndex}-${product.id}`}
                                     >
                                       <Check
                                         className={cn(
@@ -416,7 +493,7 @@ export default function EditOrder() {
                                       <div className="flex-1 min-w-0">
                                         <div className="truncate">{product.name}</div>
                                         <div className="text-xs text-muted-foreground">
-                                          Prodano: {product.totalSold} | Cijena: {product.price} KM
+                                          {product.category} | Cijena: {product.price} KM
                                         </div>
                                       </div>
                                     </CommandItem>
@@ -450,6 +527,20 @@ export default function EditOrder() {
                           onBlur={() => handleQuantityBlur(realIndex)}
                           className="w-full text-xs sm:text-sm"
                           data-testid={`input-quantity-${realIndex}`}
+                        />
+                      </div>
+
+                      <div className="w-full min-w-0">
+                        <Label className="text-xs sm:text-sm block truncate">Rabat (%)</Label>
+                        <Input
+                          type="text"
+                          inputMode="decimal"
+                          value={item.discount}
+                          onChange={(e) => updateOrderItem(realIndex, "discount", e.target.value)}
+                          onBlur={() => handleDiscountBlur(realIndex)}
+                          disabled={!item.productId || item.productId === 0}
+                          className="w-full text-xs sm:text-sm"
+                          data-testid={`input-discount-${realIndex}`}
                         />
                       </div>
 

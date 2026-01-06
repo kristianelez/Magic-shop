@@ -97,20 +97,17 @@ export default function CreateReturn() {
   });
 
   const addReturnItem = () => {
-    if (topProducts.length > 0) {
-      const firstProduct = topProducts[0];
-      setReturnItems([
-        ...returnItems,
-        {
-          productId: firstProduct.id,
-          productName: firstProduct.name,
-          quantity: 1,
-          price: firstProduct.price,
-          discount: "0",
-          total: parseFloat(firstProduct.price),
-        },
-      ]);
-    }
+    setReturnItems([
+      ...returnItems,
+      {
+        productId: 0,
+        productName: "",
+        quantity: 1,
+        price: "0",
+        discount: "0",
+        total: 0,
+      },
+    ]);
   };
 
   const removeReturnItem = (index: number) => {
@@ -118,7 +115,8 @@ export default function CreateReturn() {
   };
 
   const calculateItemTotal = (item: ReturnItem) => {
-    const baseTotal = parseFloat(item.price) * item.quantity;
+    const qty = typeof item.quantity === 'string' ? parseInt(item.quantity as string) || 0 : (item.quantity || 0);
+    const baseTotal = parseFloat(item.price || "0") * qty;
     const discountAmount = baseTotal * (parseFloat(item.discount || "0") / 100);
     return baseTotal - discountAmount;
   };
@@ -194,11 +192,33 @@ export default function CreateReturn() {
       return;
     }
     
+    // Validate product selection
+    const unselectedProduct = returnItems.find(item => !item.productId || item.productId === 0);
+    if (unselectedProduct) {
+      toast({
+        title: "Greška",
+        description: "Molimo odaberite artikal za sve stavke",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const invalidItem = returnItems.find(item => !item.quantity || item.quantity <= 0);
     if (invalidItem) {
       toast({
         title: "Greška",
         description: "Količina mora biti pozitivan broj",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validate totals are valid numbers
+    const invalidTotal = returnItems.find(item => isNaN(item.total));
+    if (invalidTotal) {
+      toast({
+        title: "Greška",
+        description: "Nevažeći ukupni iznos",
         variant: "destructive",
       });
       return;
@@ -382,7 +402,7 @@ export default function CreateReturn() {
                             className="w-full justify-between truncate"
                             data-testid={`select-return-product-${index}`}
                           >
-                            <span className="truncate">{item.productName}</span>
+                            <span className="truncate">{item.productName || "Odaberi artikal"}</span>
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 flex-shrink-0" />
                           </Button>
                         </PopoverTrigger>

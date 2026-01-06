@@ -108,10 +108,6 @@ export default function EditOffer() {
 
   const updateOfferMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedCustomerId || items.length === 0) {
-        throw new Error("Odaberi kupca i dodaj artikle");
-      }
-
       return await apiRequest("PATCH", `/api/offers/${offerId}`, {
         customerId: parseInt(selectedCustomerId),
         totalAmount: totalSaPDV.toFixed(2),
@@ -141,18 +137,15 @@ export default function EditOffer() {
   });
 
   const handleAddItem = () => {
-    if (sortedProducts.length > 0) {
-      const firstProduct = sortedProducts[0];
-      const newItem: OfferItem = {
-        productId: firstProduct.id,
-        productName: firstProduct.name,
-        quantity: 1,
-        price: firstProduct.price,
-        discount: "0",
-        category: firstProduct.category,
-      };
-      setItems([...items, newItem]);
-    }
+    const newItem: OfferItem = {
+      productId: 0,
+      productName: "",
+      quantity: 1,
+      price: "0",
+      discount: "0",
+      category: "",
+    };
+    setItems([...items, newItem]);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -315,7 +308,7 @@ export default function EditOffer() {
                               className="w-full justify-between overflow-hidden"
                               data-testid={`select-product-${idx}`}
                             >
-                              <span className="truncate flex-1 text-left">{item.productName}</span>
+                              <span className="truncate flex-1 text-left">{item.productName || "Odaberi artikal"}</span>
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 flex-shrink-0" />
                             </Button>
                           </PopoverTrigger>
@@ -480,7 +473,22 @@ export default function EditOffer() {
             Otkaži
           </Button>
           <Button
-            onClick={() => updateOfferMutation.mutate()}
+            onClick={() => {
+              if (!selectedCustomerId) {
+                toast({ title: "Greška", description: "Molimo odaberite kupca", variant: "destructive" });
+                return;
+              }
+              if (items.length === 0) {
+                toast({ title: "Greška", description: "Molimo dodajte barem jedan artikal", variant: "destructive" });
+                return;
+              }
+              const unselectedProduct = items.find(item => !item.productId || item.productId === 0);
+              if (unselectedProduct) {
+                toast({ title: "Greška", description: "Molimo odaberite artikal za sve stavke", variant: "destructive" });
+                return;
+              }
+              updateOfferMutation.mutate();
+            }}
             disabled={items.length === 0 || updateOfferMutation.isPending}
             data-testid="button-submit"
           >
