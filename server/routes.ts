@@ -242,6 +242,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/products", requireAuth, async (req, res) => {
+    if (req.user!.role === "sales_manager") {
+      return res.status(403).json({ error: "Nemate ovlaštenje za dodavanje proizvoda" });
+    }
     try {
       const productData = insertProductSchema.parse(req.body);
       const product = await storage.createProduct(productData);

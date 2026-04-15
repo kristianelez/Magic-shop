@@ -5,11 +5,13 @@ import { Search } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AddProductDialog } from "@/components/AddProductDialog";
+import { useAuth } from "@/contexts/AuthContext";
 import type { Product } from "@shared/schema";
 
 export default function Products() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("Svi proizvodi");
+  const { user } = useAuth();
 
   const { data: products = [], isLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
@@ -41,7 +43,7 @@ export default function Products() {
           <h1 className="text-2xl font-semibold" data-testid="heading-products">Proizvodi</h1>
           <p className="text-muted-foreground">Katalog Magic Shop proizvoda</p>
         </div>
-        <AddProductDialog />
+        {user?.role !== "sales_manager" && <AddProductDialog />}
       </div>
 
       <div className="relative">
