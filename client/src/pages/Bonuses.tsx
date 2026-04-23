@@ -6,10 +6,10 @@ import { startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import type { Sale } from "@shared/schema";
 
 const bonusTiers = [
-  { threshold: 8000, bonus: 200, label: "Bronze", icon: Award, color: "from-amber-600 to-amber-700" },
-  { threshold: 10000, bonus: 400, label: "Silver", icon: Target, color: "from-gray-400 to-gray-500" },
-  { threshold: 15000, bonus: 800, label: "Gold", icon: Trophy, color: "from-yellow-400 to-yellow-500" },
-  { threshold: 20000, bonus: 1200, label: "Diamond", icon: Flame, color: "from-cyan-400 to-blue-500" },
+  { threshold: 14000, bonus: 150, label: "Bronze", icon: Award, color: "from-amber-600 to-amber-700" },
+  { threshold: 16000, bonus: 300, label: "Silver", icon: Target, color: "from-gray-400 to-gray-500" },
+  { threshold: 18000, bonus: 450, label: "Gold", icon: Trophy, color: "from-yellow-400 to-yellow-500" },
+  { threshold: 20000, bonus: 600, label: "Diamond", icon: Flame, color: "from-cyan-400 to-blue-500" },
 ];
 
 export default function Bonuses() {
