@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Package, Sparkles, ShoppingCart, ClipboardList, FileText, Trophy, BarChart3, Bell, RotateCcw } from "lucide-react";
+import { LayoutDashboard, Users, Package, Sparkles, ShoppingCart, ClipboardList, FileText, Trophy, BarChart3, Bell, RotateCcw, UserSearch } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -39,6 +39,11 @@ const menuItems = [
     title: "Kupci",
     url: "/customers",
     icon: Users,
+  },
+  {
+    title: "Analiza kupca",
+    url: "/customer-analysis",
+    icon: UserSearch,
   },
   {
     title: "Proizvodi",

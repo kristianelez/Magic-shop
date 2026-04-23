@@ -51,6 +51,12 @@ Preferred communication style: Simple, everyday language.
 - Products - Product catalog with inventory tracking
 - AI Recommendations - Smart customer outreach suggestions
 - Sales - Sales history and analytics
+- **Customer Analysis** (Analiza kupca) - Individual customer purchase analytics:
+  - Searchable customer dropdown (Popover + Command pattern) supporting both selection and free-text typing
+  - Once a customer is chosen: shows summary stats (total spent, order count, unique products, total quantity)
+  - Per-product breakdown sorted by revenue with category, quantity, and last purchase date
+  - Full purchase chronology sorted newest first
+  - Reuses `/api/customers`, `/api/sales`, `/api/products` (sales already role-filtered server-side)
 - **Create Order** (Nova narudžba) - Order creation with smart product selection:
   - Displays **Top 10 preporučenih proizvoda** (suggested products based on sales volume)
   - Enables **search through products** via searchable dropdown

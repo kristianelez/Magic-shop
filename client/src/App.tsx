@@ -17,6 +17,7 @@ import { LogOut } from "lucide-react";
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const Customers = lazy(() => import("@/pages/Customers"));
 const CustomerDetail = lazy(() => import("@/pages/CustomerDetail"));
+const CustomerAnalysis = lazy(() => import("@/pages/CustomerAnalysis"));
 const Products = lazy(() => import("@/pages/Products"));
 const CreateOrder = lazy(() => import("@/pages/CreateOrder"));
 const CreateReturn = lazy(() => import("@/pages/CreateReturn"));
@@ -44,6 +45,7 @@ function Router() {
         <Route path="/login" component={Login} />
         <Route path="/" component={Dashboard} />
         <Route path="/customers" component={Customers} />
+        <Route path="/customer-analysis" component={CustomerAnalysis} />
         <Route path="/customers/:customerId" component={CustomerDetail} />
         <Route path="/products" component={Products} />
         <Route path="/recommendations" component={AIRecommendations} />
