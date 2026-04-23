@@ -29,6 +29,7 @@ import { eq, desc, and, sql, inArray } from "drizzle-orm";
 neonConfig.webSocketConstructor = ws;
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+export const neonPool = pool;
 const db = drizzle(pool);
 
 export interface CustomerWithStats extends Customer {

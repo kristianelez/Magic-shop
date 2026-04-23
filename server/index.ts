@@ -5,6 +5,7 @@ import { Pool } from "pg";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedDatabase } from "./seed";
+import { neonPool } from "./storage";
 
 const app = express();
 
@@ -126,6 +127,6 @@ app.use((req, res, next) => {
     seedDatabase().catch(err => console.error("Seed error:", err));
 
     // Warm up Neon WebSocket connection with a lightweight ping
-    sessionPool.query("SELECT 1").catch(() => {});
+    neonPool.query("SELECT 1").catch(() => {});
   });
 })();
