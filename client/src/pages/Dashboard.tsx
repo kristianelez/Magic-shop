@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { StatsCard } from "@/components/StatsCard";
 import { MonthlyProgressBar } from "@/components/MonthlyProgressBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +16,14 @@ interface CustomerWithStats extends Customer {
 }
 
 export default function Dashboard() {
+  const [recsEnabled, setRecsEnabled] = useState(false);
+
+  // Enable recommendations query after initial render is complete
+  useEffect(() => {
+    const timer = setTimeout(() => setRecsEnabled(true), 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
   const { data: customers = [], isLoading: customersLoading } = useQuery<CustomerWithStats[]>({
     queryKey: ["/api/customers"],
     staleTime: 30 * 60 * 1000,
@@ -30,9 +39,11 @@ export default function Dashboard() {
     staleTime: 30 * 60 * 1000,
   });
 
-  const { data: products = [] } = useQuery<any[]>({
-    queryKey: ["/api/products"],
+  // Deferred — only starts after initial render, pre-warms cache for recommendations page
+  useQuery({
+    queryKey: ["/api/recommendations"],
     staleTime: 30 * 60 * 1000,
+    enabled: recsEnabled,
   });
 
   // Only wait for critical data
@@ -42,26 +53,13 @@ export default function Dashboard() {
   const now = new Date();
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
-  const currentMonthSales = (sales as Sale[]).filter(sale => 
+  const currentMonthSales = (sales as Sale[]).filter(sale =>
     isWithinInterval(new Date(sale.createdAt), { start: monthStart, end: monthEnd })
   );
   const monthlyRevenue = currentMonthSales.reduce((sum, sale) => sum + parseFloat(sale.totalAmount), 0);
 
-  // Get top products by quantity sold
-  const productSalesMap = new Map<number, { name: string; quantity: number; revenue: number }>();
-  currentMonthSales.forEach(sale => {
-    const product = products.find((p: any) => p.id === sale.productId);
-    if (product) {
-      const existing = productSalesMap.get(sale.productId) || { name: product.name, quantity: 0, revenue: 0 };
-      existing.quantity += sale.quantity;
-      existing.revenue += parseFloat(sale.totalAmount);
-      productSalesMap.set(sale.productId, existing);
-    }
-  });
-
-  const topProducts = Array.from(productSalesMap.values())
-    .sort((a, b) => b.quantity - a.quantity)
-    .slice(0, 5);
+  // Count unique products sold this month (no product catalog needed)
+  const uniqueProductsSold = new Set(currentMonthSales.map(s => s.productId)).size;
 
   // Get recent activities
   const recentActivitiesList = activities
@@ -69,13 +67,13 @@ export default function Dashboard() {
     .slice(0, 6)
     .map(activity => {
       const customer = customers.find((c) => c.id === activity.customerId);
-      const relatedSale = sales.find((s) => s.customerId === activity.customerId && 
+      const relatedSale = sales.find((s) => s.customerId === activity.customerId &&
         new Date(s.createdAt).toDateString() === new Date(activity.createdAt).toDateString());
       return {
         id: activity.id,
         customer: customer?.company || "Nepoznat kupac",
         action: activity.type === "call" ? "Poziv" : activity.type === "sale" ? "Kupovina" : "Aktivnost",
-        product: relatedSale ? products.find((p: any) => p.id === relatedSale.productId)?.name : activity.notes || "-",
+        notes: activity.notes || "-",
         time: formatDistanceToNow(new Date(activity.createdAt), { locale: bs, addSuffix: true }),
         amount: relatedSale ? `${parseFloat(relatedSale.totalAmount).toFixed(2)} KM` : "-",
       };
@@ -119,10 +117,10 @@ export default function Dashboard() {
               icon={TrendingUp}
             />
             <StatsCard
-              title="Top proizvodi"
-              value={topProducts[0]?.name || "-"}
+              title="Artikala prodano"
+              value={uniqueProductsSold.toString()}
               icon={Package}
-              description={topProducts[0] ? `${topProducts[0].quantity} kom` : "nema podataka"}
+              description="različitih artikala ovaj mjesec"
             />
           </div>
 
@@ -148,7 +146,7 @@ export default function Dashboard() {
                           {activity.action}
                         </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground truncate">{activity.product}</p>
+                      <p className="text-xs text-muted-foreground truncate">{activity.notes}</p>
                       <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-border/50">
                         <span className="text-[10px] text-muted-foreground">{activity.time}</span>
                         {activity.amount !== "-" && (
@@ -161,40 +159,6 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </div>
-
-          {topProducts.length > 0 && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Package className="h-4 w-4" />
-                  Top proizvodi ovaj mjesec
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-3 sm:px-6">
-                <div className="space-y-2">
-                  {topProducts.map((product, idx) => (
-                    <div 
-                      key={idx} 
-                      className="p-2.5 rounded-md border border-border hover-elevate"
-                    >
-                      <div className="flex items-start gap-2">
-                        <div className="flex items-center justify-center h-7 w-7 rounded-md bg-primary/10 text-primary font-bold text-sm flex-shrink-0">
-                          {idx + 1}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{product.name}</p>
-                          <div className="flex items-center justify-between mt-1">
-                            <span className="text-xs text-muted-foreground">{product.quantity} kom</span>
-                            <span className="text-sm font-semibold text-primary">{product.revenue.toFixed(0)} KM</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </>
       )}
     </div>

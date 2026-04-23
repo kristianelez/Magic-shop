@@ -5,7 +5,6 @@ import { Pool } from "pg";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedDatabase } from "./seed";
-import { storage } from "./storage";
 
 const app = express();
 
@@ -126,7 +125,7 @@ app.use((req, res, next) => {
     // Run seed and DB warm-up in background after server is ready
     seedDatabase().catch(err => console.error("Seed error:", err));
 
-    // Warm up Neon WebSocket connection so first user request is fast
-    storage.getUsers().catch(() => {});
+    // Warm up Neon WebSocket connection with a lightweight ping
+    sessionPool.query("SELECT 1").catch(() => {});
   });
 })();
