@@ -5,6 +5,7 @@ import { Pool } from "pg";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedDatabase } from "./seed";
+import { storage } from "./storage";
 
 const app = express();
 
@@ -91,7 +92,6 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  await seedDatabase();
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -122,5 +122,11 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+
+    // Run seed and DB warm-up in background after server is ready
+    seedDatabase().catch(err => console.error("Seed error:", err));
+
+    // Warm up Neon WebSocket connection so first user request is fast
+    storage.getUsers().catch(() => {});
   });
 })();

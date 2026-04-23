@@ -1,14 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { StatsCard } from "@/components/StatsCard";
-import { AIRecommendationCard } from "@/components/AIRecommendationCard";
 import { MonthlyProgressBar } from "@/components/MonthlyProgressBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, TrendingUp, Phone, Target, Clock, Package } from "lucide-react";
+import { Users, TrendingUp, Phone, Clock, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { format, startOfMonth, endOfMonth, isWithinInterval, formatDistanceToNow } from "date-fns";
+import { startOfMonth, endOfMonth, isWithinInterval, formatDistanceToNow } from "date-fns";
 import { bs } from "date-fns/locale";
 import type { Customer, Sale, Activity } from "@shared/schema";
-import { getQueryFn } from "@/lib/queryClient";
 
 interface CustomerWithStats extends Customer {
   totalPurchases: number;
@@ -16,20 +14,7 @@ interface CustomerWithStats extends Customer {
   favoriteProducts: string[];
 }
 
-interface AIRecommendation {
-  customerId: number;
-  customerName: string;
-  customerCompany: string;
-  customerEmail?: string | null;
-  customerPhone?: string | null;
-  suggestedProducts: string[];
-  reasoning: string;
-  priority: "high" | "medium" | "low";
-  optimalContactTime: string;
-}
-
 export default function Dashboard() {
-  // Critical path - load these first
   const { data: customers = [], isLoading: customersLoading } = useQuery<CustomerWithStats[]>({
     queryKey: ["/api/customers"],
     staleTime: 30 * 60 * 1000,
@@ -40,7 +25,6 @@ export default function Dashboard() {
     staleTime: 30 * 60 * 1000,
   });
 
-  // Secondary - load in background without blocking
   const { data: sales = [] } = useQuery<Sale[]>({
     queryKey: ["/api/sales"],
     staleTime: 30 * 60 * 1000,
@@ -48,12 +32,6 @@ export default function Dashboard() {
 
   const { data: products = [] } = useQuery<any[]>({
     queryKey: ["/api/products"],
-    staleTime: 30 * 60 * 1000,
-  });
-
-  // Lazy load recommendations - don't block render
-  const { data: aiRecommendations = [] } = useQuery<AIRecommendation[]>({
-    queryKey: ["/api/recommendations"],
     staleTime: 30 * 60 * 1000,
   });
 

@@ -13,24 +13,23 @@ import { Button } from "@/components/ui/button";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { LogOut } from "lucide-react";
-import Dashboard from "@/pages/Dashboard";
-import Customers from "@/pages/Customers";
-import CustomerDetail from "@/pages/CustomerDetail";
-import Products from "@/pages/Products";
-import CreateOrder from "@/pages/CreateOrder";
-import CreateReturn from "@/pages/CreateReturn";
-import EditOrder from "@/pages/EditOrder";
-import EditOffer from "@/pages/EditOffer";
-import Orders from "@/pages/Orders";
-import Offers from "@/pages/Offers";
-import Bonuses from "@/pages/Bonuses";
-import Statistika from "@/pages/Statistika";
-import Login from "@/pages/Login";
-import NotFound from "@/pages/not-found";
 
-// Lazy load slow pages for faster initial load
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Customers = lazy(() => import("@/pages/Customers"));
+const CustomerDetail = lazy(() => import("@/pages/CustomerDetail"));
+const Products = lazy(() => import("@/pages/Products"));
+const CreateOrder = lazy(() => import("@/pages/CreateOrder"));
+const CreateReturn = lazy(() => import("@/pages/CreateReturn"));
+const EditOrder = lazy(() => import("@/pages/EditOrder"));
+const EditOffer = lazy(() => import("@/pages/EditOffer"));
+const Orders = lazy(() => import("@/pages/Orders"));
+const Offers = lazy(() => import("@/pages/Offers"));
+const Bonuses = lazy(() => import("@/pages/Bonuses"));
+const Statistika = lazy(() => import("@/pages/Statistika"));
 const AIRecommendations = lazy(() => import("@/pages/AIRecommendations"));
 const CustomerContacts = lazy(() => import("@/pages/CustomerContacts"));
+const Login = lazy(() => import("@/pages/Login"));
+const NotFound = lazy(() => import("@/pages/not-found"));
 
 const LoadingFallback = () => (
   <div className="flex items-center justify-center h-64">
@@ -40,36 +39,26 @@ const LoadingFallback = () => (
 
 function Router() {
   return (
-    <Switch>
-      <Route path="/login" component={Login} />
-      <Route path="/" component={Dashboard} />
-      <Route path="/customers" component={Customers} />
-      <Route path="/customers/:customerId" component={CustomerDetail} />
-      <Route path="/products" component={Products} />
-      <Route path="/recommendations">
-        {() => (
-          <Suspense fallback={<LoadingFallback />}>
-            <AIRecommendations />
-          </Suspense>
-        )}
-      </Route>
-      <Route path="/contacts">
-        {() => (
-          <Suspense fallback={<LoadingFallback />}>
-            <CustomerContacts />
-          </Suspense>
-        )}
-      </Route>
-      <Route path="/offers" component={Offers} />
-      <Route path="/edit-offer/:offerId" component={EditOffer} />
-      <Route path="/bonuses" component={Bonuses} />
-      <Route path="/statistika" component={Statistika} />
-      <Route path="/create-order" component={CreateOrder} />
-      <Route path="/create-return" component={CreateReturn} />
-      <Route path="/edit-order/:orderId" component={EditOrder} />
-      <Route path="/orders" component={Orders} />
-      <Route component={NotFound} />
-    </Switch>
+    <Suspense fallback={<LoadingFallback />}>
+      <Switch>
+        <Route path="/login" component={Login} />
+        <Route path="/" component={Dashboard} />
+        <Route path="/customers" component={Customers} />
+        <Route path="/customers/:customerId" component={CustomerDetail} />
+        <Route path="/products" component={Products} />
+        <Route path="/recommendations" component={AIRecommendations} />
+        <Route path="/contacts" component={CustomerContacts} />
+        <Route path="/offers" component={Offers} />
+        <Route path="/edit-offer/:offerId" component={EditOffer} />
+        <Route path="/bonuses" component={Bonuses} />
+        <Route path="/statistika" component={Statistika} />
+        <Route path="/create-order" component={CreateOrder} />
+        <Route path="/create-return" component={CreateReturn} />
+        <Route path="/edit-order/:orderId" component={EditOrder} />
+        <Route path="/orders" component={Orders} />
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
   );
 }
 
@@ -107,7 +96,6 @@ function AppContent() {
       <div className="flex h-screen w-full">
         <AppSidebar />
         <div className="flex flex-col flex-1 min-w-0">
-          {/* Fixed Header - ostaje fiksiran na vrhu */}
           <header className="shrink-0 flex items-center justify-between p-3 md:p-4 border-b border-border gap-2 md:gap-4 bg-background z-50">
             <div className="flex items-center gap-2 md:gap-4 min-w-0">
               <SidebarTrigger data-testid="button-sidebar-toggle" className="shrink-0" />
@@ -145,7 +133,6 @@ function AppContent() {
               <ThemeToggle />
             </div>
           </header>
-          {/* Scrollable main content - prilagođen za sve uređaje */}
           <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 md:p-4 lg:p-6">
             <div className="max-w-[100vw] md:max-w-none">
               <Router />
