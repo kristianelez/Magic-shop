@@ -13,13 +13,20 @@ import nodemailer, { type Transporter } from "nodemailer";
 
 const GMAIL_USER = process.env.GMAIL_USER?.trim();
 const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD?.trim();
-const OWNER_EMAIL =
-  process.env.OWNER_EMAIL?.trim() || "kristinapopovic112@gmail.com";
+const OWNER_EMAIL = process.env.OWNER_EMAIL?.trim();
+
+function missingVars(): string[] {
+  const missing: string[] = [];
+  if (!GMAIL_USER) missing.push("GMAIL_USER");
+  if (!GMAIL_APP_PASSWORD) missing.push("GMAIL_APP_PASSWORD");
+  if (!OWNER_EMAIL) missing.push("OWNER_EMAIL");
+  return missing;
+}
 
 let transporter: Transporter | null = null;
 
 function getTransporter(): Transporter | null {
-  if (!GMAIL_USER || !GMAIL_APP_PASSWORD) return null;
+  if (!GMAIL_USER || !GMAIL_APP_PASSWORD || !OWNER_EMAIL) return null;
   if (transporter) return transporter;
   transporter = nodemailer.createTransport({
     service: "gmail",
@@ -36,14 +43,12 @@ function getTransporter(): Transporter | null {
  * (da ne bi spamao vlasnika pri svakom restartu servera).
  */
 export function logEmailStatus(): void {
-  if (GMAIL_USER && GMAIL_APP_PASSWORD) {
+  const missing = missingVars();
+  if (missing.length === 0) {
     console.log(
       `[email] Email notifications: enabled (from=${GMAIL_USER}, to=${OWNER_EMAIL})`,
     );
   } else {
-    const missing: string[] = [];
-    if (!GMAIL_USER) missing.push("GMAIL_USER");
-    if (!GMAIL_APP_PASSWORD) missing.push("GMAIL_APP_PASSWORD");
     console.log(
       `[email] Email notifications: disabled (missing ${missing.join(", ")})`,
     );
