@@ -187,13 +187,25 @@ export default function EditOrder() {
       const upsertPromises = items
         .filter(item => !item.isDeleted)
         .map((item) => {
+          // Ako artikal NEMA definisane veličine, sizeId mora biti
+          // EKSPLICITNO null u PATCH payload-u — inače bi backend (koji
+          // gleda postojeću prodaju kad sizeId nedostaje u body-ju)
+          // pomislio da i dalje treba stara veličina sa prethodnog
+          // (sizing) artikla. Isto vrijedi i za PATCH na non-sized
+          // artiklu gdje je korisnik prebacio sa sized na non-sized.
+          const hasSizes = (item.productSizes?.length ?? 0) > 0;
+          const sizeIdForPayload: number | null = hasSizes
+            ? (item.sizeId as number)
+            : null;
+
           if (item.saleId) {
             // Update postojećeg sale zapisa
             const payload: Record<string, unknown> = {
               quantity: typeof item.quantity === 'string' ? parseInt(item.quantity) : item.quantity,
               totalAmount: item.total.toFixed(2),
+              productId: item.productId,
+              sizeId: sizeIdForPayload,
             };
-            if (item.sizeId) payload.sizeId = item.sizeId;
             if (newCreatedAtIso) payload.createdAt = newCreatedAtIso;
             return apiRequest("PATCH", `/api/sales/${item.saleId}`, payload);
           } else {
@@ -208,7 +220,7 @@ export default function EditOrder() {
               totalAmount: item.total.toFixed(2),
               status: "completed",
             };
-            if (item.sizeId) payload.sizeId = item.sizeId;
+            if (sizeIdForPayload !== null) payload.sizeId = sizeIdForPayload;
             if (canEditDate) {
               payload.createdAt = new Date(orderDateLocal).toISOString();
             }
