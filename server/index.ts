@@ -44,6 +44,31 @@ declare module 'express-session' {
   }
 }
 
+// Eksplicitno garantira da "session" tablica postoji prije nego što server
+// počne primati zahtjeve. Iako je u PgSession setup-u već postavljen
+// `createTableIfMissing: true`, taj mehanizam se zna ne pokrenuti (npr.
+// kad korisnik baze nema CREATE pravo u trenutnom search_path-u, ili kad
+// post-merge `db:push` u međuvremenu obriše tablicu). Ovaj idempotentni
+// CREATE TABLE IF NOT EXISTS nas štiti u svim tim scenarijima.
+async function ensureSessionTable() {
+  try {
+    await sessionPool.query(`
+      CREATE TABLE IF NOT EXISTS "session" (
+        "sid" varchar NOT NULL PRIMARY KEY,
+        "sess" json NOT NULL,
+        "expire" timestamp(6) NOT NULL
+      )
+    `);
+    await sessionPool.query(
+      `CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire")`,
+    );
+    log("session table ensured");
+  } catch (err) {
+    console.error("FATAL: failed to ensure session table:", err);
+    throw err;
+  }
+}
+
 app.use(
   session({
     store: new PgSession({
@@ -108,6 +133,12 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Mora se izvršiti prije nego server.listen() počne primati zahtjeve.
+  // Session middleware je već registrovan na top-level, ali on će tablicu
+  // dirnuti tek kad stigne prvi HTTP request, a do tada mi smo CREATE već
+  // pustili.
+  await ensureSessionTable();
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

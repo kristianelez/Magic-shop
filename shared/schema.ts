@@ -1,7 +1,26 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, serial, integer, decimal, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, serial, integer, decimal, timestamp, json, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// "session" tablica koju koristi connect-pg-simple za čuvanje express
+// sesija. Strukturu (sid PK, sess JSON, expire timestamp(6) + indeks na
+// expire) diktira sam connect-pg-simple paket. Tablica se OBAVEZNO mora
+// nalaziti u Drizzle schemi — inače `npm run db:push` u post-merge skripti
+// vidi tablicu u bazi koja "ne pripada" shemi i traži destruktivni DROP,
+// što obara sesije svih prijavljenih korisnika i izaziva grešku
+// "relation \"session\" does not exist" pri prvom sljedećem zahtjevu.
+export const session = pgTable(
+  "session",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: json("sess").notNull(),
+    expire: timestamp("expire", { precision: 6 }).notNull(),
+  },
+  (table) => ({
+    expireIdx: index("IDX_session_expire").on(table.expire),
+  }),
+);
 
 export const customerTypes = ["hotel", "pekara", "kafic", "restoran", "fabrika", "veseraj", "medicinska_ustanova", "autokozmetika", "ostalo"] as const;
 
