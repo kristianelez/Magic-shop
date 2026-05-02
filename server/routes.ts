@@ -878,6 +878,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/offers/items", requireAuth, async (req, res) => {
     try {
+      // TODO (veličine): offer_items.size_id postoji u šemi (nullable), ali UI
+      // za ponude zasad ne nudi izbor veličine — Task #9 pokriva samo prodaje
+      // i povrate. Kad se uvede izbor u Offers/EditOffer, ovdje treba dodati
+      // istu validaciju kao u POST /api/sales (sizeId obavezan ako artikal
+      // ima veličine, mora pripadati istom productId-u).
       const { offerId, productId, quantity, price, category } = req.body;
       const item = await storage.addOfferItem({
         offerId,

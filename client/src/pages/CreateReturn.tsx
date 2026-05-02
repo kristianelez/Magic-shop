@@ -10,11 +10,18 @@ import { Plus, Trash2, RotateCcw, Users, Package, Check, ChevronsUpDown } from "
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import type { Customer, Product, Sale } from "@shared/schema";
+import type { Customer, Product, ProductSize, Sale } from "@shared/schema";
+
+type ProductWithSizes = Product & { sizes?: ProductSize[] };
 
 interface ReturnItem {
   productId: number;
   productName: string;
+  // Veličina je obavezna ako artikal ima definisane veličine — backend
+  // odbija POST /api/sales bez sizeId za takve artikle.
+  sizeId?: number;
+  sizeName?: string;
+  productSizes?: ProductSize[];
   quantity: number;
   price: string;
   discount: string;
@@ -34,7 +41,7 @@ export default function CreateReturn() {
     queryKey: ["/api/customers"],
   });
 
-  const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
+  const { data: products = [], isLoading: productsLoading } = useQuery<ProductWithSizes[]>({
     queryKey: ["/api/products"],
   });
 
@@ -67,15 +74,17 @@ export default function CreateReturn() {
   const createReturns = useMutation({
     mutationFn: async (items: ReturnItem[]) => {
       const customerId = parseInt(selectedCustomerId);
-      const salesPromises = items.map((item) =>
-        apiRequest("POST", "/api/sales", {
+      const salesPromises = items.map((item) => {
+        const payload: Record<string, unknown> = {
           customerId,
           productId: item.productId,
           quantity: -item.quantity,
           totalAmount: (-item.total).toFixed(2),
           status: "return",
-        })
-      );
+        };
+        if (item.sizeId) payload.sizeId = item.sizeId;
+        return apiRequest("POST", "/api/sales", payload);
+      });
       return await Promise.all(salesPromises);
     },
     onSuccess: () => {
@@ -130,8 +139,17 @@ export default function CreateReturn() {
         newItems[index].productId = product.id;
         newItems[index].productName = product.name;
         newItems[index].price = product.price;
+        // Resetuj veličinu — vezana je za prethodni artikal.
+        newItems[index].productSizes = product.sizes ?? [];
+        newItems[index].sizeId = undefined;
+        newItems[index].sizeName = undefined;
         newItems[index].total = calculateItemTotal({ ...newItems[index], price: product.price });
       }
+    } else if (field === "sizeId") {
+      const sizeIdNum = value === "" || value === null || value === undefined ? undefined : parseInt(value);
+      newItems[index].sizeId = sizeIdNum;
+      const sz = newItems[index].productSizes?.find((s) => s.id === sizeIdNum);
+      newItems[index].sizeName = sz?.name;
     } else if (field === "quantity") {
       if (value === "" || value === null || value === undefined) {
         newItems[index].quantity = "" as any;
@@ -202,7 +220,20 @@ export default function CreateReturn() {
       });
       return;
     }
-    
+
+    // Veličina je obavezna ako artikal ima definisane veličine
+    const missingSize = returnItems.find(
+      (item) => (item.productSizes?.length ?? 0) > 0 && !item.sizeId,
+    );
+    if (missingSize) {
+      toast({
+        title: "Greška",
+        description: `Odaberite veličinu za artikal "${missingSize.productName}"`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     const invalidItem = returnItems.find(item => !item.quantity || item.quantity <= 0);
     if (invalidItem) {
       toast({
@@ -472,6 +503,28 @@ export default function CreateReturn() {
                         </PopoverContent>
                       </Popover>
                     </div>
+
+                    {/* Veličina — obavezna ako artikal ima definisane veličine */}
+                    {item.productSizes && item.productSizes.length > 0 && (
+                      <div className="w-full min-w-0">
+                        <Label className="text-xs sm:text-sm block truncate">
+                          Veličina <span className="text-destructive">*</span>
+                        </Label>
+                        <select
+                          value={item.sizeId ?? ""}
+                          onChange={(e) => updateReturnItem(index, "sizeId", e.target.value)}
+                          className="w-full text-xs sm:text-sm h-9 rounded-md border border-input bg-background px-3"
+                          data-testid={`select-return-size-${index}`}
+                        >
+                          <option value="">— odaberi veličinu —</option>
+                          {item.productSizes.map((s) => (
+                            <option key={s.id} value={s.id} data-testid={`return-size-option-${index}-${s.id}`}>
+                              {s.name} (lager: {s.stock})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
 
                     <div className="w-full min-w-0">
                       <Label className="text-xs sm:text-sm block truncate">Cijena (KM)</Label>
