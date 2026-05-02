@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
+import compression from "compression";
 import { Pool } from "pg";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
@@ -8,6 +9,11 @@ import { seedDatabase } from "./seed";
 import { neonPool } from "./storage";
 
 const app = express();
+
+// gzip/deflate sve odgovore (HTML, JS, CSS, JSON). Najveći dobitak je na
+// /api/sales i /api/customers koji znaju biti par stotina KB JSON-a — sa
+// gzipom se to spušta na ~10-20% originalne veličine i prijenos je puno brži.
+app.use(compression());
 
 // Replit always serves the dev preview and the published app through an HTTPS
 // reverse proxy, and the workspace embeds the preview in a cross-origin iframe.

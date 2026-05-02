@@ -76,10 +76,26 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // Hashed asseti (Vite ih emituje pod /assets/ sa hash-om u imenu) mogu se
+  // keširati godinu dana — promjena fajla povlači novo ime, pa je to sigurno.
+  // index.html se ne smije keširati, jer u njemu su novi <script src> linkovi.
+  app.use(
+    express.static(distPath, {
+      etag: true,
+      lastModified: true,
+      maxAge: "1y",
+      immutable: true,
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith("index.html")) {
+          res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        }
+      },
+    }),
+  );
 
   // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res) => {
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }

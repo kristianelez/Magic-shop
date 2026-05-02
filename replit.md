@@ -97,6 +97,8 @@ Preferred communication style: Simple, everyday language.
   - `idx_sales_product_id` - Fast product-based queries
   - `idx_activities_created_at` - Fast ordering by date
 - **In-memory Aggregation** - Customer stats (totalPurchases, favoriteProducts, lastContact) computed using Maps for O(1) lookups
+- **HTTP gzip compression** (`compression` middleware in `server/index.ts`) — sve odgovore (HTML, JS, CSS, JSON) server gzipuje. Najveći dobitak je na velikim JSON payloadima `/api/sales`, `/api/customers`, `/api/customers-with-stats` koji se sa gzipom spuste na ~10-20% originalne veličine
+- **Long-lived static asset cache** (`server/vite.ts` → `serveStatic`) — Vite emituje hash-ovane fajlove u `/assets/`, pa se serviraju sa `Cache-Control: public, max-age=31536000, immutable`. `index.html` ostaje `no-cache` da bi browser uvijek povukao novi `<script src>` link. Drugi i treći put kad korisnik otvori app, browser ne mora skidati JS/CSS bundle iz mreže.
 
 ### Data Storage Solutions
 
