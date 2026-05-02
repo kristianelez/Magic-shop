@@ -80,12 +80,15 @@ export default function EditOrder() {
     const [customerIdStr, ...dateParts] = orderId.split('-');
     const customerId = parseInt(customerIdStr);
     const dateTimeStr = dateParts.join('-');
-    
-    // Pronađi sve sale zapise za ovu narudžbu
-    const orderSales = sales.filter((sale) => {
-      const saleDate = format(new Date(sale.createdAt), 'yyyy-MM-dd-HH:mm');
-      return sale.customerId === customerId && saleDate === dateTimeStr;
-    });
+
+    // Pronađi sve sale zapise za ovu narudžbu i sortiraj po id rastuće
+    // kako bi prikaz pratio redoslijed unosa (manji id = ranije unesena stavka).
+    const orderSales = sales
+      .filter((sale) => {
+        const saleDate = format(new Date(sale.createdAt), 'yyyy-MM-dd-HH:mm');
+        return sale.customerId === customerId && saleDate === dateTimeStr;
+      })
+      .sort((a, b) => a.id - b.id);
 
     if (orderSales.length === 0) {
       toast({

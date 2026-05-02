@@ -152,7 +152,14 @@ export default function Orders() {
     return acc;
   }, []);
 
-  // Sortiraj po datumu (najnovije prvo)
+  // Sortiraj stavke unutar svake narudžbe po saleId rastuće — to je
+  // redoslijed kojim je korisnik unosio stavke u "Nova narudžba"
+  // (CreateOrder kreira sale zapise serijski, pa veći id = kasniji unos).
+  groupedOrders.forEach((order) => {
+    order.items.sort((a, b) => a.saleId - b.saleId);
+  });
+
+  // Sortiraj narudžbe po datumu (najnovije prvo)
   groupedOrders.sort((a, b) => b.orderDate.getTime() - a.orderDate.getTime());
 
   // Filtriraj po mjesecu

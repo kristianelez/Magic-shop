@@ -68,16 +68,21 @@ export default function CreateOrder() {
   const createSales = useMutation({
     mutationFn: async (items: OrderItem[]) => {
       const customerId = parseInt(selectedCustomerId);
-      const salesPromises = items.map((item) =>
-        apiRequest("POST", "/api/sales", {
+      // Serijski (jedan po jedan) — da bi DB id i createdAt rasli istim
+      // redoslijedom kojim je korisnik unio stavke. Paralelni Promise.all
+      // bi davao nedeterministički poredak u prikazu narudžbe.
+      const results = [];
+      for (const item of items) {
+        const res = await apiRequest("POST", "/api/sales", {
           customerId,
           productId: item.productId,
           quantity: item.quantity,
           totalAmount: item.total.toFixed(2),
           status: "completed",
-        })
-      );
-      return await Promise.all(salesPromises);
+        });
+        results.push(res);
+      }
+      return results;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
