@@ -1,49 +1,55 @@
-# Magic Shop Sales Management Application
+# Workspace
 
 ## Overview
 
-Magic Shop is a CRM sales management application designed for B2B sales operations. It enables sales representatives to manage customers, track products, record sales, and receive AI-powered recommendations for customer outreach. The application is a full-stack web solution built with React, Express, PostgreSQL, and integrates with OpenAI for intelligent recommendations.
+pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
 
-## User Preferences
+## Stack
 
-Preferred communication style: Simple, everyday language.
+- **Monorepo tool**: pnpm workspaces
+- **Node.js version**: 24
+- **Package manager**: pnpm
+- **TypeScript version**: 5.9
+- **API framework**: Express 5
+- **Database**: PostgreSQL + Drizzle ORM (via Neon serverless)
+- **Validation**: Zod, `drizzle-zod`
+- **API codegen**: Orval (from OpenAPI spec)
+- **Build**: esbuild (ESM bundle)
 
-## System Architecture
+## Artifacts
 
-### Frontend Architecture
+| Artifact | Kind | Preview Path | Description |
+|---|---|---|---|
+| `artifacts/magic-shop` | web | `/` | Magic Shop CRM — React/Vite frontend |
+| `artifacts/api-server` | api | `/api` | Express 5 backend — all API routes |
+| `artifacts/mockup-sandbox` | design | `/__mockup` | Design mockup sandbox |
 
-The frontend uses **React 18** with TypeScript, **Vite** for building, and **Wouter** for routing. The UI is built with **shadcn/ui** (Radix UI primitives) and styled using **Tailwind CSS**. **Brand redesign:** color system uses navy + copper/gold derived from the Magic Cosmetic Shop logo (`@assets/images-2_1777763980088.jpeg`) — primary `28 75% 48%` (copper), sidebar `220 55% 11%` (deep navy) with copper highlights. Reusable `<Logo />` component (`client/src/components/Logo.tsx`) renders the circular brand mark; `<SplashScreen />` shows it on initial auth check and on a navy radial-gradient. Login page is a full-screen branded splash with the logo, copper headline, and translucent card. The sidebar has the logo + "Magic Cosmetic" header and a light copper-tinted active state. The top header includes a larger hamburger trigger (h-11 w-11 with 24px icon) for easier mobile use, plus a small logo next to the user info on >=sm screens. Inter and JetBrains Mono typography, fully responsive mobile-first. **TanStack Query** manages server state with disabled auto-refetching. Key functionalities include comprehensive customer and product management, AI recommendation displays, and specialized "Customer Analysis" and "Create Order" pages.
+## Key Packages
 
-### Backend Architecture
+- `lib/db` — Drizzle schema (schema.ts) + DB connection. Frontend uses `@workspace/db/schema` (schema-only, no DB connection).
+- `lib/api-spec` — OpenAPI spec + codegen
+- `lib/api-client-react` — generated React Query hooks
 
-The backend is built with **Express.js** on Node.js and TypeScript, exposing a RESTful API. It uses a storage abstraction pattern to decouple business logic from the database, which is accessed via **Drizzle ORM** and **Neon serverless PostgreSQL**. Performance is optimized through batch loading, database indexing, in-memory aggregation for customer stats, and HTTP gzip compression.
+## Key Commands
 
-### Data Storage Solutions
+- `pnpm run typecheck` — full typecheck across all packages
+- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from OpenAPI spec
+- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 
-**PostgreSQL** (via Neon) is the primary database. The schema, defined with Drizzle ORM and validated by Zod, includes tables for users, customers, products, sales, activities, and AI recommendation caching. The database is automatically seeded with sample data on first run.
+## Magic Shop CRM
 
-### Authentication and Authorization
+Full-stack CRM for sales management. Backend in `artifacts/api-server`, frontend in `artifacts/magic-shop`.
 
-The application uses **session-based authentication** with bcrypt for password hashing and `express-session` with PostgreSQL-backed storage. Secure session cookies are configured for production and Replit environments. Role-Based Access Control (RBAC) is implemented with `admin`, `sales_director`, and `sales_manager` roles. Sales managers have restricted access to their own sales data, while admins and sales directors have broader permissions, including the ability to edit order dates. Default users are provided for testing. Security features include hashed passwords, environment variable-based session secrets, and proper session management.
+- **Auth**: express-session + connect-pg-simple (sessions stored in PostgreSQL)
+- **Session secret**: `SESSION_SECRET` env var required
+- **Email notifications**: `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `OWNER_EMAIL` env vars (optional)
+- **Frontend imports schema types** from `@workspace/db/schema` (schema-only export, no DB connection code)
+- **Backend** uses Neon serverless WebSocket pool (`@neondatabase/serverless`)
 
-### Security Features
+## Notes
 
-Passwords are hashed using bcrypt. Session secrets are stored in `SESSION_SECRET` environment variable. `requireAuth` middleware protects API endpoints and loads user data. Stale sessions are destroyed. Frontend manages authentication state with `AuthContext` and TanStack Query. Session cookies are configured with `httpOnly`, `sameSite: "lax"` (or `"none"` on Replit), and `secure` flags. Trust proxy is enabled on Replit. Login awaits `req.session.save()` for robust session handling. The `session` table is explicitly defined in `shared/schema.ts` and ensured to exist on startup.
+- Frontend (magic-shop) imports `@workspace/db/schema` — not `@workspace/db` — to avoid triggering the database connection code in the browser
+- The `/*path` wildcard syntax is required for Express 5 middleware (not `/*`)
+- `zod/v4` subpath imports are NOT supported by esbuild — use `zod` directly in server code
 
-## External Dependencies
-
-**AI Integration:** A hybrid AI system uses **OpenAI API** (GPT-5) for top customer recommendations (with a 24-hour cache for cost efficiency) and a **Local AI Engine** for instant, cost-free recommendations based on seasonal forecasting, stock prediction, customer type targeting, and purchase pattern analysis.
-
-**Email notifications (Nodemailer + Gmail SMTP):** On every successful order creation (`POST /api/sales`), an HTML+text email is sent to the owner (default `kristinapopovic112@gmail.com`) as a fire-and-forget call so the API response never waits on SMTP. Email failures are only logged — they never fail the order. Configured via `GMAIL_USER`, `GMAIL_APP_PASSWORD` (Gmail App Password, requires 2FA), and `OWNER_EMAIL` env vars; if any are missing, notifications are silently disabled and the server logs the disabled status at startup. See `server/email.ts` and `.env.example`.
-
-**Database Service:** **Neon Database** provides serverless PostgreSQL, configured via `DATABASE_URL`, utilizing WebSocket connections and connection pooling.
-
-**UI Component Libraries:** **Radix UI** primitives are used for accessible and unstyled components.
-
-**Development Tools:** **Replit-specific plugins** are integrated for development environments.
-
-**Date Handling:** **date-fns** library is used for date formatting and manipulation, including Bosnian locale support.
-
-**Form Management:** **React Hook Form** with `@hookform/resolvers` and Zod schemas handles form validation.
-
-**Utility Libraries:** **clsx**, **tailwind-merge**, **class-variance-authority**, **cmdk**, and **nanoid** are used for CSS class management, command palette functionality, and ID generation.
+See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
