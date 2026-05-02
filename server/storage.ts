@@ -59,6 +59,11 @@ export interface IStorage {
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product | undefined>;
   deleteProduct(id: number): Promise<boolean>;
+  setProductPromotion(
+    id: number,
+    promotion: { promoPrice: string; promoStartDate: Date; promoEndDate: Date; promoNote?: string | null },
+  ): Promise<Product | undefined>;
+  clearProductPromotion(id: number): Promise<Product | undefined>;
 
   // Sales
   getSales(userId?: string, role?: string): Promise<Sale[]>;
@@ -246,6 +251,37 @@ export class DatabaseStorage implements IStorage {
   async deleteProduct(id: number): Promise<boolean> {
     const result = await db.delete(products).where(eq(products.id, id)).returning();
     return result.length > 0;
+  }
+
+  async setProductPromotion(
+    id: number,
+    promotion: { promoPrice: string; promoStartDate: Date; promoEndDate: Date; promoNote?: string | null },
+  ): Promise<Product | undefined> {
+    const result = await db
+      .update(products)
+      .set({
+        promoPrice: promotion.promoPrice,
+        promoStartDate: promotion.promoStartDate,
+        promoEndDate: promotion.promoEndDate,
+        promoNote: promotion.promoNote ?? null,
+      })
+      .where(eq(products.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async clearProductPromotion(id: number): Promise<Product | undefined> {
+    const result = await db
+      .update(products)
+      .set({
+        promoPrice: null,
+        promoStartDate: null,
+        promoEndDate: null,
+        promoNote: null,
+      })
+      .where(eq(products.id, id))
+      .returning();
+    return result[0];
   }
 
   // Sales

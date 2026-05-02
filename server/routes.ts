@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
-import { insertCustomerSchema, insertProductSchema, insertSaleSchema, insertActivitySchema, type InsertCustomer, type InsertSale } from "@shared/schema";
+import { insertCustomerSchema, insertProductSchema, insertSaleSchema, insertActivitySchema, setPromotionSchema, isPromotionActive, type InsertCustomer, type InsertSale } from "@shared/schema";
 import { generateLocalRecommendations } from "./local-ai";
 import { requireAuth } from "./auth";
 import { z } from "zod";
@@ -218,10 +218,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/products", requireAuth, async (req, res) => {
     try {
       const products = await storage.getProducts();
-      res.json(products);
+      const now = new Date();
+      const enriched = products.map((p) => ({
+        ...p,
+        promoActive: isPromotionActive(p, now),
+      }));
+      res.json(enriched);
     } catch (error) {
       console.error("Error fetching products:", error);
       res.status(500).json({ error: "Failed to fetch products" });
+    }
+  });
+
+  app.get("/api/products/active-promotions", requireAuth, async (req, res) => {
+    try {
+      const all = await storage.getProducts();
+      const now = new Date();
+      const active = all
+        .filter((p) => isPromotionActive(p, now))
+        .map((p) => ({ ...p, promoActive: true }));
+      res.json(active);
+    } catch (error) {
+      console.error("Error fetching active promotions:", error);
+      res.status(500).json({ error: "Failed to fetch active promotions" });
     }
   });
 
@@ -306,6 +325,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting product:", error);
       res.status(500).json({ error: "Failed to delete product" });
+    }
+  });
+
+  // Postavi akciju na artikal — samo admin / sales_director
+  app.post("/api/products/:id/promotion", requireAuth, async (req, res) => {
+    const role = req.user!.role;
+    if (role !== "admin" && role !== "sales_director") {
+      return res.status(403).json({ error: "Nemate ovlaštenje za upravljanje akcijama" });
+    }
+    try {
+      const id = parseInt(req.params.id);
+      const product = await storage.getProduct(id);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      const data = setPromotionSchema.parse(req.body);
+      const promoPriceNum = parseFloat(data.promoPrice);
+      const regularPriceNum = parseFloat(product.price);
+      if (!isFinite(promoPriceNum) || promoPriceNum <= 0) {
+        return res.status(400).json({ error: "Akcijska cijena mora biti pozitivan broj" });
+      }
+      if (promoPriceNum >= regularPriceNum) {
+        return res.status(400).json({ error: "Akcijska cijena mora biti manja od redovne cijene" });
+      }
+      const start = new Date(data.promoStartDate);
+      const end = new Date(data.promoEndDate);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return res.status(400).json({ error: "Neispravan datum akcije" });
+      }
+      if (end <= start) {
+        return res.status(400).json({ error: "Datum kraja mora biti poslije datuma početka" });
+      }
+
+      const updated = await storage.setProductPromotion(id, {
+        promoPrice: data.promoPrice,
+        promoStartDate: start,
+        promoEndDate: end,
+        promoNote: data.promoNote ?? null,
+      });
+      res.json({ ...updated, promoActive: isPromotionActive(updated!) });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Error setting promotion:", error);
+      res.status(500).json({ error: "Failed to set promotion" });
+    }
+  });
+
+  // Ukloni akciju s artikla — samo admin / sales_director
+  app.delete("/api/products/:id/promotion", requireAuth, async (req, res) => {
+    const role = req.user!.role;
+    if (role !== "admin" && role !== "sales_director") {
+      return res.status(403).json({ error: "Nemate ovlaštenje za upravljanje akcijama" });
+    }
+    try {
+      const id = parseInt(req.params.id);
+      const updated = await storage.clearProductPromotion(id);
+      if (!updated) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      res.json({ ...updated, promoActive: false });
+    } catch (error) {
+      console.error("Error clearing promotion:", error);
+      res.status(500).json({ error: "Failed to clear promotion" });
     }
   });
 

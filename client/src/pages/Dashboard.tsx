@@ -1,13 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
+import { Link } from "wouter";
 import { StatsCard } from "@/components/StatsCard";
 import { MonthlyProgressBar } from "@/components/MonthlyProgressBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, TrendingUp, Phone, Clock, Package } from "lucide-react";
+import { Users, TrendingUp, Phone, Clock, Package, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { startOfMonth, endOfMonth, isWithinInterval, formatDistanceToNow } from "date-fns";
+import { startOfMonth, endOfMonth, isWithinInterval, formatDistanceToNow, format } from "date-fns";
 import { bs } from "date-fns/locale";
-import type { Customer, Sale, Activity } from "@shared/schema";
+import type { Customer, Sale, Activity, Product } from "@shared/schema";
 
 interface CustomerWithStats extends Customer {
   totalPurchases: number;
@@ -37,6 +38,11 @@ export default function Dashboard() {
   const { data: sales = [] } = useQuery<Sale[]>({
     queryKey: ["/api/sales"],
     staleTime: 30 * 60 * 1000,
+  });
+
+  const { data: activePromos = [] } = useQuery<Product[]>({
+    queryKey: ["/api/products/active-promotions"],
+    staleTime: 5 * 60 * 1000,
   });
 
   // Deferred — only starts after initial render, pre-warms cache for recommendations page
@@ -123,6 +129,66 @@ export default function Dashboard() {
               description="različitih artikala ovaj mjesec"
             />
           </div>
+
+          <Card data-testid="card-active-promotions">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center justify-between gap-2 text-base flex-wrap">
+                <span className="flex items-center gap-2">
+                  <Tag className="h-4 w-4 text-destructive" />
+                  Trenutne akcije
+                  {activePromos.length > 0 && (
+                    <Badge variant="destructive" className="text-[10px]">{activePromos.length}</Badge>
+                  )}
+                </span>
+                {activePromos.length > 0 && (
+                  <Link href="/products?category=akcija">
+                    <span className="text-xs font-normal text-muted-foreground hover:text-foreground cursor-pointer" data-testid="link-all-promotions">
+                      Vidi sve
+                    </span>
+                  </Link>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-3 sm:px-6">
+              {activePromos.length === 0 ? (
+                <p
+                  className="text-sm text-muted-foreground text-center py-4"
+                  data-testid="text-no-active-promotions"
+                >
+                  Trenutno nema aktivnih akcija
+                </p>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {activePromos.slice(0, 6).map((p) => {
+                    const promo = p.promoPrice ? parseFloat(p.promoPrice) : 0;
+                    const reg = parseFloat(p.price);
+                    const discount = reg > 0 ? Math.round(((reg - promo) / reg) * 100) : 0;
+                    return (
+                      <div
+                        key={p.id}
+                        className="p-2.5 rounded-md border border-border hover-elevate"
+                        data-testid={`promo-widget-${p.id}`}
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <p className="font-medium text-sm line-clamp-2 flex-1">{p.name}</p>
+                          <Badge variant="destructive" className="text-[10px] flex-shrink-0">-{discount}%</Badge>
+                        </div>
+                        <div className="flex items-baseline gap-2 flex-wrap">
+                          <span className="text-sm font-bold text-destructive">{promo.toFixed(2)} KM</span>
+                          <span className="text-xs text-muted-foreground line-through">{reg.toFixed(2)} KM</span>
+                        </div>
+                        {p.promoEndDate && (
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            do {format(new Date(p.promoEndDate), "dd.MM.yyyy")}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           <div className="grid gap-6">
             <Card>

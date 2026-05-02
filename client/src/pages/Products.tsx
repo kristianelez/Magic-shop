@@ -1,30 +1,53 @@
 import { ProductCard } from "@/components/ProductCard";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search } from "lucide-react";
-import { useState } from "react";
+import { Search, Tag } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { AddProductDialog } from "@/components/AddProductDialog";
 import { useAuth } from "@/contexts/AuthContext";
-import type { Product } from "@shared/schema";
+import { isPromotionActive, type Product } from "@shared/schema";
+
+const PROMO_TAB = "Akcija";
+const ALL_TAB = "Svi proizvodi";
 
 export default function Products() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState("Svi proizvodi");
+  const [activeCategory, setActiveCategory] = useState(ALL_TAB);
+  const [location] = useLocation();
   const { user } = useAuth();
 
-  const { data: products = [], isLoading } = useQuery<Product[]>({
+  const { data: products = [], isLoading } = useQuery<(Product & { promoActive?: boolean })[]>({
     queryKey: ["/api/products"],
   });
 
-  const categories = ["Svi proizvodi", ...Array.from(new Set(products.map((p) => p.category)))];
+  // Otvori "Akcija" tab ako URL sadrži ?category=akcija
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("category") === "akcija") {
+      setActiveCategory(PROMO_TAB);
+    }
+  }, [location]);
+
+  const promoProducts = useMemo(
+    () => products.filter((p) => p.promoActive ?? isPromotionActive(p)),
+    [products],
+  );
+
+  const baseCategories = Array.from(new Set(products.map((p) => p.category)));
+  const categories = [PROMO_TAB, ALL_TAB, ...baseCategories];
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch =
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.category.toLowerCase().includes(searchQuery.toLowerCase());
+    if (activeCategory === PROMO_TAB) {
+      const isPromo = product.promoActive ?? isPromotionActive(product);
+      return isPromo && matchesSearch;
+    }
     const matchesCategory =
-      activeCategory === "Svi proizvodi" || product.category === activeCategory;
+      activeCategory === ALL_TAB || product.category === activeCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -60,8 +83,17 @@ export default function Products() {
       <Tabs value={activeCategory} onValueChange={setActiveCategory}>
         <TabsList className="flex-wrap h-auto">
           {categories.map((category) => (
-            <TabsTrigger key={category} value={category} data-testid={`tab-${category.toLowerCase()}`}>
+            <TabsTrigger
+              key={category}
+              value={category}
+              data-testid={`tab-${category.toLowerCase()}`}
+              className={category === PROMO_TAB ? "data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground" : ""}
+            >
+              {category === PROMO_TAB && <Tag className="h-3 w-3 mr-1" />}
               {category}
+              {category === PROMO_TAB && promoProducts.length > 0 && (
+                <span className="ml-1.5 text-[10px] opacity-80">({promoProducts.length})</span>
+              )}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -75,7 +107,11 @@ export default function Products() {
 
           {filteredProducts.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">Nema proizvoda koji odgovaraju pretrazi</p>
+              <p className="text-muted-foreground">
+                {activeCategory === PROMO_TAB
+                  ? "Trenutno nema aktivnih akcija"
+                  : "Nema proizvoda koji odgovaraju pretrazi"}
+              </p>
             </div>
           )}
         </TabsContent>

@@ -7,13 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Plus, Trash2, ShoppingCart, Users, Package, Check, ChevronsUpDown, ArrowLeft, Calendar } from "lucide-react";
+import { Plus, Trash2, ShoppingCart, Users, Package, Check, ChevronsUpDown, ArrowLeft, Calendar, Tag } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import type { Customer, Product, Sale } from "@shared/schema";
+import { isPromotionActive, type Customer, type Product, type Sale } from "@shared/schema";
 
 interface OrderItem {
   saleId?: number;
@@ -24,6 +25,7 @@ interface OrderItem {
   discount: string;
   total: number;
   isDeleted?: boolean;
+  isPromo?: boolean;
 }
 
 export default function EditOrder() {
@@ -55,6 +57,12 @@ export default function EditOrder() {
   const { data: sales = [], isLoading: salesLoading } = useQuery<Sale[]>({
     queryKey: ["/api/sales"],
   });
+
+  // Trenutno aktivne akcije
+  const promoProducts = useMemo(
+    () => products.filter((p) => isPromotionActive(p)),
+    [products],
+  );
 
   // Izračunaj top 10 najprodavanijih proizvoda
   const topProducts = useMemo(() => {
@@ -253,10 +261,13 @@ export default function EditOrder() {
     if (field === "productId") {
       const product = products.find((p) => p.id === parseInt(value));
       if (product) {
+        const promoActive = isPromotionActive(product);
+        const effectivePrice = promoActive && product.promoPrice ? product.promoPrice : product.price;
         newItems[index].productId = product.id;
         newItems[index].productName = product.name;
-        newItems[index].price = product.price;
-        newItems[index].total = calculateItemTotal({ ...newItems[index], price: product.price });
+        newItems[index].price = effectivePrice;
+        newItems[index].isPromo = promoActive;
+        newItems[index].total = calculateItemTotal({ ...newItems[index], price: effectivePrice });
       }
     } else if (field === "quantity") {
       if (value === "" || value === null || value === undefined) {
@@ -274,6 +285,11 @@ export default function EditOrder() {
       } else {
         newItems[index].discount = value;
       }
+      newItems[index].total = calculateItemTotal(newItems[index]);
+    } else if (field === "price") {
+      // Komercijalista može ručno izmijeniti cijenu nakon auto-popune (i akcijske).
+      newItems[index].price = value === "" || value === null || value === undefined ? "" : String(value);
+      newItems[index].isPromo = false;
       newItems[index].total = calculateItemTotal(newItems[index]);
     }
 
@@ -505,7 +521,40 @@ export default function EditOrder() {
                               <CommandInput placeholder="Pretraži proizvode..." data-testid={`input-search-product-${realIndex}`} />
                               <CommandList className="max-h-40 overflow-y-auto">
                                 <CommandEmpty>Nema pronađenih proizvoda.</CommandEmpty>
-                                
+
+                                {promoProducts.length > 0 && (
+                                  <CommandGroup heading="Akcija">
+                                    {promoProducts.map((product) => (
+                                      <CommandItem
+                                        key={`promo-${product.id}`}
+                                        value={`akcija ${product.name}`}
+                                        onSelect={() => {
+                                          updateOrderItem(realIndex, "productId", String(product.id));
+                                          setProductSearchOpen({ ...productSearchOpen, [realIndex]: false });
+                                        }}
+                                        data-testid={`promo-option-${realIndex}-${product.id}`}
+                                      >
+                                        <Check
+                                          className={cn(
+                                            "mr-2 h-4 w-4",
+                                            item.productId === product.id ? "opacity-100" : "opacity-0"
+                                          )}
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="truncate">{product.name}</span>
+                                            <Badge variant="destructive" className="text-[10px]">AKCIJA</Badge>
+                                          </div>
+                                          <div className="text-xs text-muted-foreground">
+                                            <span className="text-destructive font-semibold">{parseFloat(product.promoPrice!).toFixed(2)} KM</span>
+                                            <span className="line-through ml-2">{parseFloat(product.price).toFixed(2)} KM</span>
+                                          </div>
+                                        </div>
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                )}
+
                                 {topProducts.length > 0 && (
                                   <CommandGroup heading="Preporučeni proizvodi (Top 10)">
                                     {topProducts.map((product) => (
@@ -567,13 +616,24 @@ export default function EditOrder() {
                         </Popover>
                       </div>
 
+                      {item.isPromo && (
+                        <div
+                          className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-xs text-destructive"
+                          data-testid={`promo-indicator-${realIndex}`}
+                        >
+                          <Tag className="h-3.5 w-3.5" />
+                          <span className="font-semibold">Akcijska cijena primijenjena</span>
+                        </div>
+                      )}
+
                       <div className="w-full min-w-0">
                         <Label className="text-xs sm:text-sm block truncate">Cijena (KM)</Label>
                         <Input
                           type="text"
+                          inputMode="decimal"
                           value={item.price}
-                          readOnly
-                          className="bg-muted w-full text-xs sm:text-sm"
+                          onChange={(e) => updateOrderItem(realIndex, "price", e.target.value)}
+                          className={cn("w-full text-xs sm:text-sm", item.isPromo && "bg-destructive/10 text-destructive font-semibold")}
                           data-testid={`input-price-${realIndex}`}
                         />
                       </div>

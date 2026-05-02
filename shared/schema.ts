@@ -87,6 +87,10 @@ export const products = pgTable("products", {
   vendor: text("vendor"),
   barcode: text("barcode"),
   recommendedFor: text("recommended_for").array(),
+  promoPrice: decimal("promo_price", { precision: 10, scale: 2 }),
+  promoStartDate: timestamp("promo_start_date"),
+  promoEndDate: timestamp("promo_end_date"),
+  promoNote: text("promo_note"),
 });
 
 export const insertProductSchema = createInsertSchema(products, {
@@ -100,12 +104,44 @@ export const insertProductSchema = createInsertSchema(products, {
   unit: z.string().min(1, "Jedinica je obavezna"),
   vendor: z.string().optional(),
   recommendedFor: z.array(z.enum(customerTypes)).optional(),
+  promoPrice: z.string().optional().nullable(),
+  promoStartDate: z.date().optional().nullable(),
+  promoEndDate: z.date().optional().nullable(),
+  promoNote: z.string().optional().nullable(),
 }).omit({
   id: true,
+  promoPrice: true,
+  promoStartDate: true,
+  promoEndDate: true,
+  promoNote: true,
 });
 
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type Product = typeof products.$inferSelect;
+
+export const setPromotionSchema = z.object({
+  promoPrice: z
+    .string()
+    .min(1, "Akcijska cijena je obavezna")
+    .refine(
+      (val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0,
+      "Akcijska cijena mora biti pozitivan broj",
+    ),
+  promoStartDate: z.string().min(1, "Datum početka je obavezan"),
+  promoEndDate: z.string().min(1, "Datum kraja je obavezan"),
+  promoNote: z.string().optional().nullable(),
+});
+
+export type SetPromotionInput = z.infer<typeof setPromotionSchema>;
+
+// Pomoćna provjera: da li je artikal trenutno na akciji
+export function isPromotionActive(product: Pick<Product, "promoPrice" | "promoStartDate" | "promoEndDate">, now: Date = new Date()): boolean {
+  if (!product.promoPrice) return false;
+  const start = product.promoStartDate ? new Date(product.promoStartDate) : null;
+  const end = product.promoEndDate ? new Date(product.promoEndDate) : null;
+  if (!start || !end) return false;
+  return now >= start && now <= end;
+}
 
 export const sales = pgTable("sales", {
   id: serial("id").primaryKey(),

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, PieChart as PieChartIcon, TrendingUp, Users } from "lucide-react";
+import { BarChart3, PieChart as PieChartIcon, TrendingUp, Users, Tag } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell, Legend,
@@ -9,12 +10,14 @@ import {
 import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { bs } from "date-fns/locale";
 import { useAuth } from "@/contexts/AuthContext";
-import type { Sale, User } from "@shared/schema";
+import type { Sale, User, Product } from "@shared/schema";
 
 interface SaleWithProduct extends Sale {
   productName?: string;
   productCategory?: string;
 }
+
+type ProductWithPromoFlag = Product & { promoActive?: boolean };
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#ff7300'];
 
@@ -32,10 +35,76 @@ export default function Statistika() {
     staleTime: 30 * 60 * 1000,
   });
 
-  const { data: products = [] } = useQuery<any[]>({
+  const { data: products = [] } = useQuery<ProductWithPromoFlag[]>({
     queryKey: ["/api/products"],
     staleTime: 30 * 60 * 1000,
   });
+
+  // Prodaja na akciji — sale je "promo" ako je createdAt unutar perioda
+  // (promoStartDate, promoEndDate) za pripadni proizvod.
+  const productById = new Map<number, ProductWithPromoFlag>(products.map((p) => [p.id, p]));
+  const promoSales = sales.filter((s) => {
+    const p = productById.get(s.productId);
+    if (!p || !p.promoStartDate || !p.promoEndDate) return false;
+    const t = new Date(s.createdAt).getTime();
+    return t >= new Date(p.promoStartDate).getTime() && t <= new Date(p.promoEndDate).getTime();
+  });
+
+  // Filter prikaza prema ulozi
+  const visiblePromoSales = isSalesDirector
+    ? promoSales
+    : promoSales.filter((s) => s.salesPersonId === user?.id);
+
+  // Po komercijalisti — broj prodaja, ukupna količina, ukupno (bez PDV) i top 3 proizvoda po komadima
+  type PromoStat = {
+    salesPersonId: string;
+    salesPersonName: string;
+    saleCount: number;
+    unitsSold: number;
+    total: number;
+    topProducts: { productId: number; productName: string; units: number; total: number }[];
+  };
+  const promoStatsByPerson: PromoStat[] = (() => {
+    const map = new Map<string, PromoStat>();
+    visiblePromoSales.forEach((s) => {
+      const sid = s.salesPersonId || "unknown";
+      const u = users.find((x) => x.id === sid);
+      const name = u?.fullName || "Nepoznat";
+      const prod = productById.get(s.productId);
+      const productName = prod?.name || "Nepoznat artikal";
+      const totalNoVat = parseFloat(s.totalAmount) / 1.17;
+      const qty = Number(s.quantity) || 0;
+
+      if (!map.has(sid)) {
+        map.set(sid, {
+          salesPersonId: sid,
+          salesPersonName: name,
+          saleCount: 0,
+          unitsSold: 0,
+          total: 0,
+          topProducts: [],
+        });
+      }
+      const stat = map.get(sid)!;
+      stat.saleCount += 1;
+      stat.unitsSold += qty;
+      stat.total += totalNoVat;
+
+      const existing = stat.topProducts.find((tp) => tp.productId === s.productId);
+      if (existing) {
+        existing.units += qty;
+        existing.total += totalNoVat;
+      } else {
+        stat.topProducts.push({ productId: s.productId, productName, units: qty, total: totalNoVat });
+      }
+    });
+    return Array.from(map.values())
+      .map((s) => ({
+        ...s,
+        topProducts: s.topProducts.sort((a, b) => b.units - a.units).slice(0, 3),
+      }))
+      .sort((a, b) => b.total - a.total);
+  })();
 
   const now = new Date();
   const last6Months = Array.from({ length: 6 }, (_, i) => {
@@ -170,6 +239,74 @@ export default function Statistika() {
           </CardContent>
         </Card>
       )}
+
+      <Card data-testid="card-promo-sales">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Tag className="h-5 w-5 text-destructive" />
+            Prodaja na akciji
+            {visiblePromoSales.length > 0 && (
+              <Badge variant="destructive" className="text-[10px]">{visiblePromoSales.length}</Badge>
+            )}
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            {isSalesDirector
+              ? "Pregled prodaja artikala koji su bili na akciji u trenutku prodaje"
+              : "Vaše prodaje artikala koji su bili na akciji"}
+          </p>
+        </CardHeader>
+        <CardContent>
+          {visiblePromoSales.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6" data-testid="text-no-promo-sales">
+              Trenutno nema prodaja na akciji.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {promoStatsByPerson.map((stat) => (
+                <div
+                  key={stat.salesPersonId}
+                  className="p-3 rounded-md border space-y-3"
+                  data-testid={`promo-stat-${stat.salesPersonId}`}
+                >
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div>
+                      <p className="font-semibold text-sm">{stat.salesPersonName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        <span data-testid={`promo-units-${stat.salesPersonId}`}>{stat.unitsSold}</span> kom prodano · {stat.saleCount} {stat.saleCount === 1 ? "prodaja" : "prodaja"}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">Ukupno (bez PDV)</p>
+                      <p className="text-lg font-bold text-destructive" data-testid={`promo-total-${stat.salesPersonId}`}>
+                        {stat.total.toLocaleString("bs-BA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KM
+                      </p>
+                    </div>
+                  </div>
+                  {stat.topProducts.length > 0 && (
+                    <div className="space-y-1.5 pt-2 border-t">
+                      <p className="text-xs text-muted-foreground">Top 3 akcijska artikla (po komadima):</p>
+                      {stat.topProducts.map((tp, idx) => (
+                        <div
+                          key={tp.productId}
+                          className="flex items-center justify-between gap-2 text-xs"
+                          data-testid={`promo-top-product-${stat.salesPersonId}-${idx}`}
+                        >
+                          <span className="truncate flex-1">
+                            {idx + 1}. {tp.productName}
+                          </span>
+                          <span className="text-muted-foreground whitespace-nowrap">
+                            {tp.units} kom · {tp.total.toFixed(2)} KM
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="pb-2">

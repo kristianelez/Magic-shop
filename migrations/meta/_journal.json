@@ -15,6 +15,13 @@
       "when": 1766681556002,
       "tag": "0001_brief_sentry",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777745436605,
+      "tag": "0002_shallow_skrulls",
+      "breakpoints": true
     }
   ]
 }

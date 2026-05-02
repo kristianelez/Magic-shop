@@ -14,6 +14,10 @@ export default function ProductCardExample() {
         vendor: null,
         barcode: null,
         recommendedFor: null,
+        promoPrice: null,
+        promoStartDate: null,
+        promoEndDate: null,
+        promoNote: null,
       }}
     />
   );
