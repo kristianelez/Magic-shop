@@ -1,4 +1,5 @@
 import { LayoutDashboard, Users, Package, Sparkles, ShoppingCart, ClipboardList, FileText, Trophy, BarChart3, Bell, RotateCcw, UserSearch, Tag } from "lucide-react";
+import { Logo } from "@/components/Logo";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -65,13 +66,13 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
-            <Package className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-sidebar-foreground">Magic Shop</h2>
-            <p className="text-xs text-muted-foreground">{userRoleDisplay}</p>
+        <div className="flex items-center gap-3">
+          <Logo size={44} ring={false} className="ring-2 ring-sidebar-primary/50" />
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold text-sidebar-foreground leading-tight truncate">
+              Magic Cosmetic
+            </h2>
+            <p className="text-xs text-sidebar-foreground/70 truncate">{userRoleDisplay}</p>
           </div>
         </div>
       </SidebarHeader>

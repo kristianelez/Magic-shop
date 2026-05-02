@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { LogOut } from "lucide-react";
+import { Logo } from "@/components/Logo";
+import { SplashScreen } from "@/components/SplashScreen";
 
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const Customers = lazy(() => import("@/pages/Customers"));
@@ -33,8 +35,9 @@ const Login = lazy(() => import("@/pages/Login"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 const LoadingFallback = () => (
-  <div className="flex items-center justify-center h-64">
-    <p className="text-muted-foreground">Učitavanje...</p>
+  <div className="flex flex-col items-center justify-center h-64 gap-3">
+    <Logo size={56} />
+    <p className="text-sm text-muted-foreground">Učitavanje...</p>
   </div>
 );
 
@@ -82,11 +85,7 @@ function AppContent() {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-muted-foreground">Učitavanje...</div>
-      </div>
-    );
+    return <SplashScreen label="Provjera prijave..." />;
   }
 
   if (location === "/login" || !user) {
@@ -98,16 +97,27 @@ function AppContent() {
       <div className="flex h-screen w-full">
         <AppSidebar />
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="shrink-0 flex items-center justify-between p-3 md:p-4 border-b border-border gap-2 md:gap-4 bg-background z-50">
-            <div className="flex items-center gap-2 md:gap-4 min-w-0">
-              <SidebarTrigger data-testid="button-sidebar-toggle" className="shrink-0" />
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="font-semibold text-foreground truncate text-sm md:text-base" data-testid="text-username">
-                  {user.fullName}
-                </span>
-                <span className="text-xs md:text-sm text-muted-foreground hidden sm:inline truncate">
-                  ({user.role === "admin" ? "Admin" : "Komercijalista"})
-                </span>
+          <header className="shrink-0 flex items-center justify-between px-3 md:px-5 h-16 border-b border-border gap-2 md:gap-4 bg-background z-50">
+            <div className="flex items-center gap-3 md:gap-4 min-w-0">
+              {/* Veći hamburger meni — h-11 w-11 sa 24px ikonom, lakši za klik */}
+              <SidebarTrigger
+                data-testid="button-sidebar-toggle"
+                className="shrink-0 h-11 w-11 [&_svg]:h-6 [&_svg]:w-6"
+              />
+              <div className="flex items-center gap-3 min-w-0">
+                <Logo size={36} className="hidden sm:block" />
+                <div className="min-w-0">
+                  <div className="font-semibold text-foreground truncate text-sm md:text-base leading-tight" data-testid="text-username">
+                    {user.fullName}
+                  </div>
+                  <div className="text-xs text-muted-foreground hidden sm:block truncate">
+                    {user.role === "admin"
+                      ? "Admin"
+                      : user.role === "sales_director"
+                        ? "Direktor prodaje"
+                        : "Komercijalista"}
+                  </div>
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-1 md:gap-2 shrink-0">
