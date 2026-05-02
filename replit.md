@@ -34,6 +34,8 @@ Passwords are hashed using bcrypt. Session secrets are stored in `SESSION_SECRET
 
 **AI Integration:** A hybrid AI system uses **OpenAI API** (GPT-5) for top customer recommendations (with a 24-hour cache for cost efficiency) and a **Local AI Engine** for instant, cost-free recommendations based on seasonal forecasting, stock prediction, customer type targeting, and purchase pattern analysis.
 
+**Email notifications (Nodemailer + Gmail SMTP):** On every successful order creation (`POST /api/sales`), an HTML+text email is sent to the owner (default `kristinapopovic112@gmail.com`) as a fire-and-forget call so the API response never waits on SMTP. Email failures are only logged — they never fail the order. Configured via `GMAIL_USER`, `GMAIL_APP_PASSWORD` (Gmail App Password, requires 2FA), and `OWNER_EMAIL` env vars; if any are missing, notifications are silently disabled and the server logs the disabled status at startup. See `server/email.ts` and `.env.example`.
+
 **Database Service:** **Neon Database** provides serverless PostgreSQL, configured via `DATABASE_URL`, utilizing WebSocket connections and connection pooling.
 
 **UI Component Libraries:** **Radix UI** primitives are used for accessible and unstyled components.

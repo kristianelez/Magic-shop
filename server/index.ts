@@ -7,6 +7,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedDatabase } from "./seed";
 import { neonPool } from "./storage";
+import { logEmailStatus } from "./email";
 
 const app = express();
 
@@ -144,6 +145,10 @@ app.use((req, res, next) => {
   // dirnuti tek kad stigne prvi HTTP request, a do tada mi smo CREATE već
   // pustili.
   await ensureSessionTable();
+
+  // Status email obavijesti — log na startu da vlasnik odmah vidi da li su
+  // GMAIL_USER / GMAIL_APP_PASSWORD postavljeni.
+  logEmailStatus();
 
   const server = await registerRoutes(app);
 

@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
 import { insertCustomerSchema, insertProductSchema, insertSaleSchema, insertActivitySchema, setPromotionSchema, updateProductSizesSchema, insertProductSizeSchema, isPromotionActive, type InsertCustomer, type InsertSale } from "@shared/schema";
+import { sendNewOrderEmail } from "./email";
 import { generateLocalRecommendations } from "./local-ai";
 import { requireAuth } from "./auth";
 import { z } from "zod";
@@ -655,6 +656,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const sale = await storage.createSale(saleWithSalesPerson);
+
+      // Email obavijest vlasniku — fire-and-forget (klijent ne čeka SMTP).
+      // Sve greške hvata sam modul; ako env varijable fale, tiho izlazi.
+      (async () => {
+        try {
+          const [customer, product] = await Promise.all([
+            storage.getCustomer(sale.customerId),
+            storage.getProduct(sale.productId),
+          ]);
+          let sizeName: string | null = null;
+          if (sale.sizeId) {
+            const sz = await storage.getProductSize(sale.sizeId);
+            sizeName = sz?.name ?? null;
+          }
+          const unitPrice = product?.promoPrice
+            ? product.promoPrice
+            : product?.price ?? "0";
+          await sendNewOrderEmail({
+            customerName: customer?.name ?? `#${sale.customerId}`,
+            customerCompany: customer?.company ?? null,
+            salesPersonName: req.user?.fullName ?? req.user?.username ?? "—",
+            productName: product?.name ?? `#${sale.productId}`,
+            sizeName,
+            quantity: sale.quantity,
+            unitPrice,
+            discount: sale.discount ?? "0",
+            totalAmount: sale.totalAmount,
+            // Sale schema trenutno nema polje za napomenu — ostavljeno
+            // null. Ako se napomena doda na narudžbu, proslijedi je ovdje.
+            note: null,
+            createdAt: sale.createdAt ?? new Date(),
+          });
+        } catch (e) {
+          console.error("[email] Error preparing new order email:", e);
+        }
+      })();
+
       res.status(201).json(sale);
     } catch (error) {
       if (error instanceof z.ZodError) {
