@@ -53,6 +53,11 @@ export default function CreateOrder() {
     queryKey: ["/api/sales"],
   });
 
+  const { data: lastDiscounts } = useQuery<Record<string, string>>({
+    queryKey: ["/api/sales/last-discounts", selectedCustomerId],
+    enabled: !!selectedCustomerId,
+  });
+
   // Izračunaj top 10 najprodavanijih proizvoda
   const topProducts = useMemo(() => {
     const productSales: { [key: number]: number } = {};
@@ -96,6 +101,7 @@ export default function CreateOrder() {
           productId: item.productId,
           quantity: item.quantity,
           totalAmount: item.total.toFixed(2),
+          discount: item.discount || "0",
           status: "completed",
         };
         if (createdAtIso) payload.createdAt = createdAtIso;
@@ -106,6 +112,7 @@ export default function CreateOrder() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/sales/last-discounts"] });
       toast({
         title: "Uspješno",
         description: "Narudžba je uspješno kreirana",
@@ -155,10 +162,17 @@ export default function CreateOrder() {
       // Search ALL products, not just topProducts
       const product = products.find((p) => p.id === parseInt(value));
       if (product) {
+        const lastDiscount = lastDiscounts?.[String(product.id)];
+        const discount = lastDiscount && lastDiscount !== "" ? lastDiscount : "0";
         newItems[index].productId = product.id;
         newItems[index].productName = product.name;
         newItems[index].price = product.price;
-        newItems[index].total = calculateItemTotal({ ...newItems[index], price: product.price });
+        newItems[index].discount = discount;
+        newItems[index].total = calculateItemTotal({
+          ...newItems[index],
+          price: product.price,
+          discount,
+        });
       }
     } else if (field === "quantity") {
       // Allow empty string while typing

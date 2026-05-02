@@ -320,6 +320,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/sales/last-discounts/:customerId", requireAuth, async (req, res) => {
+    try {
+      const customerId = parseInt(req.params.customerId);
+      if (isNaN(customerId)) {
+        return res.status(400).json({ error: "Nevažeći ID kupca" });
+      }
+      const discounts = await storage.getLastDiscountsByCustomer(
+        customerId,
+        req.user!.id,
+        req.user!.role,
+      );
+      res.json(discounts);
+    } catch (error) {
+      console.error("Error fetching last discounts:", error);
+      res.status(500).json({ error: "Failed to fetch last discounts" });
+    }
+  });
+
   app.post("/api/sales", requireAuth, async (req, res) => {
     try {
       // createdAt smije slati samo admin/sales_director — ostali ga ignorišu

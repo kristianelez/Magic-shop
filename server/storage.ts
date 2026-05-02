@@ -64,6 +64,7 @@ export interface IStorage {
   getSales(userId?: string, role?: string): Promise<Sale[]>;
   getSalesByCustomer(customerId: number, userId?: string, role?: string): Promise<Sale[]>;
   getSalesBySalesPerson(salesPersonId: string): Promise<Sale[]>;
+  getLastDiscountsByCustomer(customerId: number, userId?: string, role?: string): Promise<Record<number, string>>;
   createSale(sale: InsertSale & { createdAt?: Date }): Promise<Sale>;
   updateSale(id: number, sale: Partial<InsertSale> & { createdAt?: Date }): Promise<Sale | undefined>;
   deleteSale(id: number): Promise<boolean>;
@@ -277,6 +278,41 @@ export class DatabaseStorage implements IStorage {
       .from(sales)
       .where(eq(sales.salesPersonId, salesPersonId))
       .orderBy(desc(sales.createdAt));
+  }
+
+  async getLastDiscountsByCustomer(
+    customerId: number,
+    userId?: string,
+    role?: string,
+  ): Promise<Record<number, string>> {
+    const canSeeAll = role === "admin" || role === "sales_director" || !userId;
+    const customerSales = canSeeAll
+      ? await db
+          .select({
+            productId: sales.productId,
+            discount: sales.discount,
+            createdAt: sales.createdAt,
+          })
+          .from(sales)
+          .where(eq(sales.customerId, customerId))
+          .orderBy(desc(sales.createdAt))
+      : await db
+          .select({
+            productId: sales.productId,
+            discount: sales.discount,
+            createdAt: sales.createdAt,
+          })
+          .from(sales)
+          .where(and(eq(sales.customerId, customerId), eq(sales.salesPersonId, userId)))
+          .orderBy(desc(sales.createdAt));
+
+    const result: Record<number, string> = {};
+    for (const sale of customerSales) {
+      if (!(sale.productId in result)) {
+        result[sale.productId] = sale.discount ?? "0";
+      }
+    }
+    return result;
   }
 
   async createSale(sale: InsertSale & { createdAt?: Date }): Promise<Sale> {

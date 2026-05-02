@@ -95,6 +95,7 @@ export const sales = pgTable("sales", {
   salesPersonId: varchar("sales_person_id").references(() => users.id),
   quantity: integer("quantity").notNull(),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+  discount: decimal("discount", { precision: 5, scale: 2 }).notNull().default("0"),
   status: text("status").notNull().default("completed"),
   invoiceVerified: text("invoice_verified").notNull().default("false"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -106,6 +107,7 @@ export const insertSaleSchema = createInsertSchema(sales, {
   salesPersonId: z.string().optional(),
   quantity: z.number().int(),
   totalAmount: z.string(),
+  discount: z.string().optional(),
   status: z.string().optional(),
 }).omit({
   id: true,
