@@ -259,6 +259,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.patch("/api/products/:id", requireAuth, async (req, res) => {
+    if (req.user!.role === "sales_manager") {
+      return res.status(403).json({ error: "Nemate ovlaštenje za izmjenu proizvoda" });
+    }
     try {
       const id = parseInt(req.params.id);
       const productData = insertProductSchema.partial().parse(req.body);
@@ -279,6 +282,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.delete("/api/products/:id", requireAuth, async (req, res) => {
+    if (req.user!.role === "sales_manager") {
+      return res.status(403).json({ error: "Nemate ovlaštenje za brisanje proizvoda" });
+    }
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteProduct(id);

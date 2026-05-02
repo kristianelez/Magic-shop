@@ -49,6 +49,8 @@ Preferred communication style: Simple, everyday language.
   - Atomic operation ensures no orphaned records remain
   - Automatic cache invalidation and UI update after deletion
 - Products - Product catalog with inventory tracking
+  - **Edit/Delete artikala**: olovka-ikonica na karticama proizvoda otvara EditProductDialog (samo admin/sales_director, gumb sakriven za sales_manager)
+  - Backend PATCH/DELETE `/api/products/:id` vraćaju 403 za sales_manager
 - AI Recommendations - Smart customer outreach suggestions
 - Sales - Sales history and analytics
 - **Customer Analysis** (Analiza kupca) - Individual customer purchase analytics:
