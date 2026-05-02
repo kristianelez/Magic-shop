@@ -31,6 +31,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       req.session.userId = user.id;
 
+      // Wait for the session to be persisted to Postgres BEFORE responding.
+      // Otherwise the browser gets the Set-Cookie back and immediately fires
+      // follow-up requests (auth/me, sales, customers, ...) that race the
+      // session write — the session row isn't there yet, so those requests
+      // come back as 401 and the user gets bounced back to /login.
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err) => (err ? reject(err) : resolve()));
+      });
+
       const { password: _, ...userWithoutPassword } = user;
       res.json({ user: userWithoutPassword });
     } catch (error) {

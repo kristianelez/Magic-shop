@@ -159,6 +159,7 @@ Preferred communication style: Simple, everyday language.
 - Session cookies configured with httpOnly, sameSite: "lax", and secure flag in production
 - **Trust proxy enabled on every Replit-hosted environment**: Express configured with `trust proxy: 1` whenever `REPL_ID`, `REPLIT_DEPLOYMENT=1`, or `NODE_ENV=production` is set, so secure cookies work behind Replit's HTTPS reverse proxy in both the dev preview and the published app
 - **Cross-site session cookie on Replit**: cookie is set with `sameSite: "none"` + `secure: true` whenever the app runs on Replit (dev preview is loaded inside the workspace's cross-origin iframe, which would otherwise drop a `sameSite: "lax"` cookie and cause an immediate redirect back to the login page). Local non-Replit dev still uses `sameSite: "lax"` + `secure: false`.
+- **Login awaits `req.session.save()` before responding**: the PG-backed session store writes asynchronously, so the original code returned the response (with Set-Cookie) before the row was in Postgres. The follow-up `/api/auth/me` and dashboard queries fired by the client would race the write and come back as 401, bouncing the user back to /login. The login route now awaits an explicit `req.session.save()` callback before sending the JSON response.
 
 **Required Environment Variables:**
 - `SESSION_SECRET`: Strong random secret for session management (REQUIRED)
