@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
-import { insertCustomerSchema, insertProductSchema, insertSaleSchema, insertActivitySchema, setPromotionSchema, updateProductSizesSchema, isPromotionActive, type InsertCustomer, type InsertSale } from "@shared/schema";
+import { insertCustomerSchema, insertProductSchema, insertSaleSchema, insertActivitySchema, setPromotionSchema, updateProductSizesSchema, insertProductSizeSchema, isPromotionActive, type InsertCustomer, type InsertSale } from "@shared/schema";
 import { generateLocalRecommendations } from "./local-ai";
 import { requireAuth } from "./auth";
 import { z } from "zod";
@@ -437,6 +437,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Granularne rute za pojedinačne veličine — koriste ih klijenti koji
+  // ne žele bulk PUT (npr. brzi "dodaj jednu veličinu" ili "izmijeni
+  // stanje"). Sve write rute su admin / sales_director only.
+  const requireSizeAdmin = (req: any, res: any) => {
+    const role = req.user!.role;
+    if (role !== "admin" && role !== "sales_director") {
+      res.status(403).json({ error: "Nemate ovlaštenje za izmjenu veličina" });
+      return false;
+    }
+    return true;
+  };
+
+  // Dodaj jednu veličinu artiklu.
+  app.post("/api/products/:id/sizes", requireAuth, async (req, res) => {
+    if (!requireSizeAdmin(req, res)) return;
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Nevažeći ID artikla" });
+      }
+      const product = await storage.getProduct(id);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      const data = insertProductSizeSchema
+        .omit({ productId: true })
+        .parse(req.body);
+      // Spriječi duplikat naziva (case-insensitive) unutar artikla.
+      const existing = await storage.getProductSizes(id);
+      const nameKey = data.name.trim().toLowerCase();
+      if (existing.some((s) => s.name.trim().toLowerCase() === nameKey)) {
+        return res
+          .status(400)
+          .json({ error: `Veličina "${data.name}" već postoji za ovaj artikal` });
+      }
+      const created = await storage.createProductSize(id, {
+        name: data.name.trim(),
+        stock: data.stock,
+        sortOrder: data.sortOrder,
+      });
+      res.status(201).json(created);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Error creating product size:", error);
+      res.status(500).json({ error: "Failed to create product size" });
+    }
+  });
+
+  // Izmijeni jednu veličinu (naziv / stanje / sortOrder).
+  app.patch("/api/product-sizes/:sizeId", requireAuth, async (req, res) => {
+    if (!requireSizeAdmin(req, res)) return;
+    try {
+      const sizeId = parseInt(req.params.sizeId);
+      if (isNaN(sizeId)) {
+        return res.status(400).json({ error: "Nevažeći ID veličine" });
+      }
+      const existing = await storage.getProductSize(sizeId);
+      if (!existing) {
+        return res.status(404).json({ error: "Size not found" });
+      }
+      const data = insertProductSizeSchema
+        .omit({ productId: true })
+        .partial()
+        .parse(req.body);
+
+      // Ako se mijenja naziv, provjeri duplikat unutar istog artikla.
+      if (data.name !== undefined) {
+        const trimmed = data.name.trim();
+        if (!trimmed) {
+          return res
+            .status(400)
+            .json({ error: "Naziv veličine ne smije biti prazan" });
+        }
+        const others = await storage.getProductSizes(existing.productId);
+        const dup = others.find(
+          (s) =>
+            s.id !== sizeId && s.name.trim().toLowerCase() === trimmed.toLowerCase(),
+        );
+        if (dup) {
+          return res
+            .status(400)
+            .json({ error: `Veličina "${trimmed}" već postoji za ovaj artikal` });
+        }
+        data.name = trimmed;
+      }
+
+      const updated = await storage.updateProductSize(sizeId, data);
+      if (!updated) {
+        return res.status(404).json({ error: "Size not found" });
+      }
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Error updating product size:", error);
+      res.status(500).json({ error: "Failed to update product size" });
+    }
+  });
+
+  // Obriši jednu veličinu. Ako je već korištena u prodajama/ponudama,
+  // backend je samo "isprazni" (stock=0) i vrati { cleared: true } da se
+  // sačuva istorija.
+  app.delete("/api/product-sizes/:sizeId", requireAuth, async (req, res) => {
+    if (!requireSizeAdmin(req, res)) return;
+    try {
+      const sizeId = parseInt(req.params.sizeId);
+      if (isNaN(sizeId)) {
+        return res.status(400).json({ error: "Nevažeći ID veličine" });
+      }
+      const existing = await storage.getProductSize(sizeId);
+      if (!existing) {
+        return res.status(404).json({ error: "Size not found" });
+      }
+      const result = await storage.deleteProductSize(sizeId);
+      res.json(result);
+    } catch (error) {
+      console.error("Error deleting product size:", error);
+      res.status(500).json({ error: "Failed to delete product size" });
+    }
+  });
+
   // Ukloni akciju s artikla — samo admin / sales_director
   app.delete("/api/products/:id/promotion", requireAuth, async (req, res) => {
     const role = req.user!.role;
@@ -548,26 +672,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const saleData: Partial<InsertSale> & { createdAt?: Date } =
         insertSaleSchema.partial().parse(rest);
 
-      // Ako klijent eksplicitno mijenja sizeId, validiraj da pripada artiklu.
-      // Koristimo productId iz body-ja ako je poslan, inače iz postojeće prodaje.
-      if (saleData.sizeId !== undefined) {
-        let productIdForCheck = saleData.productId;
-        if (productIdForCheck === undefined) {
-          const existing = await storage.getSale(id);
-          if (!existing) {
-            return res.status(404).json({ error: "Sale not found" });
-          }
-          productIdForCheck = existing.productId;
+      // Validacija veličine pri PATCH-u prodaje:
+      //  - utvrdimo koji productId će prodaja imati nakon update-a (poslani
+      //    iz body-ja ili postojeći iz baze)
+      //  - utvrdimo efektivni sizeId (poslani iz body-ja ako je u njemu, inače
+      //    postojeći iz baze)
+      //  - ako artikal ima definisane veličine, sizeId MORA biti postavljen
+      //    i mora pripadati tom artiklu
+      const existingSale = await storage.getSale(id);
+      if (!existingSale) {
+        return res.status(404).json({ error: "Sale not found" });
+      }
+      const effectiveProductId = saleData.productId ?? existingSale.productId;
+      const effectiveSizeId =
+        saleData.sizeId !== undefined ? saleData.sizeId : existingSale.sizeId;
+      const productSizesList = await storage.getProductSizes(effectiveProductId);
+      if (productSizesList.length > 0) {
+        if (effectiveSizeId === null || effectiveSizeId === undefined) {
+          return res.status(400).json({
+            error:
+              "Ovaj artikal ima definisane veličine — odaberite veličinu za prodaju",
+          });
         }
-        if (saleData.sizeId !== null) {
-          const productSizesList = await storage.getProductSizes(productIdForCheck);
-          const match = productSizesList.find((s) => s.id === saleData.sizeId);
-          if (!match) {
-            return res
-              .status(400)
-              .json({ error: "Odabrana veličina ne pripada ovom artiklu" });
-          }
+        const match = productSizesList.find((s) => s.id === effectiveSizeId);
+        if (!match) {
+          return res
+            .status(400)
+            .json({ error: "Odabrana veličina ne pripada ovom artiklu" });
         }
+      } else if (effectiveSizeId !== null && effectiveSizeId !== undefined) {
+        // Artikal nema veličina, ali je sizeId postavljen — ne smije se desiti.
+        return res
+          .status(400)
+          .json({ error: "Ovaj artikal nema definisane veličine" });
       }
 
       if (createdAtRaw !== undefined && createdAtRaw !== null && createdAtRaw !== "") {

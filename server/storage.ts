@@ -75,6 +75,15 @@ export interface IStorage {
   // Product sizes
   getProductSizes(productId: number): Promise<ProductSize[]>;
   getProductSize(sizeId: number): Promise<ProductSize | undefined>;
+  createProductSize(
+    productId: number,
+    data: { name: string; stock: number; sortOrder?: number },
+  ): Promise<ProductSize>;
+  updateProductSize(
+    sizeId: number,
+    data: Partial<{ name: string; stock: number; sortOrder: number }>,
+  ): Promise<ProductSize | undefined>;
+  deleteProductSize(sizeId: number): Promise<{ deleted: boolean; cleared: boolean }>;
   replaceProductSizes(
     productId: number,
     sizes: Array<{ id?: number; name: string; stock: number; sortOrder?: number }>,
@@ -329,6 +338,63 @@ export class DatabaseStorage implements IStorage {
       .where(eq(productSizes.id, sizeId))
       .limit(1);
     return result[0];
+  }
+
+  async createProductSize(
+    productId: number,
+    data: { name: string; stock: number; sortOrder?: number },
+  ): Promise<ProductSize> {
+    const result = await db
+      .insert(productSizes)
+      .values({
+        productId,
+        name: data.name,
+        stock: data.stock,
+        sortOrder: data.sortOrder ?? 0,
+      })
+      .returning();
+    return result[0];
+  }
+
+  async updateProductSize(
+    sizeId: number,
+    data: Partial<{ name: string; stock: number; sortOrder: number }>,
+  ): Promise<ProductSize | undefined> {
+    const result = await db
+      .update(productSizes)
+      .set(data)
+      .where(eq(productSizes.id, sizeId))
+      .returning();
+    return result[0];
+  }
+
+  async deleteProductSize(
+    sizeId: number,
+  ): Promise<{ deleted: boolean; cleared: boolean }> {
+    // Ako je veličina već korištena u prodajama/ponudama, ne brišemo je
+    // (FK bi pucao, a i istorija mora ostati). Umjesto toga nuliramo stanje.
+    const usedInSales = await db
+      .select({ id: sales.id })
+      .from(sales)
+      .where(eq(sales.sizeId, sizeId))
+      .limit(1);
+    const usedInOffers = await db
+      .select({ id: offerItems.id })
+      .from(offerItems)
+      .where(eq(offerItems.sizeId, sizeId))
+      .limit(1);
+    if (usedInSales.length > 0 || usedInOffers.length > 0) {
+      await db
+        .update(productSizes)
+        .set({ stock: 0 })
+        .where(eq(productSizes.id, sizeId));
+      return { deleted: false, cleared: true };
+    }
+    const res = await db
+      .delete(productSizes)
+      .where(eq(productSizes.id, sizeId))
+      .returning({ id: productSizes.id });
+    return { deleted: res.length > 0, cleared: false };
   }
 
   async replaceProductSizes(
