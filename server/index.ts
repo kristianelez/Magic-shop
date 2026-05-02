@@ -9,8 +9,16 @@ import { neonPool } from "./storage";
 
 const app = express();
 
-// Trust Replit's reverse proxy for secure cookies in published deployments
-if (process.env.REPLIT_DEPLOYMENT === "1" || process.env.NODE_ENV === "production") {
+// Replit always serves the dev preview and the published app through an HTTPS
+// reverse proxy, and the workspace embeds the preview in a cross-origin iframe.
+// We treat any Replit-hosted environment as "behind a proxy" and use cross-site
+// cookies so the session works inside the workspace iframe as well.
+const isReplitHosted =
+  process.env.REPLIT_DEPLOYMENT === "1" ||
+  process.env.NODE_ENV === "production" ||
+  !!process.env.REPL_ID;
+
+if (isReplitHosted) {
   app.set('trust proxy', 1);
 }
 
@@ -40,10 +48,12 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      // Set secure: true for published Replit apps (HTTPS) and production deployments
-      secure: process.env.REPLIT_DEPLOYMENT === "1" || process.env.NODE_ENV === "production",
+      // On Replit (dev preview iframe + published HTTPS app) the cookie must be
+      // SameSite=None + Secure so the browser allows it inside the workspace
+      // iframe and over the HTTPS reverse proxy.
+      secure: isReplitHosted,
       httpOnly: true,
-      sameSite: "lax",
+      sameSite: isReplitHosted ? "none" : "lax",
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     },
   })

@@ -157,7 +157,8 @@ Preferred communication style: Simple, everyday language.
 - Frontend AuthContext manages authentication state with TanStack Query
 - Logout properly clears both server session and client-side cache
 - Session cookies configured with httpOnly, sameSite: "lax", and secure flag in production
-- **Trust proxy enabled for published deployments**: Express configured with `trust proxy: 1` when `REPLIT_DEPLOYMENT=1` to properly handle secure cookies behind Replit's HTTPS reverse proxy
+- **Trust proxy enabled on every Replit-hosted environment**: Express configured with `trust proxy: 1` whenever `REPL_ID`, `REPLIT_DEPLOYMENT=1`, or `NODE_ENV=production` is set, so secure cookies work behind Replit's HTTPS reverse proxy in both the dev preview and the published app
+- **Cross-site session cookie on Replit**: cookie is set with `sameSite: "none"` + `secure: true` whenever the app runs on Replit (dev preview is loaded inside the workspace's cross-origin iframe, which would otherwise drop a `sameSite: "lax"` cookie and cause an immediate redirect back to the login page). Local non-Replit dev still uses `sameSite: "lax"` + `secure: false`.
 
 **Required Environment Variables:**
 - `SESSION_SECRET`: Strong random secret for session management (REQUIRED)
