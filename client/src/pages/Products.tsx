@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Tag } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useSearch } from "wouter";
 import { AddProductDialog } from "@/components/AddProductDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { isPromotionActive, type Product } from "@shared/schema";
@@ -15,20 +15,22 @@ const ALL_TAB = "Svi proizvodi";
 export default function Products() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState(ALL_TAB);
-  const [location] = useLocation();
+  const search = useSearch();
   const { user } = useAuth();
 
   const { data: products = [], isLoading } = useQuery<(Product & { promoActive?: boolean })[]>({
     queryKey: ["/api/products"],
   });
 
-  // Otvori "Akcija" tab ako URL sadrži ?category=akcija
+  // Sinhronizuj tab sa query parametrom (?category=akcija ↔ "Akcija" tab)
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(search);
     if (params.get("category") === "akcija") {
       setActiveCategory(PROMO_TAB);
+    } else {
+      setActiveCategory(ALL_TAB);
     }
-  }, [location]);
+  }, [search]);
 
   const promoProducts = useMemo(
     () => products.filter((p) => p.promoActive ?? isPromotionActive(p)),

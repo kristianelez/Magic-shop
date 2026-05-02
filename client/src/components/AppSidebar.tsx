@@ -1,6 +1,6 @@
 import { LayoutDashboard, Users, Package, Sparkles, ShoppingCart, ClipboardList, FileText, Trophy, BarChart3, Bell, RotateCcw, UserSearch, Tag } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +44,7 @@ const menuItems: MenuItem[] = [
 
 export function AppSidebar() {
   const [location, setLocation] = useLocation();
+  const search = useSearch();
   const { setOpenMobile, isMobile } = useSidebar();
   const { user } = useAuth();
 
@@ -83,11 +84,11 @@ export function AppSidebar() {
             <SidebarMenu>
               {menuItems.map((item) => {
                 const isAkcije = item.key === "akcije";
-                const search = typeof window !== "undefined" ? window.location.search : "";
+                const isPromoQuery = search.includes("category=akcija");
                 const isActive = isAkcije
-                  ? location === "/products" && search.includes("category=akcija")
+                  ? location === "/products" && isPromoQuery
                   : item.url === "/products"
-                    ? location === "/products" && !search.includes("category=akcija")
+                    ? location === "/products" && !isPromoQuery
                     : location === item.url;
                 return (
                   <SidebarMenuItem key={item.title}>
