@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Plus, Trash2, ShoppingCart, Users, Package, Check, ChevronsUpDown, ArrowLeft } from "lucide-react";
+import { Plus, Trash2, ShoppingCart, Users, Package, Check, ChevronsUpDown, ArrowLeft, Calendar } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { Customer, Product, Sale } from "@shared/schema";
@@ -35,7 +36,13 @@ export default function EditOrder() {
   const [productSearchOpen, setProductSearchOpen] = useState<{ [key: number]: boolean }>({});
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  // Datum + vrijeme narudžbe — može mijenjati samo admin / sales_director.
+  // Format: "yyyy-MM-ddTHH:mm" (lokalno vrijeme, kompatibilno s <input type="datetime-local">).
+  const [orderDateLocal, setOrderDateLocal] = useState<string>("");
+  const [originalOrderDateLocal, setOriginalOrderDateLocal] = useState<string>("");
   const { toast } = useToast();
+  const { user } = useAuth();
+  const canEditDate = user?.role === "admin" || user?.role === "sales_director";
 
   const { data: customers = [], isLoading: customersLoading } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
@@ -126,18 +133,32 @@ export default function EditOrder() {
     });
 
     setOrderItems(items);
+
+    // Inicijaliziraj datum narudžbe iz prvog sale zapisa (svi su isti za grupu)
+    const firstCreatedAt = new Date(orderSales[0].createdAt);
+    const initialDate = format(firstCreatedAt, "yyyy-MM-dd'T'HH:mm");
+    setOrderDateLocal(initialDate);
+    setOriginalOrderDateLocal(initialDate);
+
     setIsLoaded(true);
   }, [orderId, sales, customers, products, isLoaded, salesLoading, customersLoading, productsLoading, toast, setLocation]);
 
   const updateOrder = useMutation({
     mutationFn: async (items: OrderItem[]) => {
       const customerId = parseInt(selectedCustomerId);
-      
+
+      // Ako je admin/sales_director promijenio datum, šaljemo ga uz svaku
+      // stavku da bi sve ostale grupisane pod istim datumom u prikazu narudžbi.
+      const dateChanged = canEditDate && orderDateLocal !== originalOrderDateLocal;
+      const newCreatedAtIso = dateChanged
+        ? new Date(orderDateLocal).toISOString()
+        : undefined;
+
       // Prvo izbriši stavke koje su označene za brisanje
       const deletePromises = items
         .filter(item => item.isDeleted && item.saleId)
         .map(item => apiRequest("DELETE", `/api/sales/${item.saleId}`, {}));
-      
+
       if (deletePromises.length > 0) {
         await Promise.all(deletePromises);
       }
@@ -148,19 +169,28 @@ export default function EditOrder() {
         .map((item) => {
           if (item.saleId) {
             // Update postojećeg sale zapisa
-            return apiRequest("PATCH", `/api/sales/${item.saleId}`, {
+            const payload: Record<string, unknown> = {
               quantity: typeof item.quantity === 'string' ? parseInt(item.quantity) : item.quantity,
               totalAmount: item.total.toFixed(2),
-            });
+            };
+            if (newCreatedAtIso) payload.createdAt = newCreatedAtIso;
+            return apiRequest("PATCH", `/api/sales/${item.saleId}`, payload);
           } else {
-            // Kreiraj novi sale zapis
-            return apiRequest("POST", "/api/sales", {
+            // Kreiraj novi sale zapis. Ako je datum mijenjan, koristi novi;
+            // inače pusti server da postavi defaultNow() — nove stavke će
+            // dobiti današnji datum, što normalno ne želimo unutar postojeće
+            // narudžbe, pa ako datum NIJE promijenjen šaljemo originalni.
+            const payload: Record<string, unknown> = {
               customerId,
               productId: item.productId,
               quantity: typeof item.quantity === 'string' ? parseInt(item.quantity) : item.quantity,
               totalAmount: item.total.toFixed(2),
               status: "completed",
-            });
+            };
+            if (canEditDate) {
+              payload.createdAt = new Date(orderDateLocal).toISOString();
+            }
+            return apiRequest("POST", "/api/sales", payload);
           }
         });
 
@@ -378,7 +408,7 @@ export default function EditOrder() {
               Informacije o kupcu
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>Kupac</Label>
               <div className="p-3 bg-muted rounded-md">
@@ -387,6 +417,35 @@ export default function EditOrder() {
                   <p className="text-sm text-muted-foreground">{selectedCustomer.company}</p>
                 )}
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="order-date" className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Datum i vrijeme narudžbe
+              </Label>
+              {canEditDate ? (
+                <>
+                  <Input
+                    id="order-date"
+                    type="datetime-local"
+                    value={orderDateLocal}
+                    onChange={(e) => setOrderDateLocal(e.target.value)}
+                    data-testid="input-order-date"
+                  />
+                  {orderDateLocal !== originalOrderDateLocal && (
+                    <p className="text-xs text-muted-foreground" data-testid="text-date-changed-hint">
+                      Datum je promijenjen — primijenit će se na sve stavke ove narudžbe nakon spremanja.
+                    </p>
+                  )}
+                </>
+              ) : (
+                <div className="p-3 bg-muted rounded-md text-sm" data-testid="text-order-date-readonly">
+                  {orderDateLocal
+                    ? format(new Date(orderDateLocal), "dd.MM.yyyy HH:mm")
+                    : "—"}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

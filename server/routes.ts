@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
-import { insertCustomerSchema, insertProductSchema, insertSaleSchema, insertActivitySchema, type InsertCustomer } from "@shared/schema";
+import { insertCustomerSchema, insertProductSchema, insertSaleSchema, insertActivitySchema, type InsertCustomer, type InsertSale } from "@shared/schema";
 import { generateLocalRecommendations } from "./local-ai";
 import { requireAuth } from "./auth";
 import { z } from "zod";

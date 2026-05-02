@@ -144,6 +144,7 @@ Preferred communication style: Simple, everyday language.
   - `sales_manager` sees only sales where `salesPersonId` matches their user ID
   - `sales_director` and `admin` see all sales from all sales persons
 - Sales creation automatically assigns current user's ID to `salesPersonId` field
+- **Order date editing**: only `admin` and `sales_director` may change the `createdAt` of a sale. EditOrder shows a `<input type="datetime-local">` for those roles (read-only label for `sales_manager`). On save the chosen `createdAt` is sent with each PATCH (existing items) and POST (new items) so all rows in the order share the same timestamp and stay grouped under the same order in the Narudžbe view. Backend POST/PATCH `/api/sales` validate the role and return 403 if `sales_manager` tries to send `createdAt`.
 - All other resources (customers, products, activities, recommendations) accessible to all authenticated users
 
 **Default Users (seeded automatically):**
