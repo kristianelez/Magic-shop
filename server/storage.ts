@@ -64,8 +64,8 @@ export interface IStorage {
   getSales(userId?: string, role?: string): Promise<Sale[]>;
   getSalesByCustomer(customerId: number, userId?: string, role?: string): Promise<Sale[]>;
   getSalesBySalesPerson(salesPersonId: string): Promise<Sale[]>;
-  createSale(sale: InsertSale): Promise<Sale>;
-  updateSale(id: number, sale: Partial<InsertSale>): Promise<Sale | undefined>;
+  createSale(sale: InsertSale & { createdAt?: Date }): Promise<Sale>;
+  updateSale(id: number, sale: Partial<InsertSale> & { createdAt?: Date }): Promise<Sale | undefined>;
   deleteSale(id: number): Promise<boolean>;
 
   // Activities
@@ -279,12 +279,12 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(sales.createdAt));
   }
 
-  async createSale(sale: InsertSale): Promise<Sale> {
+  async createSale(sale: InsertSale & { createdAt?: Date }): Promise<Sale> {
     const result = await db.insert(sales).values(sale).returning();
     return result[0];
   }
 
-  async updateSale(id: number, sale: Partial<InsertSale>): Promise<Sale | undefined> {
+  async updateSale(id: number, sale: Partial<InsertSale> & { createdAt?: Date }): Promise<Sale | undefined> {
     const result = await db.update(sales).set(sale).where(eq(sales.id, id)).returning();
     return result[0];
   }

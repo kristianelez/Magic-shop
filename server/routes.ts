@@ -322,12 +322,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/sales", requireAuth, async (req, res) => {
     try {
-      const saleData = insertSaleSchema.parse(req.body);
-      
-      const saleWithSalesPerson = {
+      // createdAt smije slati samo admin/sales_director — ostali ga ignorišu
+      const { createdAt: createdAtRaw, ...rest } = req.body ?? {};
+      const saleData = insertSaleSchema.parse(rest);
+
+      const saleWithSalesPerson: InsertSale & { createdAt?: Date } = {
         ...saleData,
         salesPersonId: req.user!.id,
       };
+
+      if (createdAtRaw !== undefined && createdAtRaw !== null && createdAtRaw !== "") {
+        const role = req.user!.role;
+        if (role !== "admin" && role !== "sales_director") {
+          return res.status(403).json({ error: "Nemate dozvolu za izmjenu datuma narudžbe" });
+        }
+        const parsed = new Date(createdAtRaw);
+        if (isNaN(parsed.getTime())) {
+          return res.status(400).json({ error: "Nevažeći datum narudžbe" });
+        }
+        saleWithSalesPerson.createdAt = parsed;
+      }
 
       const sale = await storage.createSale(saleWithSalesPerson);
       res.status(201).json(sale);
@@ -343,13 +357,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/sales/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const saleData = insertSaleSchema.partial().parse(req.body);
+      const { createdAt: createdAtRaw, ...rest } = req.body ?? {};
+      const saleData: Partial<InsertSale> & { createdAt?: Date } =
+        insertSaleSchema.partial().parse(rest);
+
+      if (createdAtRaw !== undefined && createdAtRaw !== null && createdAtRaw !== "") {
+        const role = req.user!.role;
+        if (role !== "admin" && role !== "sales_director") {
+          return res.status(403).json({ error: "Nemate dozvolu za izmjenu datuma narudžbe" });
+        }
+        const parsed = new Date(createdAtRaw);
+        if (isNaN(parsed.getTime())) {
+          return res.status(400).json({ error: "Nevažeći datum narudžbe" });
+        }
+        saleData.createdAt = parsed;
+      }
+
       const sale = await storage.updateSale(id, saleData);
-      
+
       if (!sale) {
         return res.status(404).json({ error: "Sale not found" });
       }
-      
+
       res.json(sale);
     } catch (error) {
       if (error instanceof z.ZodError) {
