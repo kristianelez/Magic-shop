@@ -11,8 +11,10 @@ import { useToast } from "@/hooks/use-toast";
 import { ShoppingCart, Calendar, Package, Users, Pencil, Trash2, CheckCircle, XCircle } from "lucide-react";
 import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { bs } from "date-fns/locale";
-import type { Sale, Customer, Product } from "@shared/schema";
+import type { Sale, Customer, Product, ProductSize } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+
+type ProductWithSizes = Product & { sizes?: ProductSize[] };
 
 interface SaleWithDetails extends Sale {
   customer?: Customer;
@@ -29,6 +31,7 @@ interface GroupedOrder {
     saleId: number;
     productId: number;
     productName: string;
+    sizeName?: string;
     quantity: number;
     price: string;
     total: string;
@@ -57,7 +60,7 @@ export default function Orders() {
     queryKey: ["/api/customers"],
   });
 
-  const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
+  const { data: products = [], isLoading: productsLoading } = useQuery<ProductWithSizes[]>({
     queryKey: ["/api/products"],
   });
 
@@ -135,10 +138,17 @@ export default function Orders() {
     }
 
     const itemTotal = parseFloat(sale.totalAmount);
+    // Ako je prodaja zabilježila veličinu, prikazat ćemo je u zagradi pored
+    // naziva artikla — npr. "Majica (M)". Ime veličine vadimo iz eager-loaded
+    // sizes (vidi GET /api/products koji vraća product.sizes).
+    const sizeName = sale.sizeId
+      ? product.sizes?.find((s) => s.id === sale.sizeId)?.name
+      : undefined;
     order.items.push({
       saleId: sale.id,
       productId: product.id,
       productName: product.name,
+      sizeName,
       quantity: sale.quantity,
       price: (itemTotal / sale.quantity).toFixed(2),
       total: itemTotal.toFixed(2),
@@ -318,7 +328,10 @@ export default function Orders() {
                     <div className="space-y-3">
                       {order.items.map((item, idx) => (
                         <div key={idx} data-testid={`order-item-${order.id}-${idx}`} className="pb-3 border-b last:border-b-0 last:pb-0">
-                          <p className="font-medium text-sm truncate mb-2">{item.productName}</p>
+                          <p className="font-medium text-sm truncate mb-2">
+                            {item.productName}
+                            {item.sizeName ? ` (${item.sizeName})` : ""}
+                          </p>
                           <div className="flex justify-between text-sm text-muted-foreground">
                             <span>Količina: {item.quantity}</span>
                             <span>{item.price} KM</span>
@@ -378,7 +391,10 @@ export default function Orders() {
                   <p className="font-medium text-foreground">Stavke u narudžbi:</p>
                   <ul className="text-xs text-foreground space-y-1 break-words">
                     {selectedOrderForDelete.items.map((item, idx) => (
-                      <li key={idx} className="truncate">• {item.productName} x {item.quantity}</li>
+                      <li key={idx} className="truncate">
+                        • {item.productName}
+                        {item.sizeName ? ` (${item.sizeName})` : ""} x {item.quantity}
+                      </li>
                     ))}
                   </ul>
                 </div>

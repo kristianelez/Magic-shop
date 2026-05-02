@@ -13,11 +13,20 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { isPromotionActive, type Customer, type Product, type Sale } from "@shared/schema";
+import { isPromotionActive, type Customer, type Product, type ProductSize, type Sale } from "@shared/schema";
+
+type ProductWithSizes = Product & { sizes?: ProductSize[] };
 
 interface OrderItem {
   productId: number;
   productName: string;
+  // Veličina je obavezna ako artikal ima definisane veličine. Držimo
+  // i ime radi prikaza (sizeName) i kompletan popis dostupnih veličina za
+  // dropdown (productSizes) — kako se ne bi morao stalno tražiti u listi
+  // produkata.
+  sizeId?: number;
+  sizeName?: string;
+  productSizes?: ProductSize[];
   quantity: number;
   price: string;
   discount: string;
@@ -47,7 +56,7 @@ export default function CreateOrder() {
     queryKey: ["/api/customers"],
   });
 
-  const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
+  const { data: products = [], isLoading: productsLoading } = useQuery<ProductWithSizes[]>({
     queryKey: ["/api/products"],
   });
 
@@ -112,6 +121,7 @@ export default function CreateOrder() {
           discount: item.discount || "0",
           status: "completed",
         };
+        if (item.sizeId) payload.sizeId = item.sizeId;
         if (createdAtIso) payload.createdAt = createdAtIso;
         const res = await apiRequest("POST", "/api/sales", payload);
         results.push(res);
@@ -182,12 +192,23 @@ export default function CreateOrder() {
         newItems[index].price = effectivePrice;
         newItems[index].discount = discount;
         newItems[index].isPromo = promoActive;
+        // Veličine artikla — ako postoje, korisnik ih MORA odabrati prije
+        // slanja. Resetujemo prethodno odabrane sizeId/Name jer su vezane
+        // za prethodni artikal.
+        newItems[index].productSizes = product.sizes ?? [];
+        newItems[index].sizeId = undefined;
+        newItems[index].sizeName = undefined;
         newItems[index].total = calculateItemTotal({
           ...newItems[index],
           price: effectivePrice,
           discount,
         });
       }
+    } else if (field === "sizeId") {
+      const sizeIdNum = value === "" || value === null || value === undefined ? undefined : parseInt(value);
+      newItems[index].sizeId = sizeIdNum;
+      const sz = newItems[index].productSizes?.find((s) => s.id === sizeIdNum);
+      newItems[index].sizeName = sz?.name;
     } else if (field === "quantity") {
       // Allow empty string while typing
       if (value === "" || value === null || value === undefined) {
@@ -268,7 +289,20 @@ export default function CreateOrder() {
       });
       return;
     }
-    
+
+    // Validate veličina — ako artikal ima veličine, ona mora biti odabrana
+    const missingSize = orderItems.find(
+      (item) => (item.productSizes?.length ?? 0) > 0 && !item.sizeId,
+    );
+    if (missingSize) {
+      toast({
+        title: "Greška",
+        description: `Odaberite veličinu za artikal "${missingSize.productName}"`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Validate quantities
     const invalidItem = orderItems.find(item => !item.quantity || item.quantity <= 0);
     if (invalidItem) {
@@ -599,6 +633,30 @@ export default function CreateOrder() {
                       >
                         <Tag className="h-3.5 w-3.5" />
                         <span className="font-semibold">Akcijska cijena primijenjena</span>
+                      </div>
+                    )}
+
+                    {/* Veličina — prikazuje se samo ako odabrani artikal ima
+                        definisane veličine. Korisnik je MORA odabrati prije
+                        slanja narudžbe (validacija u handleSubmit). */}
+                    {item.productSizes && item.productSizes.length > 0 && (
+                      <div className="w-full min-w-0">
+                        <Label className="text-xs sm:text-sm block truncate">
+                          Veličina <span className="text-destructive">*</span>
+                        </Label>
+                        <select
+                          value={item.sizeId ?? ""}
+                          onChange={(e) => updateOrderItem(index, "sizeId", e.target.value)}
+                          className="w-full text-xs sm:text-sm h-9 rounded-md border border-input bg-background px-3"
+                          data-testid={`select-size-${index}`}
+                        >
+                          <option value="">— odaberi veličinu —</option>
+                          {item.productSizes.map((s) => (
+                            <option key={s.id} value={s.id} data-testid={`size-option-${index}-${s.id}`}>
+                              {s.name} (lager: {s.stock})
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     )}
 

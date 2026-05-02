@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
-import { insertCustomerSchema, insertProductSchema, insertSaleSchema, insertActivitySchema, setPromotionSchema, isPromotionActive, type InsertCustomer, type InsertSale } from "@shared/schema";
+import { insertCustomerSchema, insertProductSchema, insertSaleSchema, insertActivitySchema, setPromotionSchema, updateProductSizesSchema, isPromotionActive, type InsertCustomer, type InsertSale } from "@shared/schema";
 import { generateLocalRecommendations } from "./local-ai";
 import { requireAuth } from "./auth";
 import { z } from "zod";
@@ -374,6 +374,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Veličine artikla — pregled (svi prijavljeni)
+  app.get("/api/products/:id/sizes", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Nevažeći ID artikla" });
+      }
+      const sizes = await storage.getProductSizes(id);
+      res.json(sizes);
+    } catch (error) {
+      console.error("Error fetching product sizes:", error);
+      res.status(500).json({ error: "Failed to fetch product sizes" });
+    }
+  });
+
+  // Veličine artikla — bulk zamjena. Frontend šalje cijelu listu željenih
+  // veličina. Backend pravi diff: postojeće update-uje, nove insertuje, a
+  // one koje nisu poslane briše (osim ako su već iskorištene u prodajama —
+  // tada samo nuliramo stock da ne pokvarimo istoriju). Pristup: samo
+  // admin / sales_director.
+  app.put("/api/products/:id/sizes", requireAuth, async (req, res) => {
+    const role = req.user!.role;
+    if (role !== "admin" && role !== "sales_director") {
+      return res.status(403).json({ error: "Nemate ovlaštenje za izmjenu veličina" });
+    }
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Nevažeći ID artikla" });
+      }
+      const product = await storage.getProduct(id);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+      const data = updateProductSizesSchema.parse(req.body);
+
+      // Naziv veličine mora biti jedinstven unutar artikla.
+      const seen = new Set<string>();
+      for (const s of data.sizes) {
+        const key = s.name.trim().toLowerCase();
+        if (!key) {
+          return res.status(400).json({ error: "Naziv veličine ne smije biti prazan" });
+        }
+        if (seen.has(key)) {
+          return res.status(400).json({ error: `Naziv veličine "${s.name}" se ponavlja` });
+        }
+        seen.add(key);
+      }
+
+      const sizes = await storage.replaceProductSizes(
+        id,
+        data.sizes.map((s) => ({ ...s, name: s.name.trim() })),
+      );
+      res.json(sizes);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Error updating product sizes:", error);
+      res.status(500).json({ error: "Failed to update product sizes" });
+    }
+  });
+
   // Ukloni akciju s artikla — samo admin / sales_director
   app.delete("/api/products/:id/promotion", requireAuth, async (req, res) => {
     const role = req.user!.role;
@@ -428,6 +491,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { createdAt: createdAtRaw, ...rest } = req.body ?? {};
       const saleData = insertSaleSchema.parse(rest);
 
+      // Validacija veličine: ako artikal ima definisane veličine,
+      // sizeId je obavezan; ako je poslan, mora pripadati istom artiklu.
+      const productSizesList = await storage.getProductSizes(saleData.productId);
+      if (productSizesList.length > 0) {
+        if (!saleData.sizeId) {
+          return res
+            .status(400)
+            .json({ error: "Ovaj artikal ima veličine — odaberite veličinu" });
+        }
+        const match = productSizesList.find((s) => s.id === saleData.sizeId);
+        if (!match) {
+          return res
+            .status(400)
+            .json({ error: "Odabrana veličina ne pripada ovom artiklu" });
+        }
+      } else if (saleData.sizeId) {
+        // Artikal nema veličina, a klijent je svejedno poslao sizeId
+        return res
+          .status(400)
+          .json({ error: "Ovaj artikal nema veličine" });
+      }
+
       const saleWithSalesPerson: InsertSale & { createdAt?: Date } = {
         ...saleData,
         salesPersonId: req.user!.id,
@@ -462,6 +547,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { createdAt: createdAtRaw, ...rest } = req.body ?? {};
       const saleData: Partial<InsertSale> & { createdAt?: Date } =
         insertSaleSchema.partial().parse(rest);
+
+      // Ako klijent eksplicitno mijenja sizeId, validiraj da pripada artiklu.
+      // Koristimo productId iz body-ja ako je poslan, inače iz postojeće prodaje.
+      if (saleData.sizeId !== undefined) {
+        let productIdForCheck = saleData.productId;
+        if (productIdForCheck === undefined) {
+          const existing = await storage.getSale(id);
+          if (!existing) {
+            return res.status(404).json({ error: "Sale not found" });
+          }
+          productIdForCheck = existing.productId;
+        }
+        if (saleData.sizeId !== null) {
+          const productSizesList = await storage.getProductSizes(productIdForCheck);
+          const match = productSizesList.find((s) => s.id === saleData.sizeId);
+          if (!match) {
+            return res
+              .status(400)
+              .json({ error: "Odabrana veličina ne pripada ovom artiklu" });
+          }
+        }
+      }
 
       if (createdAtRaw !== undefined && createdAtRaw !== null && createdAtRaw !== "") {
         const role = req.user!.role;

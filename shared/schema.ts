@@ -119,6 +119,41 @@ export const insertProductSchema = createInsertSchema(products, {
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type Product = typeof products.$inferSelect;
 
+// Veličine artikala (npr. S/M/L/XL) i stanje po veličini.
+// Opcionalno — artikli bez veličina rade kao i danas.
+export const productSizes = pgTable("product_sizes", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  stock: integer("stock").notNull().default(0),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
+export const insertProductSizeSchema = createInsertSchema(productSizes, {
+  productId: z.number().int(),
+  name: z.string().min(1, "Naziv veličine je obavezan"),
+  stock: z.number().int().min(0, "Stanje mora biti pozitivno"),
+  sortOrder: z.number().int().optional(),
+}).omit({ id: true });
+
+export type InsertProductSize = z.infer<typeof insertProductSizeSchema>;
+export type ProductSize = typeof productSizes.$inferSelect;
+
+// Šema za bulk-update veličina nekog artikla.
+// Frontend šalje cijelu listu željenih veličina, backend pravi diff.
+export const updateProductSizesSchema = z.object({
+  sizes: z.array(
+    z.object({
+      id: z.number().int().optional(),
+      name: z.string().min(1, "Naziv veličine je obavezan"),
+      stock: z.number().int().min(0, "Stanje mora biti pozitivno"),
+      sortOrder: z.number().int().optional(),
+    }),
+  ),
+});
+
+export type UpdateProductSizesInput = z.infer<typeof updateProductSizesSchema>;
+
 export const setPromotionSchema = z.object({
   promoPrice: z
     .string()
@@ -147,6 +182,8 @@ export const sales = pgTable("sales", {
   id: serial("id").primaryKey(),
   customerId: integer("customer_id").notNull().references(() => customers.id),
   productId: integer("product_id").notNull().references(() => products.id),
+  // Veličina artikla (npr. M, L) — opcionalno; popunjeno samo ako artikal ima veličine.
+  sizeId: integer("size_id").references(() => productSizes.id),
   salesPersonId: varchar("sales_person_id").references(() => users.id),
   quantity: integer("quantity").notNull(),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
@@ -159,6 +196,7 @@ export const sales = pgTable("sales", {
 export const insertSaleSchema = createInsertSchema(sales, {
   customerId: z.number().int(),
   productId: z.number().int(),
+  sizeId: z.number().int().nullable().optional(),
   salesPersonId: z.string().optional(),
   quantity: z.number().int(),
   totalAmount: z.string(),
@@ -214,6 +252,8 @@ export const offerItems = pgTable("offer_items", {
   id: serial("id").primaryKey(),
   offerId: integer("offer_id").notNull().references(() => offers.id),
   productId: integer("product_id").notNull().references(() => products.id),
+  // Veličina artikla — opcionalno, samo ako artikal ima veličine.
+  sizeId: integer("size_id").references(() => productSizes.id),
   quantity: integer("quantity").notNull(),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   discount: decimal("discount", { precision: 5, scale: 2 }).default("0"),

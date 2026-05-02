@@ -14,12 +14,18 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { isPromotionActive, type Customer, type Product, type Sale } from "@shared/schema";
+import { isPromotionActive, type Customer, type Product, type ProductSize, type Sale } from "@shared/schema";
+
+type ProductWithSizes = Product & { sizes?: ProductSize[] };
 
 interface OrderItem {
   saleId?: number;
   productId: number;
   productName: string;
+  // Veličina je obavezna ako artikal ima definisane veličine.
+  sizeId?: number;
+  sizeName?: string;
+  productSizes?: ProductSize[];
   quantity: number | string;
   price: string;
   discount: string;
@@ -50,7 +56,7 @@ export default function EditOrder() {
     queryKey: ["/api/customers"],
   });
 
-  const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
+  const { data: products = [], isLoading: productsLoading } = useQuery<ProductWithSizes[]>({
     queryKey: ["/api/products"],
   });
 
@@ -128,11 +134,17 @@ export default function EditOrder() {
       const product = products.find(p => p.id === sale.productId);
       const itemTotal = parseFloat(sale.totalAmount);
       const unitPrice = sale.quantity > 0 ? itemTotal / sale.quantity : 0;
-      
+      const sizeMatch = sale.sizeId
+        ? product?.sizes?.find((s) => s.id === sale.sizeId)
+        : undefined;
+
       return {
         saleId: sale.id,
         productId: sale.productId,
         productName: product?.name || "Unknown",
+        sizeId: sale.sizeId ?? undefined,
+        sizeName: sizeMatch?.name,
+        productSizes: product?.sizes ?? [],
         quantity: sale.quantity,
         price: unitPrice.toFixed(2),
         discount: "0",
@@ -181,6 +193,7 @@ export default function EditOrder() {
               quantity: typeof item.quantity === 'string' ? parseInt(item.quantity) : item.quantity,
               totalAmount: item.total.toFixed(2),
             };
+            if (item.sizeId) payload.sizeId = item.sizeId;
             if (newCreatedAtIso) payload.createdAt = newCreatedAtIso;
             return apiRequest("PATCH", `/api/sales/${item.saleId}`, payload);
           } else {
@@ -195,6 +208,7 @@ export default function EditOrder() {
               totalAmount: item.total.toFixed(2),
               status: "completed",
             };
+            if (item.sizeId) payload.sizeId = item.sizeId;
             if (canEditDate) {
               payload.createdAt = new Date(orderDateLocal).toISOString();
             }
@@ -267,8 +281,17 @@ export default function EditOrder() {
         newItems[index].productName = product.name;
         newItems[index].price = effectivePrice;
         newItems[index].isPromo = promoActive;
+        // Resetuj veličinu jer je vezana za prethodni artikal.
+        newItems[index].productSizes = product.sizes ?? [];
+        newItems[index].sizeId = undefined;
+        newItems[index].sizeName = undefined;
         newItems[index].total = calculateItemTotal({ ...newItems[index], price: effectivePrice });
       }
+    } else if (field === "sizeId") {
+      const sizeIdNum = value === "" || value === null || value === undefined ? undefined : parseInt(value);
+      newItems[index].sizeId = sizeIdNum;
+      const sz = newItems[index].productSizes?.find((s) => s.id === sizeIdNum);
+      newItems[index].sizeName = sz?.name;
     } else if (field === "quantity") {
       if (value === "" || value === null || value === undefined) {
         newItems[index].quantity = "" as any;
@@ -350,7 +373,20 @@ export default function EditOrder() {
       });
       return;
     }
-    
+
+    // Validate veličina — ako artikal ima veličine, ona mora biti odabrana
+    const missingSize = activeItems.find(
+      (item) => (item.productSizes?.length ?? 0) > 0 && !item.sizeId,
+    );
+    if (missingSize) {
+      toast({
+        title: "Greška",
+        description: `Odaberite veličinu za artikal "${missingSize.productName}"`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     const invalidItem = activeItems.find(item => {
       const qty = typeof item.quantity === 'string' ? parseInt(item.quantity) : item.quantity;
       return !item.quantity || isNaN(qty) || qty <= 0;
@@ -623,6 +659,28 @@ export default function EditOrder() {
                         >
                           <Tag className="h-3.5 w-3.5" />
                           <span className="font-semibold">Akcijska cijena primijenjena</span>
+                        </div>
+                      )}
+
+                      {/* Veličina — obavezna ako artikal ima definisane veličine */}
+                      {item.productSizes && item.productSizes.length > 0 && (
+                        <div className="w-full min-w-0">
+                          <Label className="text-xs sm:text-sm block truncate">
+                            Veličina <span className="text-destructive">*</span>
+                          </Label>
+                          <select
+                            value={item.sizeId ?? ""}
+                            onChange={(e) => updateOrderItem(realIndex, "sizeId", e.target.value)}
+                            className="w-full text-xs sm:text-sm h-9 rounded-md border border-input bg-background px-3"
+                            data-testid={`select-size-${realIndex}`}
+                          >
+                            <option value="">— odaberi veličinu —</option>
+                            {item.productSizes.map((s) => (
+                              <option key={s.id} value={s.id} data-testid={`size-option-${realIndex}-${s.id}`}>
+                                {s.name} (lager: {s.stock})
+                              </option>
+                            ))}
+                          </select>
                         </div>
                       )}
 

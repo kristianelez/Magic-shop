@@ -6,11 +6,11 @@ import { Package, Pencil, Tag } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { EditProductDialog } from "./EditProductDialog";
 import { SetPromotionDialog } from "./SetPromotionDialog";
-import { isPromotionActive, type Product } from "@shared/schema";
+import { isPromotionActive, type Product, type ProductSize } from "@shared/schema";
 import { format } from "date-fns";
 
 interface ProductCardProps {
-  product: Product & { promoActive?: boolean };
+  product: Product & { promoActive?: boolean; sizes?: ProductSize[] };
 }
 
 export function ProductCard({ product }: ProductCardProps) {
@@ -85,6 +85,25 @@ export function ProductCard({ product }: ProductCardProps) {
             <div className="flex items-baseline gap-1">
               <span className="text-xl font-bold text-primary">{regularPrice.toFixed(2)} KM</span>
               <span className="text-sm text-muted-foreground">/ {product.unit}</span>
+            </div>
+          )}
+
+          {/* Prikaz po-veličinskog lagera (npr. "S: 10 · M: 20"). Prikazuje
+              se samo ako artikal ima definisane veličine; u suprotnom se
+              koristi standardni "Stanje" prikaz iz product.stock (već vidljiv
+              u listi/tabeli iznad ako postoji). */}
+          {product.sizes && product.sizes.length > 0 && (
+            <div className="flex flex-wrap gap-1" data-testid={`product-sizes-${product.id}`}>
+              {product.sizes.map((s) => (
+                <Badge
+                  key={s.id}
+                  variant="secondary"
+                  className="text-[10px]"
+                  data-testid={`size-badge-${product.id}-${s.id}`}
+                >
+                  {s.name}: {s.stock}
+                </Badge>
+              ))}
             </div>
           )}
 

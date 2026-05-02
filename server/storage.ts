@@ -8,6 +8,8 @@ import {
   type InsertCustomer,
   type Product,
   type InsertProduct,
+  type ProductSize,
+  type InsertProductSize,
   type Sale,
   type InsertSale,
   type Activity,
@@ -19,12 +21,13 @@ import {
   users,
   customers,
   products,
+  productSizes,
   sales,
   activities,
   offers,
   offerItems,
 } from "@shared/schema";
-import { eq, desc, and, sql, inArray } from "drizzle-orm";
+import { eq, desc, and, sql, inArray, asc } from "drizzle-orm";
 
 neonConfig.webSocketConstructor = ws;
 
@@ -36,6 +39,10 @@ export interface CustomerWithStats extends Customer {
   totalPurchases: number;
   lastContact?: string;
   favoriteProducts: string[];
+}
+
+export interface ProductWithSizes extends Product {
+  sizes: ProductSize[];
 }
 
 export interface IStorage {
@@ -54,8 +61,8 @@ export interface IStorage {
   deleteCustomer(id: number): Promise<boolean>;
 
   // Products
-  getProducts(): Promise<Product[]>;
-  getProduct(id: number): Promise<Product | undefined>;
+  getProducts(): Promise<ProductWithSizes[]>;
+  getProduct(id: number): Promise<ProductWithSizes | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product | undefined>;
   deleteProduct(id: number): Promise<boolean>;
@@ -65,7 +72,16 @@ export interface IStorage {
   ): Promise<Product | undefined>;
   clearProductPromotion(id: number): Promise<Product | undefined>;
 
+  // Product sizes
+  getProductSizes(productId: number): Promise<ProductSize[]>;
+  getProductSize(sizeId: number): Promise<ProductSize | undefined>;
+  replaceProductSizes(
+    productId: number,
+    sizes: Array<{ id?: number; name: string; stock: number; sortOrder?: number }>,
+  ): Promise<ProductSize[]>;
+
   // Sales
+  getSale(id: number): Promise<Sale | undefined>;
   getSales(userId?: string, role?: string): Promise<Sale[]>;
   getSalesByCustomer(customerId: number, userId?: string, role?: string): Promise<Sale[]>;
   getSalesBySalesPerson(salesPersonId: string): Promise<Sale[]>;
@@ -229,13 +245,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Products
-  async getProducts(): Promise<Product[]> {
-    return await db.select().from(products).orderBy(products.name);
+  async getProducts(): Promise<ProductWithSizes[]> {
+    const allProducts = await db.select().from(products).orderBy(products.name);
+    const allSizes = await db
+      .select()
+      .from(productSizes)
+      .orderBy(asc(productSizes.sortOrder), asc(productSizes.id));
+    const sizesByProduct = new Map<number, ProductSize[]>();
+    for (const s of allSizes) {
+      const existing = sizesByProduct.get(s.productId) || [];
+      existing.push(s);
+      sizesByProduct.set(s.productId, existing);
+    }
+    return allProducts.map((p) => ({ ...p, sizes: sizesByProduct.get(p.id) || [] }));
   }
 
-  async getProduct(id: number): Promise<Product | undefined> {
+  async getProduct(id: number): Promise<ProductWithSizes | undefined> {
     const result = await db.select().from(products).where(eq(products.id, id)).limit(1);
-    return result[0];
+    if (!result[0]) return undefined;
+    const sizes = await this.getProductSizes(id);
+    return { ...result[0], sizes };
   }
 
   async createProduct(product: InsertProduct): Promise<Product> {
@@ -284,7 +313,96 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
+  // Product sizes
+  async getProductSizes(productId: number): Promise<ProductSize[]> {
+    return await db
+      .select()
+      .from(productSizes)
+      .where(eq(productSizes.productId, productId))
+      .orderBy(asc(productSizes.sortOrder), asc(productSizes.id));
+  }
+
+  async getProductSize(sizeId: number): Promise<ProductSize | undefined> {
+    const result = await db
+      .select()
+      .from(productSizes)
+      .where(eq(productSizes.id, sizeId))
+      .limit(1);
+    return result[0];
+  }
+
+  async replaceProductSizes(
+    productId: number,
+    desired: Array<{ id?: number; name: string; stock: number; sortOrder?: number }>,
+  ): Promise<ProductSize[]> {
+    return await db.transaction(async (tx) => {
+      const existing = await tx
+        .select()
+        .from(productSizes)
+        .where(eq(productSizes.productId, productId));
+      const existingById = new Map(existing.map((s) => [s.id, s]));
+      const desiredIds = new Set(
+        desired.filter((d) => typeof d.id === "number").map((d) => d.id as number),
+      );
+
+      // Obriši veličine koje korisnik više ne želi.
+      // Ako se neka od njih koristi u prodajama (sizeId FK), zaštitimo se
+      // tako što umjesto brisanja samo postavimo stock na 0 — istorija ostaje.
+      for (const s of existing) {
+        if (!desiredIds.has(s.id)) {
+          const usedInSales = await tx
+            .select({ id: sales.id })
+            .from(sales)
+            .where(eq(sales.sizeId, s.id))
+            .limit(1);
+          const usedInOffers = await tx
+            .select({ id: offerItems.id })
+            .from(offerItems)
+            .where(eq(offerItems.sizeId, s.id))
+            .limit(1);
+          if (usedInSales.length > 0 || usedInOffers.length > 0) {
+            // Ne brišemo — samo nuliramo stanje da ne kvarimo prodaje.
+            await tx
+              .update(productSizes)
+              .set({ stock: 0 })
+              .where(eq(productSizes.id, s.id));
+          } else {
+            await tx.delete(productSizes).where(eq(productSizes.id, s.id));
+          }
+        }
+      }
+
+      // Update postojećih + insert novih
+      let order = 0;
+      for (const d of desired) {
+        const sortOrder = typeof d.sortOrder === "number" ? d.sortOrder : order;
+        if (typeof d.id === "number" && existingById.has(d.id)) {
+          await tx
+            .update(productSizes)
+            .set({ name: d.name, stock: d.stock, sortOrder })
+            .where(eq(productSizes.id, d.id));
+        } else {
+          await tx
+            .insert(productSizes)
+            .values({ productId, name: d.name, stock: d.stock, sortOrder });
+        }
+        order++;
+      }
+
+      return await tx
+        .select()
+        .from(productSizes)
+        .where(eq(productSizes.productId, productId))
+        .orderBy(asc(productSizes.sortOrder), asc(productSizes.id));
+    });
+  }
+
   // Sales
+  async getSale(id: number): Promise<Sale | undefined> {
+    const result = await db.select().from(sales).where(eq(sales.id, id)).limit(1);
+    return result[0];
+  }
+
   async getSales(userId?: string, role?: string): Promise<Sale[]> {
     if (role === 'admin' || role === 'sales_director' || !userId) {
       return await db.select().from(sales).orderBy(desc(sales.createdAt));
