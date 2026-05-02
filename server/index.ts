@@ -52,15 +52,18 @@ declare module 'express-session' {
 // CREATE TABLE IF NOT EXISTS nas štiti u svim tim scenarijima.
 async function ensureSessionTable() {
   try {
+    // Eksplicitno kvalifikujemo s "public" da DDL radi bez obzira na
+    // trenutni search_path konekcije (Neon zna mijenjati default schemu
+    // u nekim slučajevima).
     await sessionPool.query(`
-      CREATE TABLE IF NOT EXISTS "session" (
+      CREATE TABLE IF NOT EXISTS "public"."session" (
         "sid" varchar NOT NULL PRIMARY KEY,
         "sess" json NOT NULL,
         "expire" timestamp(6) NOT NULL
       )
     `);
     await sessionPool.query(
-      `CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire")`,
+      `CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "public"."session" ("expire")`,
     );
     log("session table ensured");
   } catch (err) {
@@ -73,6 +76,9 @@ app.use(
   session({
     store: new PgSession({
       pool: sessionPool,
+      // Iste razloge kao i ensureSessionTable — vežemo store eksplicitno
+      // za "public" shemu, ne prepuštamo search_path-u.
+      schemaName: "public",
       createTableIfMissing: true,
     }),
     secret: process.env.SESSION_SECRET,
