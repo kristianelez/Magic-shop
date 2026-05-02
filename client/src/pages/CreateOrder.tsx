@@ -6,10 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Plus, Trash2, ShoppingCart, Users, Package, Check, ChevronsUpDown } from "lucide-react";
+import { Plus, Trash2, ShoppingCart, Users, Package, Check, ChevronsUpDown, Calendar } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 import type { Customer, Product, Sale } from "@shared/schema";
 
 interface OrderItem {
@@ -23,12 +25,21 @@ interface OrderItem {
 
 const PDV_RATE = 0.17;
 
+// Pomoćna: trenutni lokalni datum+vrijeme u formatu "yyyy-MM-ddTHH:mm"
+// koji prima <input type="datetime-local">.
+const nowAsLocalInput = () => format(new Date(), "yyyy-MM-dd'T'HH:mm");
+
 export default function CreateOrder() {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
   const [productSearchOpen, setProductSearchOpen] = useState<{ [key: number]: boolean }>({});
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+  // Datum + vrijeme narudžbe — može mijenjati samo admin / sales_director.
+  // Za sales_manager uvijek ostaje "trenutni trenutak" (server postavlja defaultNow).
+  const [orderDateLocal, setOrderDateLocal] = useState<string>(nowAsLocalInput);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const canEditDate = user?.role === "admin" || user?.role === "sales_director";
 
   const { data: customers = [], isLoading: customersLoading } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
@@ -68,18 +79,27 @@ export default function CreateOrder() {
   const createSales = useMutation({
     mutationFn: async (items: OrderItem[]) => {
       const customerId = parseInt(selectedCustomerId);
+      // Ako admin/sales_director eksplicitno bira datum, šaljemo isti createdAt
+      // za svaku stavku — tako sve ostaju grupisane pod istom narudžbom u
+      // prikazu Narudžbe (koji grupira po customerId + minuti).
+      const createdAtIso = canEditDate
+        ? new Date(orderDateLocal).toISOString()
+        : undefined;
+
       // Serijski (jedan po jedan) — da bi DB id i createdAt rasli istim
       // redoslijedom kojim je korisnik unio stavke. Paralelni Promise.all
       // bi davao nedeterministički poredak u prikazu narudžbe.
       const results = [];
       for (const item of items) {
-        const res = await apiRequest("POST", "/api/sales", {
+        const payload: Record<string, unknown> = {
           customerId,
           productId: item.productId,
           quantity: item.quantity,
           totalAmount: item.total.toFixed(2),
           status: "completed",
-        });
+        };
+        if (createdAtIso) payload.createdAt = createdAtIso;
+        const res = await apiRequest("POST", "/api/sales", payload);
         results.push(res);
       }
       return results;
@@ -92,6 +112,7 @@ export default function CreateOrder() {
       });
       setSelectedCustomerId("");
       setOrderItems([]);
+      setOrderDateLocal(nowAsLocalInput());
     },
     onError: (error: any) => {
       toast({
@@ -367,6 +388,25 @@ export default function CreateOrder() {
                 </PopoverContent>
               </Popover>
             </div>
+
+            {canEditDate && (
+              <div className="space-y-2">
+                <Label htmlFor="order-date" className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Datum i vrijeme narudžbe
+                </Label>
+                <Input
+                  id="order-date"
+                  type="datetime-local"
+                  value={orderDateLocal}
+                  onChange={(e) => setOrderDateLocal(e.target.value)}
+                  data-testid="input-order-date"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Po default-u trenutni datum i vrijeme. Možeš izmijeniti ako se narudžba kuca naknadno.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 

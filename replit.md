@@ -144,7 +144,10 @@ Preferred communication style: Simple, everyday language.
   - `sales_manager` sees only sales where `salesPersonId` matches their user ID
   - `sales_director` and `admin` see all sales from all sales persons
 - Sales creation automatically assigns current user's ID to `salesPersonId` field
-- **Order date editing**: only `admin` and `sales_director` may change the `createdAt` of a sale. EditOrder shows a `<input type="datetime-local">` for those roles (read-only label for `sales_manager`). On save the chosen `createdAt` is sent with each PATCH (existing items) and POST (new items) so all rows in the order share the same timestamp and stay grouped under the same order in the Narudžbe view. Backend POST/PATCH `/api/sales` validate the role and return 403 if `sales_manager` tries to send `createdAt`.
+- **Order date editing**: only `admin` and `sales_director` may set/change the `createdAt` of a sale.
+  - **CreateOrder** ("Nova narudžba"): for those roles the customer card shows a `<input type="datetime-local">` prefilled with the current local moment; the chosen value is sent as `createdAt` with every POST so all line items in the order share the same timestamp. For `sales_manager` the input is hidden and the server applies its `defaultNow()`.
+  - **EditOrder** ("Uredi narudžbu"): for those roles the same `datetime-local` input is shown, prefilled from the existing sale's `createdAt`. On save the chosen value is sent with each PATCH (existing items) and POST (new items) so the order stays grouped under one timestamp in the Narudžbe view. `sales_manager` only sees a read-only label.
+  - Backend POST/PATCH `/api/sales` validate the role and return 403 if `sales_manager` tries to send `createdAt`.
 - All other resources (customers, products, activities, recommendations) accessible to all authenticated users
 
 **Default Users (seeded automatically):**
