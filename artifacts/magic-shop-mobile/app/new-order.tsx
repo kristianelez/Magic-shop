@@ -41,6 +41,7 @@ interface OrderItem {
   quantity: number;
   unitPrice: number;
   discount: number;
+  note: string;
 }
 
 function formatBAM(value: number) {
@@ -93,6 +94,7 @@ export default function NewOrderScreen() {
           quantity: 1,
           unitPrice: price,
           discount: 0,
+          note: "",
         },
       ];
     });
@@ -123,6 +125,7 @@ export default function NewOrderScreen() {
           quantity: it.quantity,
           totalAmount: lineTotal.toFixed(2),
           discount: it.discount.toString(),
+          notes: it.note || null,
           status: "completed",
         };
         results.push(await api("/api/sales", { method: "POST", body: payload }));
@@ -205,6 +208,32 @@ export default function NewOrderScreen() {
                   })
                 }
                 colors={colors}
+              />
+            </View>
+            <View style={{ marginTop: 8 }}>
+              <Text style={{ fontSize: 12, color: colors.mutedForeground, fontFamily: "Inter_500Medium", marginBottom: 4 }}>
+                Napomena
+              </Text>
+              <TextInput
+                value={it.note}
+                onChangeText={(t) => updateItem(it.productId, { note: t })}
+                placeholder="Npr. hitna isporuka, poseban zahtjev..."
+                placeholderTextColor={colors.mutedForeground}
+                multiline
+                numberOfLines={2}
+                style={{
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: 8,
+                  paddingHorizontal: 10,
+                  paddingVertical: 8,
+                  color: colors.foreground,
+                  fontFamily: "Inter_400Regular",
+                  fontSize: 13,
+                  backgroundColor: colors.card,
+                  minHeight: 52,
+                  textAlignVertical: "top",
+                }}
               />
             </View>
             <Text style={{ color: colors.copper, fontFamily: "Inter_600SemiBold", marginTop: 8 }}>

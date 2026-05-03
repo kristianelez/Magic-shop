@@ -29,6 +29,7 @@ interface OrderItem {
   quantity: number | string;
   price: string;
   discount: string;
+  note: string;
   total: number;
   isDeleted?: boolean;
   isPromo?: boolean;
@@ -148,6 +149,7 @@ export default function EditOrder() {
         quantity: sale.quantity,
         price: unitPrice.toFixed(2),
         discount: "0",
+        note: (sale as { notes?: string | null }).notes || "",
         total: itemTotal,
       };
     });
@@ -205,6 +207,7 @@ export default function EditOrder() {
               totalAmount: item.total.toFixed(2),
               productId: item.productId,
               sizeId: sizeIdForPayload,
+              notes: item.note || null,
             };
             if (newCreatedAtIso) payload.createdAt = newCreatedAtIso;
             return apiRequest("PATCH", `/api/sales/${item.saleId}`, payload);
@@ -218,6 +221,7 @@ export default function EditOrder() {
               productId: item.productId,
               quantity: typeof item.quantity === 'string' ? parseInt(item.quantity) : item.quantity,
               totalAmount: item.total.toFixed(2),
+              notes: item.note || null,
               status: "completed",
             };
             if (sizeIdForPayload !== null) payload.sizeId = sizeIdForPayload;
@@ -263,6 +267,7 @@ export default function EditOrder() {
         quantity: 1,
         price: "0",
         discount: "0",
+        note: "",
         total: 0,
       },
     ]);
@@ -733,6 +738,18 @@ export default function EditOrder() {
                           disabled={!item.productId || item.productId === 0}
                           className="w-full text-xs sm:text-sm"
                           data-testid={`input-discount-${realIndex}`}
+                        />
+                      </div>
+
+                      <div className="w-full min-w-0 col-span-full">
+                        <Label className="text-xs sm:text-sm block truncate">Napomena</Label>
+                        <textarea
+                          value={item.note}
+                          onChange={(e) => updateOrderItem(realIndex, "note", e.target.value)}
+                          placeholder="Npr. hitna isporuka, poseban zahtjev..."
+                          rows={2}
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs sm:text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
+                          data-testid={`input-note-${realIndex}`}
                         />
                       </div>
 

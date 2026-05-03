@@ -30,6 +30,7 @@ interface OrderItem {
   quantity: number;
   price: string;
   discount: string;
+  note: string;
   total: number;
   isPromo?: boolean;
 }
@@ -119,6 +120,7 @@ export default function CreateOrder() {
           quantity: item.quantity,
           totalAmount: item.total.toFixed(2),
           discount: item.discount || "0",
+          notes: item.note || null,
           status: "completed",
         };
         if (item.sizeId) payload.sizeId = item.sizeId;
@@ -157,6 +159,7 @@ export default function CreateOrder() {
         quantity: 1,
         price: "0",
         discount: "0",
+        note: "",
         total: 0,
       },
     ]);
@@ -696,6 +699,18 @@ export default function CreateOrder() {
                         min="0"
                         max="100"
                         data-testid={`input-discount-${index}`}
+                      />
+                    </div>
+
+                    <div className="w-full min-w-0 col-span-full">
+                      <Label className="text-xs sm:text-sm block truncate">Napomena</Label>
+                      <textarea
+                        value={item.note}
+                        onChange={(e) => updateOrderItem(index, "note", e.target.value)}
+                        placeholder="Npr. hitna isporuka, poseban zahtjev..."
+                        rows={2}
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs sm:text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
+                        data-testid={`input-note-${index}`}
                       />
                     </div>
 

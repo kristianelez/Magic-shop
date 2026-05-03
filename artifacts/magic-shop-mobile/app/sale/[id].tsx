@@ -64,6 +64,7 @@ interface OrderItem {
   // totalAmount koji ide u bazu).
   unitPrice: string;
   discount: string;
+  note: string;
   isDeleted?: boolean;
 }
 
@@ -166,6 +167,7 @@ export default function SaleDetailScreen() {
         quantity: String(qty),
         unitPrice: basePrice.toFixed(2),
         discount: disc ? String(disc) : "0",
+        note: (s as { notes?: string | null }).notes || "",
       };
     });
     setItems(formItems);
@@ -212,6 +214,7 @@ export default function SaleDetailScreen() {
         quantity: "1",
         unitPrice: price.toFixed(2),
         discount: "0",
+        note: "",
       },
     ]);
     setShowProductPicker(false);
@@ -267,6 +270,7 @@ export default function SaleDetailScreen() {
             totalAmount: lineTotal.toFixed(2),
             discount: d.toString(),
             sizeId: sizeIdForPayload,
+            notes: it.note || null,
           };
           await api(`/api/sales/${it.saleId}`, {
             method: "PATCH",
@@ -279,6 +283,7 @@ export default function SaleDetailScreen() {
             quantity: q,
             totalAmount: lineTotal.toFixed(2),
             discount: d.toString(),
+            notes: it.note || null,
             status: "completed",
             createdAt: anchorCreatedAtIso,
           };
@@ -466,6 +471,32 @@ export default function SaleDetailScreen() {
                   value={it.discount}
                   onChangeText={(t) => updateItem(index, { discount: t })}
                   colors={colors}
+                />
+              </View>
+              <View style={{ marginTop: 8 }}>
+                <Text style={{ fontSize: 12, color: colors.mutedForeground, fontFamily: "Inter_500Medium", marginBottom: 4 }}>
+                  Napomena
+                </Text>
+                <TextInput
+                  value={it.note}
+                  onChangeText={(t) => updateItem(index, { note: t })}
+                  placeholder="Npr. hitna isporuka, poseban zahtjev..."
+                  placeholderTextColor={colors.mutedForeground}
+                  multiline
+                  numberOfLines={2}
+                  style={{
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    borderRadius: 8,
+                    paddingHorizontal: 10,
+                    paddingVertical: 8,
+                    color: colors.foreground,
+                    fontFamily: "Inter_400Regular",
+                    fontSize: 13,
+                    backgroundColor: colors.card,
+                    minHeight: 52,
+                    textAlignVertical: "top",
+                  }}
                 />
               </View>
               <Text

@@ -188,6 +188,7 @@ export const sales = pgTable("sales", {
   quantity: integer("quantity").notNull(),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
   discount: decimal("discount", { precision: 5, scale: 2 }).notNull().default("0"),
+  notes: text("notes"),
   status: text("status").notNull().default("completed"),
   invoiceVerified: text("invoice_verified").notNull().default("false"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -201,6 +202,7 @@ export const insertSaleSchema = createInsertSchema(sales, {
   quantity: z.number().int(),
   totalAmount: z.string(),
   discount: z.string().optional(),
+  notes: z.string().nullable().optional(),
   status: z.string().optional(),
 }).omit({
   id: true,
