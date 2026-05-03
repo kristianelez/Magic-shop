@@ -9,9 +9,12 @@ import {
 import { useLocalSearchParams } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
+import type { ComponentProps } from "react";
 
 import { api } from "@/lib/api";
 import { useColors } from "@/hooks/useColors";
+
+type FeatherIconName = ComponentProps<typeof Feather>["name"];
 
 interface CustomerDetail {
   id: number;
@@ -57,7 +60,7 @@ export default function CustomerDetailScreen() {
     );
   }
 
-  const Item = ({ icon, label, value }: { icon: any; label: string; value?: string | null }) =>
+  const Item = ({ icon, label, value }: { icon: FeatherIconName; label: string; value?: string | null }) =>
     value ? (
       <View style={styles.row}>
         <Feather name={icon} size={16} color={colors.mutedForeground} />

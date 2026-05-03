@@ -1,77 +1,79 @@
-export const radius = 10;
+export const radius = 8;
 
 const colors = {
   light: {
-    text: "#27201A",
-    tint: "#D58427",
+    text: "#151C28",
+    tint: "#D6741F",
 
-    background: "#FBF7F2",
-    foreground: "#1A2233",
+    background: "#FBFAF9",
+    foreground: "#151C28",
 
     card: "#FFFFFF",
-    cardForeground: "#1A2233",
+    cardForeground: "#151C28",
 
-    primary: "#D58427",
+    primary: "#D6741F",
     primaryForeground: "#FFFFFF",
 
-    secondary: "#F0E9E0",
-    secondaryForeground: "#1A2233",
+    secondary: "#F3F0ED",
+    secondaryForeground: "#151C28",
 
-    muted: "#EFE7DC",
-    mutedForeground: "#6B6359",
+    muted: "#F2F0ED",
+    mutedForeground: "#555D6D",
 
-    accent: "#F4E4D0",
-    accentForeground: "#1A2233",
+    accent: "#F9EFE7",
+    accentForeground: "#151C28",
 
-    destructive: "#C62828",
-    destructiveForeground: "#FFFFFF",
+    destructive: "#C51111",
+    destructiveForeground: "#FAFAFA",
 
-    border: "#E5DCCF",
-    input: "#D5C9B8",
+    border: "#E5E0DC",
+    input: "#D8D1CA",
 
-    sidebar: "#0E172B",
-    sidebarForeground: "#EDE3D6",
-    sidebarBorder: "#1F2A47",
-    navy: "#0E172B",
-    navyDeep: "#070D1C",
-    copper: "#D58427",
-    copperLight: "#E0A05A",
+    sidebar: "#0D172B",
+    sidebarForeground: "#F1EBE4",
+    sidebarBorder: "#1C2840",
+    sidebarAccent: "#192743",
+    navy: "#0D172B",
+    navyDeep: "#081021",
+    copper: "#D6741F",
+    copperLight: "#E28736",
   },
   dark: {
-    text: "#EFE6D8",
-    tint: "#E0A05A",
+    text: "#F5F2EF",
+    tint: "#E28736",
 
-    background: "#0D1422",
-    foreground: "#EFE6D8",
+    background: "#0D121C",
+    foreground: "#F5F2EF",
 
-    card: "#141C2E",
-    cardForeground: "#EFE6D8",
+    card: "#121926",
+    cardForeground: "#F5F2EF",
 
-    primary: "#E0A05A",
-    primaryForeground: "#0E172B",
+    primary: "#E28736",
+    primaryForeground: "#0A1429",
 
-    secondary: "#1E2638",
-    secondaryForeground: "#EFE6D8",
+    secondary: "#1F2533",
+    secondaryForeground: "#F5F2EF",
 
-    muted: "#1B2334",
-    mutedForeground: "#A89E8E",
+    muted: "#212631",
+    mutedForeground: "#BEB3A7",
 
-    accent: "#23304A",
-    accentForeground: "#EFE6D8",
+    accent: "#20293C",
+    accentForeground: "#F5F2EF",
 
-    destructive: "#E53935",
-    destructiveForeground: "#FFFFFF",
+    destructive: "#C51111",
+    destructiveForeground: "#FAFAFA",
 
-    border: "#2A344B",
-    input: "#33405A",
+    border: "#262F40",
+    input: "#2E384D",
 
-    sidebar: "#070D1C",
-    sidebarForeground: "#EDE3D6",
-    sidebarBorder: "#1F2A47",
-    navy: "#070D1C",
+    sidebar: "#081021",
+    sidebarForeground: "#F1EBE4",
+    sidebarBorder: "#182339",
+    sidebarAccent: "#182339",
+    navy: "#081021",
     navyDeep: "#040712",
-    copper: "#E0A05A",
-    copperLight: "#EBB57A",
+    copper: "#E28736",
+    copperLight: "#E48F44",
   },
 };
 

@@ -4,9 +4,23 @@ const COOKIE_KEY = "magic_shop_session_cookie";
 
 let cachedCookie: string | null = null;
 
+/**
+ * Resolve the API base URL.
+ *
+ * Resolution order:
+ *  1. `EXPO_PUBLIC_API_URL` — explicit override (set this for production
+ *     builds, e.g. `https://magic-shop.replit.app`).
+ *  2. `EXPO_PUBLIC_DOMAIN` — Replit dev preview hostname injected by the
+ *     workflow (`$REPLIT_DEV_DOMAIN`). Used during local development so the
+ *     app talks to the same workspace's API server through the shared proxy.
+ *  3. Empty string — falls back to relative URLs (only useful when the API
+ *     is served from the same origin as the app, e.g. on web preview).
+ */
 function getBaseUrl(): string {
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  if (domain) return `https://${domain}`;
+  const explicit = process.env.EXPO_PUBLIC_API_URL;
+  if (explicit) return explicit.replace(/\/$/, "");
+  const devDomain = process.env.EXPO_PUBLIC_DOMAIN;
+  if (devDomain) return `https://${devDomain}`;
   return "";
 }
 

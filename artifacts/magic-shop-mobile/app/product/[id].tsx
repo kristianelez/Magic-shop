@@ -3,9 +3,12 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-nat
 import { useLocalSearchParams } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
+import type { ComponentProps } from "react";
 
 import { api } from "@/lib/api";
 import { useColors } from "@/hooks/useColors";
+
+type FeatherIconName = ComponentProps<typeof Feather>["name"];
 
 interface Product {
   id: number;
@@ -51,7 +54,7 @@ export default function ProductDetailScreen() {
     );
   }
 
-  const Row = ({ icon, label, value }: { icon: any; label: string; value: string }) => (
+  const Row = ({ icon, label, value }: { icon: FeatherIconName; label: string; value: string }) => (
     <View style={styles.row}>
       <Feather name={icon} size={16} color={colors.mutedForeground} />
       <View style={{ flex: 1 }}>
