@@ -1,5 +1,9 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { api, setToken } from "@/lib/api";
+import {
+  registerPushTokenWithServer,
+  unregisterPushTokenWithServer,
+} from "@/lib/push";
 
 interface User {
   id: string;
@@ -26,6 +30,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const data = await api<{ user: User }>("/api/auth/me");
       setUser(data.user);
+      // Ako je sesija već aktivna (npr. nakon restartanja app-a), pokušaj
+      // re-registrovati push token — fire & forget, ne čekamo rezultat.
+      registerPushTokenWithServer().catch(() => {});
     } catch {
       setUser(null);
     }
@@ -44,9 +51,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       body: { username, password },
     });
     setUser(data.user);
+    // Registracija push tokena nakon uspješne prijave — ne blokira UI.
+    registerPushTokenWithServer().catch(() => {});
   }, []);
 
   const logout = useCallback(async () => {
+    // Pokušaj odjaviti push token PRIJE rušenja sesije, kako bi DELETE prošao
+    // kroz requireAuth middleware. Greške ignorišemo (nije kritično).
+    await unregisterPushTokenWithServer();
     try {
       await api("/api/auth/logout", { method: "POST" });
     } catch {}

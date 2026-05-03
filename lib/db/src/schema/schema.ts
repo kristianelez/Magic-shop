@@ -230,6 +230,28 @@ export const insertActivitySchema = createInsertSchema(activities, {
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
 export type Activity = typeof activities.$inferSelect;
 
+// Expo push tokeni — registrovani sa mobilnih klijenata nakon prijave.
+// Jedan korisnik može imati više uređaja, ali isti token (uređaj) ne smije
+// postojati duplo, tako da je `token` unique. Pri brisanju usera/loginu
+// drugog korisnika s istim tokenom radimo upsert preko `token`.
+export const pushTokens = pgTable("push_tokens", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  token: text("token").notNull().unique(),
+  platform: text("platform"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertPushTokenSchema = createInsertSchema(pushTokens, {
+  userId: z.string(),
+  token: z.string().min(1, "Push token je obavezan"),
+  platform: z.string().optional().nullable(),
+}).omit({ id: true, createdAt: true, updatedAt: true });
+
+export type InsertPushToken = z.infer<typeof insertPushTokenSchema>;
+export type PushToken = typeof pushTokens.$inferSelect;
+
 export const aiRecommendationsCache = pgTable("ai_recommendations_cache", {
   id: serial("id").primaryKey(),
   recommendations: text("recommendations").notNull(),

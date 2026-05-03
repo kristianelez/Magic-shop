@@ -4,6 +4,7 @@ import { logger } from "./lib/logger";
 import { registerRoutes } from "./routes/routes";
 import { seedDatabase } from "./seed";
 import { logEmailStatus } from "./email";
+import { logPushStatus } from "./push";
 import { neonPool } from "./storage";
 
 const rawPort = process.env["PORT"];
@@ -43,6 +44,7 @@ async function ensureSessionTable() {
   await ensureSessionTable();
 
   logEmailStatus();
+  logPushStatus();
 
   // registerRoutes registers all app routes and returns an http.Server
   const httpServer = await registerRoutes(app);

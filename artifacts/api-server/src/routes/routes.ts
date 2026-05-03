@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { storage } from "../storage";
 import { insertCustomerSchema, insertProductSchema, insertSaleSchema, insertActivitySchema, setPromotionSchema, updateProductSizesSchema, insertProductSizeSchema, isPromotionActive, type InsertCustomer, type InsertSale } from "@workspace/db";
 import { sendNewOrderEmail } from "../email";
+import { sendNewOrderPush } from "../push";
 import { generateLocalRecommendations } from "../local-ai";
 import { requireAuth } from "../auth";
 import { z } from "zod";
@@ -65,6 +66,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json({ message: "Uspješno ste se odjavili" });
     });
+  });
+
+  // Push tokens — mobilni klijent registruje (ili obnavlja) Expo push token
+  // nakon prijave. Token je vezan za prijavljenog korisnika; ista naprava može
+  // biti ponovo prijavljena s drugim userom — onConflictDoUpdate handla to.
+  const pushTokenRegisterSchema = z.object({
+    token: z.string().min(1, "Push token je obavezan"),
+    platform: z.string().optional().nullable(),
+  });
+
+  app.post("/api/push-tokens", requireAuth, async (req, res) => {
+    try {
+      const data = pushTokenRegisterSchema.parse(req.body);
+      const saved = await storage.upsertPushToken({
+        userId: req.user!.id,
+        token: data.token,
+        platform: data.platform ?? null,
+      });
+      res.status(201).json({ id: saved.id });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Error registering push token:", error);
+      res.status(500).json({ error: "Failed to register push token" });
+    }
+  });
+
+  app.delete("/api/push-tokens", requireAuth, async (req, res) => {
+    try {
+      const data = pushTokenRegisterSchema.pick({ token: true }).parse(req.body);
+      // Ownership check — autentifikovani user smije obrisati samo svoje tokene.
+      await storage.deletePushToken(data.token, req.user!.id);
+      res.json({ ok: true });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Error deleting push token:", error);
+      res.status(500).json({ error: "Failed to delete push token" });
+    }
   });
 
   app.get("/api/auth/me", async (req, res) => {
@@ -682,23 +724,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const unitPrice = product?.promoPrice
             ? product.promoPrice
             : product?.price ?? "0";
-          await sendNewOrderEmail({
-            customerName: customer?.name ?? `#${sale.customerId}`,
-            customerCompany: customer?.company ?? null,
-            salesPersonName: req.user?.fullName ?? req.user?.username ?? "—",
-            productName: product?.name ?? `#${sale.productId}`,
-            sizeName,
-            quantity: sale.quantity,
-            unitPrice,
-            discount: sale.discount ?? "0",
-            totalAmount: sale.totalAmount,
-            // Sale schema trenutno nema polje za napomenu — ostavljeno
-            // null. Ako se napomena doda na narudžbu, proslijedi je ovdje.
-            note: null,
-            createdAt: sale.createdAt ?? new Date(),
-          });
+          const customerName = customer?.name ?? `#${sale.customerId}`;
+          const customerCompany = customer?.company ?? null;
+          const salesPersonName = req.user?.fullName ?? req.user?.username ?? "—";
+          const productName = product?.name ?? `#${sale.productId}`;
+
+          await Promise.allSettled([
+            sendNewOrderEmail({
+              customerName,
+              customerCompany,
+              salesPersonName,
+              productName,
+              sizeName,
+              quantity: sale.quantity,
+              unitPrice,
+              discount: sale.discount ?? "0",
+              totalAmount: sale.totalAmount,
+              // Sale schema trenutno nema polje za napomenu — ostavljeno
+              // null. Ako se napomena doda na narudžbu, proslijedi je ovdje.
+              note: null,
+              createdAt: sale.createdAt ?? new Date(),
+            }),
+            sendNewOrderPush({
+              saleId: sale.id,
+              customerId: sale.customerId,
+              customerName,
+              customerCompany,
+              salesPersonName,
+              productName,
+              quantity: sale.quantity,
+              totalAmount: sale.totalAmount,
+            }),
+          ]);
         } catch (e) {
-          console.error("[email] Error preparing new order email:", e);
+          console.error("[notify] Error preparing new order notifications:", e);
         }
       })();
 

@@ -18,6 +18,8 @@ import {
   type InsertOffer,
   type OfferItem,
   type InsertOfferItem,
+  type PushToken,
+  type InsertPushToken,
   users,
   customers,
   products,
@@ -26,6 +28,7 @@ import {
   activities,
   offers,
   offerItems,
+  pushTokens,
 } from "@workspace/db";
 import { eq, desc, and, sql, inArray, asc } from "drizzle-orm";
 
@@ -120,6 +123,12 @@ export interface IStorage {
     lastPurchaseDate: Date | null;
     favoriteProducts: string[];
   }>;
+
+  // Push tokens
+  upsertPushToken(token: InsertPushToken): Promise<PushToken>;
+  deletePushToken(token: string): Promise<boolean>;
+  deletePushTokensForUser(userId: string): Promise<boolean>;
+  getPushTokensByRoles(roles: string[]): Promise<PushToken[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -691,6 +700,52 @@ export class DatabaseStorage implements IStorage {
       lastPurchaseDate,
       favoriteProducts: topProducts.map(p => p.name),
     };
+  }
+
+  // Push tokens
+  async upsertPushToken(token: InsertPushToken): Promise<PushToken> {
+    const result = await db
+      .insert(pushTokens)
+      .values(token)
+      .onConflictDoUpdate({
+        target: pushTokens.token,
+        set: {
+          userId: token.userId,
+          platform: token.platform ?? null,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return result[0];
+  }
+
+  async deletePushToken(token: string, userId?: string): Promise<boolean> {
+    const condition = userId
+      ? and(eq(pushTokens.token, token), eq(pushTokens.userId, userId))
+      : eq(pushTokens.token, token);
+    const result = await db.delete(pushTokens).where(condition).returning();
+    return result.length > 0;
+  }
+
+  async deletePushTokensForUser(userId: string): Promise<boolean> {
+    const result = await db.delete(pushTokens).where(eq(pushTokens.userId, userId)).returning();
+    return result.length > 0;
+  }
+
+  async getPushTokensByRoles(roles: string[]): Promise<PushToken[]> {
+    if (roles.length === 0) return [];
+    return await db
+      .select({
+        id: pushTokens.id,
+        userId: pushTokens.userId,
+        token: pushTokens.token,
+        platform: pushTokens.platform,
+        createdAt: pushTokens.createdAt,
+        updatedAt: pushTokens.updatedAt,
+      })
+      .from(pushTokens)
+      .innerJoin(users, eq(users.id, pushTokens.userId))
+      .where(inArray(users.role, roles));
   }
 }
 
