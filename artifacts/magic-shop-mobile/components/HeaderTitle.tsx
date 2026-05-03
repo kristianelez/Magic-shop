@@ -8,7 +8,7 @@ export function HeaderTitle({ title }: { title: string }) {
   return (
     <View style={styles.row}>
       <Logo size={28} ring={false} />
-      <Text style={[styles.title, { color: colors.foreground }]}>{title}</Text>
+      <Text style={[styles.title, { color: colors.copperLight }]}>{title}</Text>
     </View>
   );
 }
