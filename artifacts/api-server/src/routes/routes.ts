@@ -7,6 +7,7 @@ import { sendNewOrderEmail } from "../email";
 import { generateLocalRecommendations } from "../local-ai";
 import { requireAuth } from "../auth";
 import { z } from "zod";
+import * as cookieSignature from "cookie-signature";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication API
@@ -41,8 +42,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.session.save((err) => (err ? reject(err) : resolve()));
       });
 
+      // Expose the signed session id in the response body so non-cookie
+      // clients (mobile, cross-origin web preview where third-party cookies
+      // are blocked) can store it and send it back as
+      // `Authorization: Bearer <sessionToken>`. We sign manually because
+      // express-session only writes the Set-Cookie header right before
+      // sending the response, so res.getHeader("set-cookie") is empty here.
+      const sessionToken = `s:${cookieSignature.sign(req.sessionID, process.env.SESSION_SECRET!)}`;
+
       const { password: _, ...userWithoutPassword } = user;
-      res.json({ user: userWithoutPassword });
+      res.json({ user: userWithoutPassword, sessionToken });
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ message: "Greška pri prijavljivanju" });

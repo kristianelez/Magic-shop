@@ -85,6 +85,27 @@ declare module "express-session" {
   }
 }
 
+// Bearer token shim — lets mobile/cross-origin clients (where third-party
+// cookies are blocked or Set-Cookie can't be read from JS) authenticate by
+// sending the signed session id as `Authorization: Bearer <token>`. The
+// token is the same signed `connect.sid` value the browser would normally
+// store in its cookie jar; we inject it into req.headers.cookie so the
+// existing express-session middleware loads the session unchanged.
+app.use((req, _res, next) => {
+  const auth = req.headers["authorization"];
+  if (typeof auth === "string" && auth.startsWith("Bearer ")) {
+    const token = auth.slice("Bearer ".length).trim();
+    if (token) {
+      const existing = req.headers.cookie ?? "";
+      if (!existing.includes("connect.sid=")) {
+        const injected = `connect.sid=${encodeURIComponent(token)}`;
+        req.headers.cookie = existing ? `${existing}; ${injected}` : injected;
+      }
+    }
+  }
+  next();
+});
+
 app.use(
   session({
     store: new PgSession({

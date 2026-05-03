@@ -1,8 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const COOKIE_KEY = "magic_shop_session_cookie";
+const TOKEN_KEY = "magic_shop_session_token";
 
-let cachedCookie: string | null = null;
+let cachedToken: string | null = null;
 
 /**
  * Resolve the API base URL.
@@ -24,27 +24,20 @@ function getBaseUrl(): string {
   return "";
 }
 
-export async function loadCookie(): Promise<string | null> {
-  if (cachedCookie) return cachedCookie;
-  const stored = await AsyncStorage.getItem(COOKIE_KEY);
-  cachedCookie = stored;
+export async function loadToken(): Promise<string | null> {
+  if (cachedToken) return cachedToken;
+  const stored = await AsyncStorage.getItem(TOKEN_KEY);
+  cachedToken = stored;
   return stored;
 }
 
-export async function setCookie(cookie: string | null): Promise<void> {
-  cachedCookie = cookie;
-  if (cookie) {
-    await AsyncStorage.setItem(COOKIE_KEY, cookie);
+export async function setToken(token: string | null): Promise<void> {
+  cachedToken = token;
+  if (token) {
+    await AsyncStorage.setItem(TOKEN_KEY, token);
   } else {
-    await AsyncStorage.removeItem(COOKIE_KEY);
+    await AsyncStorage.removeItem(TOKEN_KEY);
   }
-}
-
-function parseSetCookie(setCookieHeader: string | null): string | null {
-  if (!setCookieHeader) return null;
-  const first = setCookieHeader.split(",")[0];
-  const pair = first.split(";")[0];
-  return pair.trim();
 }
 
 export interface ApiOptions {
@@ -65,13 +58,13 @@ export async function api<T = unknown>(
   path: string,
   opts: ApiOptions = {},
 ): Promise<T> {
-  const cookie = await loadCookie();
+  const token = await loadToken();
   const url = `${getBaseUrl()}${path}`;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Accept: "application/json",
   };
-  if (cookie) headers["Cookie"] = cookie;
+  if (token) headers["Authorization"] = `Bearer ${token}`;
 
   const res = await fetch(url, {
     method: opts.method ?? "GET",
@@ -79,12 +72,6 @@ export async function api<T = unknown>(
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
     credentials: "include",
   });
-
-  const setCookieHeader = res.headers.get("set-cookie");
-  const parsed = parseSetCookie(setCookieHeader);
-  if (parsed) {
-    await setCookie(parsed);
-  }
 
   const text = await res.text();
   let data: unknown = null;
@@ -94,6 +81,19 @@ export async function api<T = unknown>(
     } catch {
       data = text;
     }
+  }
+
+  // If the login response carries a sessionToken, persist it so subsequent
+  // requests can authenticate via Authorization: Bearer (works in
+  // cross-origin web preview where third-party cookies are blocked, and on
+  // native where there is no shared cookie jar with the API host).
+  if (
+    data &&
+    typeof data === "object" &&
+    "sessionToken" in data &&
+    typeof (data as { sessionToken?: unknown }).sessionToken === "string"
+  ) {
+    await setToken((data as { sessionToken: string }).sessionToken);
   }
 
   if (!res.ok) {

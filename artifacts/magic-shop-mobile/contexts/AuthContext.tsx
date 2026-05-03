@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { api, setCookie } from "@/lib/api";
+import { api, setToken } from "@/lib/api";
 
 interface User {
   id: string;
@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await api("/api/auth/logout", { method: "POST" });
     } catch {}
-    await setCookie(null);
+    await setToken(null);
     setUser(null);
   }, []);
 
