@@ -109,6 +109,7 @@ function RootLayoutNav() {
         options={{ title: "Nova narudžba", presentation: "modal" }}
       />
       <Stack.Screen name="customer/[id]" options={{ title: "Detalji kupca" }} />
+      <Stack.Screen name="sale/[id]" options={{ title: "Uredi narudžbu" }} />
       <Stack.Screen name="product/[id]" options={{ title: "Detalji proizvoda" }} />
     </Stack>
   );

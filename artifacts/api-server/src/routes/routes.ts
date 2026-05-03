@@ -695,10 +695,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       if (createdAtRaw !== undefined && createdAtRaw !== null && createdAtRaw !== "") {
-        const role = req.user!.role;
-        if (role !== "admin" && role !== "sales_director") {
-          return res.status(403).json({ error: "Nemate dozvolu za izmjenu datuma narudžbe" });
-        }
+        // Datum prodaje smiju postaviti svi autentikovani korisnici — ovo je
+        // potrebno da bi mobilni edit-order flow mogao dodati novu stavku u
+        // postojeću narudžbu (grupisana je po customerId + minuti createdAt).
+        // Ako se ne dozvoli, komercijalisti dobijaju 403 i ne mogu dodavati
+        // stavke u svoje stare narudžbe.
         const parsed = new Date(createdAtRaw);
         if (isNaN(parsed.getTime())) {
           return res.status(400).json({ error: "Nevažeći datum narudžbe" });
@@ -771,6 +772,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/sales/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (Number.isNaN(id)) {
+        return res.status(400).json({ error: "Invalid sale id" });
+      }
+      const sale = await storage.getSale(id);
+      if (!sale) {
+        return res.status(404).json({ error: "Sale not found" });
+      }
+      // Komercijalisti smiju vidjeti samo svoje prodaje.
+      if (
+        req.user!.role !== "admin" &&
+        req.user!.role !== "sales_director" &&
+        req.user!.role !== "sales_manager" &&
+        sale.salesPersonId !== req.user!.id
+      ) {
+        return res.status(403).json({ error: "Nemate pristup ovoj narudžbi" });
+      }
+      res.json(sale);
+    } catch (error) {
+      console.error("Error fetching sale:", error);
+      res.status(500).json({ error: "Failed to fetch sale" });
+    }
+  });
+
   app.patch("/api/sales/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -788,6 +815,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const existingSale = await storage.getSale(id);
       if (!existingSale) {
         return res.status(404).json({ error: "Sale not found" });
+      }
+      // Komercijalisti smiju mijenjati samo svoje prodaje. Admin / direktor /
+      // menadžer mogu sve.
+      {
+        const role = req.user!.role;
+        if (
+          role !== "admin" &&
+          role !== "sales_director" &&
+          role !== "sales_manager" &&
+          existingSale.salesPersonId !== req.user!.id
+        ) {
+          return res.status(403).json({ error: "Nemate dozvolu za izmjenu ove narudžbe" });
+        }
       }
       const effectiveProductId = saleData.productId ?? existingSale.productId;
       const effectiveSizeId =
@@ -844,6 +884,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/sales/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      // Komercijalisti smiju brisati samo svoje prodaje.
+      const existing = await storage.getSale(id);
+      if (!existing) {
+        return res.status(404).json({ error: "Sale not found" });
+      }
+      const role = req.user!.role;
+      if (
+        role !== "admin" &&
+        role !== "sales_director" &&
+        role !== "sales_manager" &&
+        existing.salesPersonId !== req.user!.id
+      ) {
+        return res.status(403).json({ error: "Nemate dozvolu za brisanje ove narudžbe" });
+      }
       const deleted = await storage.deleteSale(id);
       
       if (!deleted) {

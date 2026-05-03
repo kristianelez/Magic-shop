@@ -57,24 +57,30 @@ export default function OrdersScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: Sale }) => (
-      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={styles.cardRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.customer, { color: colors.foreground }]}>
-              {item.customerName || `Kupac #${item.customerId}`}
+      <TouchableOpacity
+        onPress={() => router.push(`/sale/${item.id}` as never)}
+        activeOpacity={0.85}
+      >
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.cardRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.customer, { color: colors.foreground }]}>
+                {item.customerName || `Kupac #${item.customerId}`}
+              </Text>
+              <Text style={[styles.meta, { color: colors.mutedForeground }]}>
+                {formatDate(item.createdAt)}
+                {item.invoiceNumber ? `  •  Faktura ${item.invoiceNumber}` : ""}
+              </Text>
+            </View>
+            <Text style={[styles.total, { color: colors.copper }]}>
+              {formatBAM(item.total)}
             </Text>
-            <Text style={[styles.meta, { color: colors.mutedForeground }]}>
-              {formatDate(item.createdAt)}
-              {item.invoiceNumber ? `  •  Faktura ${item.invoiceNumber}` : ""}
-            </Text>
+            <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
           </View>
-          <Text style={[styles.total, { color: colors.copper }]}>
-            {formatBAM(item.total)}
-          </Text>
         </View>
-      </View>
+      </TouchableOpacity>
     ),
-    [colors]
+    [colors, router]
   );
 
   return (
