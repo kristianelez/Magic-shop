@@ -17,6 +17,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 
 import { api } from "@/lib/api";
 import { useColors } from "@/hooks/useColors";
+import type { ColorTokens } from "@/constants/colors";
 
 interface Customer {
   id: number;
@@ -129,8 +130,8 @@ export default function NewOrderScreen() {
       Alert.alert("Uspjeh", "Narudžba je spremljena.");
       router.back();
     },
-    onError: (e: any) => {
-      Alert.alert("Greška", e?.message || "Nije moguće sačuvati narudžbu");
+    onError: (e: Error) => {
+      Alert.alert("Greška", e.message || "Nije moguće sačuvati narudžbu");
     },
   });
 
@@ -293,7 +294,7 @@ function Field({
   label: string;
   value: string;
   onChangeText: (t: string) => void;
-  colors: any;
+  colors: ColorTokens;
 }) {
   return (
     <View style={{ flex: 1 }}>
@@ -328,7 +329,7 @@ function PickerModal<T>({
   keyExtractor: (item: T) => string;
   renderLabel: (item: T) => string;
   onSelect: (item: T) => void;
-  colors: any;
+  colors: ColorTokens;
 }) {
   const [q, setQ] = useState("");
   const filtered = useMemo(

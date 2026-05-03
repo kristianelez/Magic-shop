@@ -35,10 +35,22 @@ function parseSetCookie(setCookieHeader: string | null): string | null {
 
 export interface ApiOptions {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
-  body?: any;
+  body?: unknown;
 }
 
-export async function api<T = any>(path: string, opts: ApiOptions = {}): Promise<T> {
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
+export async function api<T = unknown>(
+  path: string,
+  opts: ApiOptions = {},
+): Promise<T> {
   const cookie = await loadCookie();
   const url = `${getBaseUrl()}${path}`;
   const headers: Record<string, string> = {
@@ -50,21 +62,18 @@ export async function api<T = any>(path: string, opts: ApiOptions = {}): Promise
   const res = await fetch(url, {
     method: opts.method ?? "GET",
     headers,
-    body: opts.body ? JSON.stringify(opts.body) : undefined,
+    body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
     credentials: "include",
   });
 
-  const setCookieHeader =
-    (res.headers as any).get?.("set-cookie") ??
-    (res.headers as any).get?.("Set-Cookie") ??
-    null;
+  const setCookieHeader = res.headers.get("set-cookie");
   const parsed = parseSetCookie(setCookieHeader);
   if (parsed) {
     await setCookie(parsed);
   }
 
   const text = await res.text();
-  let data: any = null;
+  let data: unknown = null;
   if (text) {
     try {
       data = JSON.parse(text);
@@ -74,10 +83,13 @@ export async function api<T = any>(path: string, opts: ApiOptions = {}): Promise
   }
 
   if (!res.ok) {
-    const message = (data && (data.message || data.error)) || `HTTP ${res.status}`;
-    const err = new Error(typeof message === "string" ? message : JSON.stringify(message));
-    (err as any).status = res.status;
-    throw err;
+    let message = `HTTP ${res.status}`;
+    if (data && typeof data === "object") {
+      const obj = data as { message?: unknown; error?: unknown };
+      if (typeof obj.message === "string") message = obj.message;
+      else if (typeof obj.error === "string") message = obj.error;
+    }
+    throw new ApiError(message, res.status);
   }
 
   return data as T;

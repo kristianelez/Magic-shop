@@ -41,9 +41,26 @@ app.use(
     },
   }),
 );
+const allowedOrigins = new Set<string>(
+  [
+    process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : null,
+    process.env.REPLIT_EXPO_DEV_DOMAIN
+      ? `https://${process.env.REPLIT_EXPO_DEV_DOMAIN}`
+      : null,
+    ...(process.env.REPLIT_DOMAINS
+      ? process.env.REPLIT_DOMAINS.split(",").map((d) => `https://${d.trim()}`)
+      : []),
+  ].filter((v): v is string => !!v),
+);
+
 app.use(
   cors({
-    origin: (origin, callback) => callback(null, origin || true),
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.has(origin)) return callback(null, true);
+      if (!isReplitHosted) return callback(null, true);
+      return callback(new Error(`Origin ${origin} not allowed by CORS`));
+    },
     credentials: true,
   }),
 );

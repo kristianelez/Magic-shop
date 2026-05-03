@@ -1,3 +1,5 @@
+export const radius = 10;
+
 const colors = {
   light: {
     text: "#27201A",
@@ -71,7 +73,9 @@ const colors = {
     copper: "#E0A05A",
     copperLight: "#EBB57A",
   },
-  radius: 10,
 };
+
+export type ColorPalette = (typeof colors)["light"];
+export type ColorTokens = ColorPalette & { radius: number };
 
 export default colors;

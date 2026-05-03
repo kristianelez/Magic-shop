@@ -31,8 +31,9 @@ export default function LoginScreen() {
     setSubmitting(true);
     try {
       await login(username.trim(), password);
-    } catch (e: any) {
-      Alert.alert("Greška pri prijavljivanju", e?.message || "Pokušajte ponovo");
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Pokušajte ponovo";
+      Alert.alert("Greška pri prijavljivanju", message);
     } finally {
       setSubmitting(false);
     }
