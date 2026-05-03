@@ -112,18 +112,22 @@ export default function NewOrderScreen() {
     mutationFn: async () => {
       if (!customer) throw new Error("Odaberite kupca");
       if (items.length === 0) throw new Error("Dodajte barem jedan proizvod");
-      const payload = {
-        customerId: customer.id,
-        total: total.toFixed(2),
-        items: items.map((it) => ({
+      // Backend `/api/sales` prima jednu stavku po pozivu (kao i web app).
+      // Šaljemo serijski da bi DB id i createdAt rasli istim redoslijedom.
+      const results = [];
+      for (const it of items) {
+        const lineTotal = it.quantity * it.unitPrice * (1 - it.discount / 100);
+        const payload = {
+          customerId: customer.id,
           productId: it.productId,
           quantity: it.quantity,
-          unitPrice: it.unitPrice.toFixed(2),
+          totalAmount: lineTotal.toFixed(2),
           discount: it.discount.toString(),
-          subtotal: (it.quantity * it.unitPrice * (1 - it.discount / 100)).toFixed(2),
-        })),
-      };
-      return api("/api/sales", { method: "POST", body: payload });
+          status: "completed",
+        };
+        results.push(await api("/api/sales", { method: "POST", body: payload }));
+      }
+      return results;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sales"] });
