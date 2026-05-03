@@ -4,8 +4,9 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { BrandedSidebarTrigger } from "@/components/BrandedSidebarTrigger";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -97,15 +98,11 @@ function AppContent() {
       <div className="flex h-screen w-full">
         <AppSidebar />
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="shrink-0 flex items-center justify-between px-3 md:px-5 h-16 border-b border-border gap-2 md:gap-4 bg-background z-50">
+          <header className="relative shrink-0 flex items-center justify-between px-3 md:px-5 h-16 md:h-[68px] border-b border-border gap-2 md:gap-4 bg-gradient-to-r from-background via-background to-primary/5 z-50 after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-gradient-to-r after:from-transparent after:via-primary/40 after:to-transparent">
             <div className="flex items-center gap-3 md:gap-4 min-w-0">
-              {/* Veći hamburger meni — h-11 w-11 sa 24px ikonom, lakši za klik */}
-              <SidebarTrigger
-                data-testid="button-sidebar-toggle"
-                className="shrink-0 h-11 w-11 [&_svg]:h-6 [&_svg]:w-6"
-              />
+              <BrandedSidebarTrigger />
               <div className="flex items-center gap-3 min-w-0">
-                <Logo size={36} className="hidden sm:block" />
+                <Logo size={40} className="hidden sm:block" />
                 <div className="min-w-0">
                   <div className="font-semibold text-foreground truncate text-sm md:text-base leading-tight" data-testid="text-username">
                     {user.fullName}

@@ -66,15 +66,34 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <Logo size={44} ring={false} className="ring-2 ring-sidebar-primary/50" />
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold text-sidebar-foreground leading-tight truncate">
+      <SidebarHeader className="relative p-5 border-b border-sidebar-border bg-gradient-to-br from-sidebar via-sidebar to-sidebar-accent/30">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="relative">
+            <div className="absolute inset-0 rounded-full bg-sidebar-primary/30 blur-xl" />
+            <Logo
+              size={72}
+              ring={false}
+              className="relative ring-2 ring-sidebar-primary/60 shadow-[0_4px_20px_rgba(0,0,0,0.4)]"
+            />
+          </div>
+          <div className="min-w-0 w-full">
+            <h2 className="text-lg font-bold text-sidebar-foreground leading-tight truncate tracking-tight">
               Magic Cosmetic
             </h2>
-            <p className="text-xs text-sidebar-foreground/70 truncate">{userRoleDisplay}</p>
+            <p className="text-[11px] uppercase tracking-[0.15em] text-sidebar-primary font-semibold mt-0.5">
+              Shop CRM
+            </p>
           </div>
+          {user?.fullName && (
+            <div className="w-full pt-2 mt-1 border-t border-sidebar-border/60">
+              <p className="text-sm font-medium text-sidebar-foreground/95 truncate">
+                {user.fullName}
+              </p>
+              <p className="text-[11px] text-sidebar-foreground/60 truncate">
+                {userRoleDisplay}
+              </p>
+            </div>
+          )}
         </div>
       </SidebarHeader>
       <SidebarContent>
