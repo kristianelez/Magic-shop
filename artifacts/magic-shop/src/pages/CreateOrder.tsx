@@ -46,12 +46,11 @@ export default function CreateOrder() {
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
   const [productSearchOpen, setProductSearchOpen] = useState<{ [key: number]: boolean }>({});
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
-  // Datum + vrijeme narudžbe — može mijenjati samo admin / sales_director.
-  // Za sales_manager uvijek ostaje "trenutni trenutak" (server postavlja defaultNow).
+  // Datum + vrijeme narudžbe — svi korisnici mogu mijenjati.
   const [orderDateLocal, setOrderDateLocal] = useState<string>(nowAsLocalInput);
   const { toast } = useToast();
   const { user } = useAuth();
-  const canEditDate = user?.role === "admin" || user?.role === "sales_director";
+  const canEditDate = !!user;
 
   const { data: customers = [], isLoading: customersLoading } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
