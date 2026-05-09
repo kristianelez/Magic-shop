@@ -194,19 +194,17 @@ export const sales = pgTable("sales", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const insertSaleSchema = createInsertSchema(sales, {
+export const insertSaleSchema = z.object({
   customerId: z.number().int(),
   productId: z.number().int(),
   sizeId: z.number().int().nullable().optional(),
-  salesPersonId: z.string().optional(),
+  salesPersonId: z.string().optional().nullable(),
   quantity: z.number().int(),
   totalAmount: z.string(),
   discount: z.string().optional(),
   notes: z.string().nullable().optional(),
   status: z.string().optional(),
-}).omit({
-  id: true,
-  createdAt: true,
+  invoiceVerified: z.string().optional(),
 });
 
 export type InsertSale = z.infer<typeof insertSaleSchema>;
