@@ -1,0 +1,47 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getIronSession } from "iron-session";
+import { cookies } from "next/headers";
+import { sessionOptions, type SessionData } from "@/lib/auth";
+import { storage } from "@/lib/storage";
+
+async function getUser() {
+  const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
+  if (!session.userId) return null;
+  return await storage.getUser(session.userId);
+}
+
+export async function GET() {
+  try {
+    const user = await getUser();
+    if (!user) {
+      return NextResponse.json({ message: "Niste prijavljeni" }, { status: 401 });
+    }
+
+    const offers = await storage.getOffers(user.id, user.role);
+    return NextResponse.json(offers);
+  } catch (error) {
+    console.error("Error fetching offers:", error);
+    return NextResponse.json({ error: "Failed to fetch offers" }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const user = await getUser();
+    if (!user) {
+      return NextResponse.json({ message: "Niste prijavljeni" }, { status: 401 });
+    }
+
+    const { customerId, totalAmount, status } = await request.json();
+    const offer = await storage.createOffer({
+      customerId,
+      totalAmount,
+      status: status || "draft",
+      salesPersonId: user.id,
+    });
+    return NextResponse.json(offer, { status: 201 });
+  } catch (error) {
+    console.error("Error creating offer:", error);
+    return NextResponse.json({ error: "Failed to create offer" }, { status: 500 });
+  }
+}
