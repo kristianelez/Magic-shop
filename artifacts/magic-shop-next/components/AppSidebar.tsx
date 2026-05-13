@@ -30,8 +30,8 @@ type MenuItem = {
 
 const menuItems: MenuItem[] = [
   { title: "Analitika", url: "/", icon: LayoutDashboard },
-  { title: "Nova narudžba", url: "/create-order", icon: ShoppingCart },
-  { title: "Povrat robe", url: "/create-return", icon: RotateCcw },
+  { title: "Nova narudžba", url: "/orders/create", icon: ShoppingCart },
+  { title: "Povrat robe", url: "/returns/create", icon: RotateCcw },
   { title: "Narudžbe", url: "/orders", icon: ClipboardList },
   { title: "Kupci", url: "/customers", icon: Users },
   { title: "Analiza kupca", url: "/customer-analysis", icon: UserSearch },
@@ -108,7 +108,13 @@ export function AppSidebar() {
               {menuItems.map((item) => {
                 const isAkcije = item.key === "akcije";
                 const isPromoQuery = search.includes("category=akcija");
-                const isActive = isAkcije ? pathname === "/products" && isPromoQuery : item.url === "/products" ? pathname === "/products" && !isPromoQuery : pathname === item.url;
+                const isActive = isAkcije
+                  ? pathname === "/products" && isPromoQuery
+                  : item.url === "/products"
+                  ? pathname === "/products" && !isPromoQuery
+                  : item.url === "/orders"
+                  ? pathname === "/orders"
+                  : pathname === item.url;
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
