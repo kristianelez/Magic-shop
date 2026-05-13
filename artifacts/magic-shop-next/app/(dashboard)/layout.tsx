@@ -9,13 +9,33 @@ import { SplashScreen } from "@/components/SplashScreen";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+
+const ALL_ROUTES = [
+  "/", "/customers", "/customer-analysis", "/contacts",
+  "/products", "/recommendations", "/offers", "/bonuses",
+  "/statistika", "/orders", "/orders/create", "/returns/create",
+];
+
+const ALL_API_KEYS = [
+  ["/api/customers"], ["/api/products"], ["/api/sales"],
+  ["/api/activities"], ["/api/offers"], ["/api/users"],
+  ["/api/products/active-promotions"],
+];
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    if (!user) return;
+    ALL_ROUTES.forEach(route => router.prefetch(route));
+    ALL_API_KEYS.forEach(key => qc.prefetchQuery({ queryKey: key }));
+  }, [user, router, qc]);
 
   const logoutMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/auth/logout", {}),

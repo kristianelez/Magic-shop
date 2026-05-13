@@ -66,6 +66,10 @@ export function AppSidebar() {
     }
   };
 
+  const handlePrefetch = (url: string) => {
+    router.prefetch(url.split("?")[0]);
+  };
+
   const userRoleDisplay = user?.role === 'admin' ? "Admin" : "Komercijalista";
 
   return (
@@ -121,6 +125,8 @@ export function AppSidebar() {
                       isActive={isActive}
                       data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                       onClick={() => handleLinkClick(item.url)}
+                      onMouseEnter={() => handlePrefetch(item.url)}
+                      onTouchStart={() => handlePrefetch(item.url)}
                     >
                       <item.icon className="h-4 w-4" />
                       <span className="flex-1 truncate">{item.title}</span>

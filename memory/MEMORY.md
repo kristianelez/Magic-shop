@@ -1,0 +1,1 @@
+- [Next.js Migration](project_nextjs_migration.md) — Next.js 15 app at artifacts/magic-shop-next/, ready for Vercel. Old Vite+Express still in artifacts/magic-shop + artifacts/api-server.
