@@ -1,6 +1,6 @@
 {
   "buildCommand": "pnpm --filter @workspace/magic-shop-next run build",
   "outputDirectory": ".next",
-  "installCommand": "pnpm install",
+  "installCommand": "pnpm install --ignore-scripts",
   "framework": "nextjs"
 }
