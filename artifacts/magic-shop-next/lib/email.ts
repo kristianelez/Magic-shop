@@ -1,13 +1,12 @@
-const RESEND_API_KEY = process.env.RESEND_API_KEY?.trim();
+const BREVO_API_KEY = process.env.BREVO_API_KEY?.trim();
 const OWNER_EMAIL = process.env.OWNER_EMAIL?.trim();
-const FROM_EMAIL = "Magic Shop <onboarding@resend.dev>";
 
 export function logEmailStatus(): void {
-  if (RESEND_API_KEY && OWNER_EMAIL) {
+  if (BREVO_API_KEY && OWNER_EMAIL) {
     console.log(`[email] Email notifications: enabled (to=${OWNER_EMAIL})`);
   } else {
     const missing = [];
-    if (!RESEND_API_KEY) missing.push("RESEND_API_KEY");
+    if (!BREVO_API_KEY) missing.push("BREVO_API_KEY");
     if (!OWNER_EMAIL) missing.push("OWNER_EMAIL");
     console.log(`[email] Email notifications: disabled (missing ${missing.join(", ")})`);
   }
@@ -89,8 +88,8 @@ function buildHtml(p: NewOrderEmailPayload): string {
   return `<!DOCTYPE html>
 <html lang="bs">
 <body style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#222;background:#fff;padding:16px">
-  <h2 style="margin:0 0 12px">Nova narudžba</h2>
-  <p style="margin:0 0 16px;color:#444">Kreirana u Magic Shop sistemu.</p>
+  <h2 style="margin:0 0 12px">Nova narudžba — Magic Shop</h2>
+  <p style="margin:0 0 16px;color:#444">Kreirana u Magic Shop CRM sistemu.</p>
   <table style="border-collapse:collapse;font-size:14px;margin-bottom:16px">
     <tr><td style="padding:4px 8px;color:#666">Kupac</td><td style="padding:4px 8px">${customer}</td></tr>
     <tr><td style="padding:4px 8px;color:#666">Komercijalista</td><td style="padding:4px 8px">${escapeHtml(p.salesPersonName)}</td></tr>
@@ -110,25 +109,26 @@ function buildHtml(p: NewOrderEmailPayload): string {
 }
 
 export async function sendNewOrderEmail(payload: NewOrderEmailPayload): Promise<void> {
-  if (!RESEND_API_KEY || !OWNER_EMAIL) return;
+  if (!BREVO_API_KEY || !OWNER_EMAIL) return;
   try {
-    const res = await fetch("https://api.resend.com/emails", {
+    const res = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json",
+        "accept": "application/json",
+        "api-key": BREVO_API_KEY,
+        "content-type": "application/json",
       },
       body: JSON.stringify({
-        from: FROM_EMAIL,
-        to: [OWNER_EMAIL],
+        sender: { name: "MagicShop", email: "kristian.elez@gmail.com" },
+        to: [{ email: OWNER_EMAIL }],
         subject: buildSubject(payload),
-        html: buildHtml(payload),
-        text: buildText(payload),
+        htmlContent: buildHtml(payload),
+        textContent: buildText(payload),
       }),
     });
     if (!res.ok) {
       const err = await res.text();
-      console.error("[email] Resend error:", err);
+      console.error("[email] Brevo error:", err);
     }
   } catch (err) {
     console.error("[email] Failed to send notification:", err);
