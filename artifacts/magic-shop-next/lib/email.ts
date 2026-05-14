@@ -1,42 +1,15 @@
-import nodemailer, { type Transporter } from "nodemailer";
-
-const GMAIL_USER = process.env.GMAIL_USER?.trim();
-const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD?.trim();
+const RESEND_API_KEY = process.env.RESEND_API_KEY?.trim();
 const OWNER_EMAIL = process.env.OWNER_EMAIL?.trim();
-
-function missingVars(): string[] {
-  const missing: string[] = [];
-  if (!GMAIL_USER) missing.push("GMAIL_USER");
-  if (!GMAIL_APP_PASSWORD) missing.push("GMAIL_APP_PASSWORD");
-  if (!OWNER_EMAIL) missing.push("OWNER_EMAIL");
-  return missing;
-}
-
-let transporter: Transporter | null = null;
-
-function getTransporter(): Transporter | null {
-  if (!GMAIL_USER || !GMAIL_APP_PASSWORD || !OWNER_EMAIL) return null;
-  if (transporter) return transporter;
-  transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: GMAIL_USER,
-      pass: GMAIL_APP_PASSWORD,
-    },
-  });
-  return transporter;
-}
+const FROM_EMAIL = "Magic Shop <onboarding@resend.dev>";
 
 export function logEmailStatus(): void {
-  const missing = missingVars();
-  if (missing.length === 0) {
-    console.log(
-      `[email] Email notifications: enabled (from=${GMAIL_USER}, to=${OWNER_EMAIL})`,
-    );
+  if (RESEND_API_KEY && OWNER_EMAIL) {
+    console.log(`[email] Email notifications: enabled (to=${OWNER_EMAIL})`);
   } else {
-    console.log(
-      `[email] Email notifications: disabled (missing ${missing.join(", ")})`,
-    );
+    const missing = [];
+    if (!RESEND_API_KEY) missing.push("RESEND_API_KEY");
+    if (!OWNER_EMAIL) missing.push("OWNER_EMAIL");
+    console.log(`[email] Email notifications: disabled (missing ${missing.join(", ")})`);
   }
 }
 
@@ -136,22 +109,28 @@ function buildHtml(p: NewOrderEmailPayload): string {
 </html>`;
 }
 
-export async function sendNewOrderEmail(
-  payload: NewOrderEmailPayload,
-): Promise<void> {
+export async function sendNewOrderEmail(payload: NewOrderEmailPayload): Promise<void> {
+  if (!RESEND_API_KEY || !OWNER_EMAIL) return;
   try {
-    const tx = getTransporter();
-    if (!tx) {
-      return;
-    }
-    await tx.sendMail({
-      from: `"Magic Shop" <${GMAIL_USER}>`,
-      to: OWNER_EMAIL,
-      subject: buildSubject(payload),
-      text: buildText(payload),
-      html: buildHtml(payload),
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: FROM_EMAIL,
+        to: [OWNER_EMAIL],
+        subject: buildSubject(payload),
+        html: buildHtml(payload),
+        text: buildText(payload),
+      }),
     });
+    if (!res.ok) {
+      const err = await res.text();
+      console.error("[email] Resend error:", err);
+    }
   } catch (err) {
-    console.error("[email] Failed to send new order notification:", err);
+    console.error("[email] Failed to send notification:", err);
   }
 }
